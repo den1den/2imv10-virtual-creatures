@@ -12,7 +12,7 @@ namespace Assets.Scripts.Logic.Genotype
     /// </summary>
     public interface ShapeSpecification
     {
-        Object createUnityObject();
+        UnityEngine.Object createUnityObject();
     }
 
     public class Rectangle : ShapeSpecification
@@ -26,7 +26,7 @@ namespace Assets.Scripts.Logic.Genotype
             this.height = height;
         }
 
-        public object createUnityObject()
+        public UnityEngine.Object createUnityObject()
         {
             throw new NotImplementedException();
         }
@@ -55,7 +55,7 @@ namespace Assets.Scripts.Logic.Genotype
         {
             this.r = r;
         }
-        public object createUnityObject()
+        public UnityEngine.Object createUnityObject()
         {
             throw new NotImplementedException();
         }
