@@ -9,10 +9,10 @@ namespace Assets.Scripts.Logic.VirtualCreatures
     class Phenotype
     {
         Morphology morphology; //for tracking only
-        UnityEngine.Object someUnityOutput;
+        SomeUnityObject someUnityOutput;
         ExplicitNN theNetwork;
 
-        public Phenotype(Morphology morphology, UnityEngine.Object someUnityOutput, ExplicitNN theNetwork)
+        public Phenotype(Morphology morphology, SomeUnityObject someUnityOutput, ExplicitNN theNetwork)
         {
             this.morphology = morphology;
             this.someUnityOutput = someUnityOutput;
@@ -21,14 +21,25 @@ namespace Assets.Scripts.Logic.VirtualCreatures
 
         public static Phenotype createNew(Morphology morphology)
         {
-            //
-            UnityEngine.Object someUnityOutput = null;
-            throw new NotImplementedException();
-
-            //
-            ExplicitNN theNetwork = ExplicitNN.createNew(morphology);
+            SomeUnityObject someUnityOutput = SomeUnityObject.createNew(morphology);
+            IList<Joint> joints = someUnityOutput.getJoints();
+            
+            ExplicitNN theNetwork = ExplicitNN.createNew(morphology, joints);
 
             return new Phenotype(morphology, someUnityOutput, theNetwork);
+        }
+    }
+
+    public class SomeUnityObject
+    {
+        internal static SomeUnityObject createNew(Morphology morphology)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal IList<Joint> getJoints()
+        {
+            throw new NotImplementedException();
         }
     }
 }
