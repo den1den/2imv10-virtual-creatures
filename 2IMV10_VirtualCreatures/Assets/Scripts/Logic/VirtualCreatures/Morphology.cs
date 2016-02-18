@@ -35,8 +35,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
 
             Genotype genotype = null;
 
-            Node root = new Node(new Sphere(3));
-            Node fin = new Node(new PlaneRectangle(4, 0.16f));
+            Node root = new Node(new Sphere(1f/4));
+            Node fin = new Node(new PlaneRectangle(2, 0.5f));
+            Node fin2 = new Node(new PlaneRectangle(2, 0.5f));
 
             float[] limits = new float[] { (float)(Math.PI / 2 * 0.8) };
             JointPosition right = new JointPosition(0, 0, 2, 0.1f, 0);
@@ -52,7 +53,7 @@ namespace Assets.Scripts.Logic.VirtualCreatures
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
                 new EdgeMorph(root, fin, rightJoint, rightWriteOnlyNNS, rightNNSMapping),
-                new EdgeMorph(root, fin, leftJoint, leftReadWriteNNS, leftNNSMapping)
+                new EdgeMorph(root, fin2, leftJoint, leftReadWriteNNS, leftNNSMapping)
             }.ToList();
 
             return new Morphology(root, brain, edges, genotype);
