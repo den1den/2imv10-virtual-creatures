@@ -34,7 +34,34 @@ namespace Assets.Scripts.Logic.VirtualCreatures
     {
         internal static SomeUnityObject createNew(Morphology morphology)
         {
+            processNode(morphology.root);
+            processJointRec(morphology.root, morphology.edges);
             throw new NotImplementedException();
+        }
+
+        static void processJointRec(Node src, IList<EdgeMorph> edgelist)
+        {
+            IEnumerator<EdgeMorph> it = edgelist.GetEnumerator();
+            while (it.MoveNext())
+            {
+                EdgeMorph e = it.Current;
+                if(e.source == src)
+                {
+                    it.Dispose();
+                    processJoint(src, e);
+                    processJointRec(e.destination, edgelist);
+                }
+            }
+        }
+
+        static void processNode(Node node)
+        {
+
+        }
+
+        static void processJoint(Node node, EdgeMorph edge)
+        {
+
         }
 
         internal IList<Joint> getJoints()
