@@ -29,10 +29,10 @@ namespace Assets.Scripts.Logic.Genotype
 
     public class Symmetry
     {
-        public Vector axis;
+        public Vector3 axis;
         public int number;
 
-        public Symmetry(Vector axis, int number)
+        public Symmetry(Vector3 axis, int number)
         {
             this.axis = axis;
             this.number = number;
