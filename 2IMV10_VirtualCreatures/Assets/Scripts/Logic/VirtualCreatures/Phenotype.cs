@@ -13,6 +13,7 @@ namespace Assets.Scripts.Logic.VirtualCreatures
     class Phenotype<ResultClass>
     {
         Morphology morphology;  //for tracking only
+        ResultClass unity;  //I think this is the right class???
         ExplicitNN theNetwork;
 
         float fitness = float.NaN;
@@ -47,6 +48,7 @@ namespace Assets.Scripts.Logic.VirtualCreatures
 
     /// <summary>
     /// A factory for unity objects
+    /// This could be done in a sperate file???
     /// </summary>
     public class UnityFactory : IUnityFactory<UnityEngine.Object, MonoBehaviour>
     {
