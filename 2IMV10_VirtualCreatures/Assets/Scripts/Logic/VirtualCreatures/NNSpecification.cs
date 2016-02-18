@@ -37,6 +37,45 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             }
         }
 
+        public static NNSpecification createReadWriteNetwork(JointSpecification joint)
+        {
+            Neuron copy = Neuron.createCopyNeuron();
+            IList<Connection> interCon = new List<Connection>();
+            IList<OutConnection> outCon = new OutConnection[] { new OutConnection(copy) }.ToList();
+            IList<InConnection> inCon = new InConnection[] { new InConnection(copy, 1.0f) }.ToList();
+            return new NNSpecification(interCon, inCon, outCon);
+        }
+
+        internal static NNSpecification createWriteOnlyNetwork(JointSpecification rightJoint)
+        {
+            Neuron copy = Neuron.createCopyNeuron();
+            IList<Connection> interCon = new List<Connection>();
+            IList<OutConnection> outCon = new List<OutConnection>();
+            IList<InConnection> inCon = new InConnection[] { new InConnection(copy, 1.0f) }.ToList();
+            return new NNSpecification(interCon, inCon, outCon);
+        }
+
+        internal static NNSpecification test1()
+        {
+            Neuron n1 = new Neuron(Function.SAW);
+            Neuron n2 = new Neuron(Function.SIN);
+
+            IList<Connection> interCon = new Connection[]
+            {
+                    new Connection(n1, n2, 0.5f)
+            }.ToList();
+            IList<OutConnection> outCon = new OutConnection[]
+            {
+                new OutConnection(n2)
+            }.ToList();
+            IList<InConnection> inCon = new InConnection[]
+            {
+                new InConnection(n1, 1f)
+            }.ToList();
+
+            return new NNSpecification(interCon, inCon, outCon);
+        }
+
         private void checkDummies()
         {
             throw new NotImplementedException();
@@ -88,6 +127,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         public Neuron(Function function)
         {
             this.function = function;
+        }
+
+        internal static Neuron createCopyNeuron()
+        {
+            return new Neuron(Function.SUM);
         }
     }
 

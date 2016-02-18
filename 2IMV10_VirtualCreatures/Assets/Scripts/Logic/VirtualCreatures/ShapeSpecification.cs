@@ -45,7 +45,13 @@ namespace Assets.Scripts.Logic.VirtualCreatures
     public class PlaneRectangle : Rectangle
     {
         public static float width = 0.2f;
-        public PlaneRectangle(float size, float factor) : base(size, width, size * factor) { }
+        public PlaneRectangle(float length, float widthFactor) : base(length * widthFactor, width, length)
+        {
+            if(widthFactor <= 0 || widthFactor > 1)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+        }
     }
 
     public class Sphere : ShapeSpecification
