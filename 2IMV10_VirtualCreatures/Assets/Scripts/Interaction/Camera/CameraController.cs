@@ -9,12 +9,7 @@ public class CameraController : MonoBehaviour {
     public UnityEngine.Object virtualCreature;
 
     // Properties for camera motion
-    public float flySpeed = 0.5f;
-    public float accelerationRatio = 1;
-    public float accelerationAmount = 3;
-    public float slowDownRatio = 0.5f;
-    public bool shift = false;
-    public bool ctrl = false;
+    public float speed = 5f;
 
     // Properties for camera look at
     Vector2 _mouseAbsolute;
@@ -28,8 +23,6 @@ public class CameraController : MonoBehaviour {
 
     void Start()
     {
-        // Save own transform object
-        _transform = this.transform;
 
         // Set target direction to the camera's initial orientation.
         targetDirection = transform.localRotation.eulerAngles;
@@ -45,53 +38,14 @@ public class CameraController : MonoBehaviour {
 
     public void CameraKeyboardControl()
     {
-        // Detect if one of the Shift keys is pressed
-        if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
-        {
-            shift = true;
-            flySpeed *= accelerationRatio;
-        }
-
-        // Detect if one of the Shift keys is not pressed
-        if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.RightShift))
-        {
-            shift = false;
-            flySpeed /= accelerationRatio;
-        }
-
-        // Detect if one of the Ctrl keys is pressed
-        if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))
-        {
-            ctrl = true;
-            flySpeed *= slowDownRatio;
-        }
-
-        // Detect if one of the Ctrl keys is not pressed
-        if (Input.GetKeyUp(KeyCode.LeftControl) || Input.GetKeyUp(KeyCode.RightControl))
-        {
-            ctrl = false;
-            flySpeed /= slowDownRatio;
-        }
-
-        // 
         if (Input.GetAxis("Vertical") != 0)
         {
-            transform.Translate(-transform.forward * flySpeed * Input.GetAxis("Vertical"));
+            transform.Translate(-transform.forward * speed * Input.GetAxis("Vertical"));
         }
 
         if (Input.GetAxis("Horizontal") != 0)
         {
-            transform.Translate(-transform.right * flySpeed * Input.GetAxis("Horizontal"));
-        }
-
-        if (Input.GetKey(KeyCode.E))
-        {
-            transform.Translate(transform.up * flySpeed * 0.5f);
-        }
-
-        else if (Input.GetKey(KeyCode.Q))
-        {
-            transform.Translate(-transform.up * flySpeed * 0.5f);
+            transform.Translate(-transform.right * speed * Input.GetAxis("Horizontal"));
         }
     }
 
