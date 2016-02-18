@@ -27,6 +27,20 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.edges = edges;
             this.nodes = nodes;
         }
+
+        static public Morphology test1()
+        {
+            NNSpecification spec = NNSpecification.test1();
+            Genotype genotype = null;
+
+            Node root = new Node(new Sphere(3));
+            Node fin = new Node(new PlaneRectangle(4, 0.16f));
+            
+            new Edge[]
+            {
+                new Edge(root, fin, new Symmetry(Vector3.up, 2), )
+            }
+        }
     }
 
 

@@ -37,6 +37,27 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             }
         }
 
+        internal static NNSpecification test1()
+        {
+            Neuron n1 = new Neuron(Function.SIN);
+            Neuron n2 = new Neuron(Function.SIN);
+
+            IList<Connection> interCon = new Connection[]
+            {
+                    new Connection(n1, n2, 0.01f)
+            }.ToList();
+            IList<OutConnection> outCon = new OutConnection[]
+            {
+                new OutConnection(n2)
+            }.ToList();
+            IList<InConnection> inCon = new InConnection[]
+            {
+                new InConnection(n1, 1f)
+            }.ToList();
+
+            return new NNSpecification(interCon, inCon, outCon);
+        }
+
         private void checkDummies()
         {
             throw new NotImplementedException();
