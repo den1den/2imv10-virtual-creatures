@@ -9,11 +9,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
     public class Genotype
     {
         public NNSpecification brain;
-        public IList<Edge> edges;
+        public IList<EdgeGen> edges;
         public IList<Node> nodes;
         public Node root;
 
-        public Genotype(Node root, NNSpecification brain, IList<Edge> edges)
+        public Genotype(Node root, NNSpecification brain, IList<EdgeGen> edges)
         {
             IList<Node> nodes = edges.SelectMany(e => new Node[] { e.source, e.destination }).Distinct().ToList();
             if (!edges.Select(e => e.network).Contains(brain))
