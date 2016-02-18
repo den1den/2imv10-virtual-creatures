@@ -9,8 +9,8 @@ public class CameraController : MonoBehaviour {
     public UnityEngine.Object virtualCreature;
 
     // Properties for camera motion
-    public float speed = 5f;
-
+    public float speed = 0.5f;
+    public Vector3 translation;
     // Properties for camera look at
     Vector2 _mouseAbsolute;
     Vector2 _smoothMouse;
@@ -40,13 +40,15 @@ public class CameraController : MonoBehaviour {
     {
         if (Input.GetAxis("Vertical") != 0)
         {
-            transform.Translate(-transform.forward * speed * Input.GetAxis("Vertical"));
+            transform.Translate(transform.forward * speed * Input.GetAxis("Vertical") * Time.deltaTime);
         }
+
 
         if (Input.GetAxis("Horizontal") != 0)
         {
-            transform.Translate(-transform.right * speed * Input.GetAxis("Horizontal"));
+            transform.Translate(transform.right * speed * Input.GetAxis("Horizontal") * Time.deltaTime);
         }
+
     }
 
 
