@@ -8,28 +8,45 @@ using UnityEngine;
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
     /// <summary>
-    /// A creature that is executable. This class basically consists of a UnityObject and a NeuralNetwork that is connected to it.
+    /// A simple layer of abstraction for the Unity implementation
     /// </summary>
-    class Phenotype<ResultClass>
+    /// <typeparam name="ResultClass">The class that is needed by the algorithm to render this creature</typeparam>
+    public class Phenotype<ResultClass> : IPhenotype
+    {
+        ResultClass unity;
+        
+        public Phenotype(Morphology morphology, ResultClass unity, ExplicitNN theNetwork) : base(morphology, theNetwork)
+        {
+            this.unity = unity;
+        }
+    }
+
+    /// <summary>
+    /// A creature that is executable. This class basically consists of a Unity related object and a NeuralNetwork that is connected to it.
+    /// </summary>
+    public abstract class IPhenotype
     {
         Morphology morphology;  //for tracking only
-        ResultClass unity;  //I think this is the right class???
         ExplicitNN theNetwork;
 
-        float fitness = float.NaN;
-
-        public Phenotype(Morphology morphology, ResultClass unity, ExplicitNN theNetwork)
+        internal IPhenotype(Morphology morphology, ExplicitNN theNetwork)
         {
             this.morphology = morphology;
-            this.unity = unity;
             this.theNetwork = theNetwork;
         }
 
-        public static Phenotype<MonoBehaviour> createNew(UnityFactory factory, Morphology morphology)
+        /// <summary>
+        /// First attempt at the Unity intergration using a List of objects as ResultClass
+        /// </summary>
+        /// <param name="factory">A object that is capable of creating unity objects</param>
+        /// <param name="morphology">The definition of the creature</param>
+        /// <returns></returns>
+        public static Phenotype<MonoBehaviour> createNew(MyUnityFactory factory, Morphology morphology)
         {
-            if(factory == null) //create default factory
+            if (factory == null)
             {
-                factory = new UnityFactory();
+                //create default factory if no explicit factory is given
+                factory = new MyUnityFactory();
             }
 
             //invoke the factory
@@ -38,7 +55,7 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             //get the other results of the factory
             IDictionary<EdgeMorph, UnityEngine.Joint> jointsMapping = factory.getJointsMapping();
 
-            //create the neural network
+            //create the neural network using the joints
             IList<UnityEngine.Joint> joints = morphology.edges.Select(e => jointsMapping[e]).ToList();
             ExplicitNN theNetwork = ExplicitNN.createNew(morphology, joints);
 
@@ -48,15 +65,19 @@ namespace Assets.Scripts.Logic.VirtualCreatures
 
     /// <summary>
     /// A factory for unity objects
+    /// See http://answers.unity3d.com/questions/572852/how-do-you-create-an-empty-gameobject-in-code-and.html
     /// This could be done in a sperate file???
     /// </summary>
-    public class UnityFactory : IUnityFactory<UnityEngine.Object, MonoBehaviour>
+    public class MyUnityFactory : IUnityFactory<
+        UnityEngine.GameObject, //I think this is the right class???
+        UnityEngine.MonoBehaviour> //I think this is the right class???
     {
         BoxCollider boxcolider; //example
-        public UnityFactory()
+        GameObject spherePreFab = null; //example
+        public MyUnityFactory()
         {
-            // default values for the factory
-            this.boxcolider = new BoxCollider();
+            //TODO
+            this.boxcolider = new BoxCollider(); //example
         }
 
         /// <summary>
@@ -64,7 +85,7 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         /// </summary>
         /// <param name="node">the source node</param>
         /// <returns>The shape which can have a joint connected to it</returns>
-        protected override UnityEngine.Object processNode(Node node)
+        protected override UnityEngine.GameObject processNode(Node node)
         {
             //TODO
             throw new NotImplementedException();
@@ -79,15 +100,15 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         /// <param name="dst">The destination node</param>
         /// <param name="destination">The (already generated) destination body part (at the origin)</param>
         /// <returns>The joint that is added</returns>
-        protected override UnityEngine.Joint processJoint(Node src, UnityEngine.Object source, EdgeMorph edge, Node dst, UnityEngine.Object destination)
+        protected override UnityEngine.Joint processJoint(Node src, UnityEngine.GameObject source, EdgeMorph edge, Node dst, UnityEngine.GameObject destination)
         {
             //TODO
             throw new NotImplementedException();
-            //this will be a large function probably for all the case distinctions.
+            //this will be a large function probably because of all the case distinctions.
         }
 
         /// <summary>
-        /// Generate the resulting class
+        /// Generate the resulting class (using the intermediate objects).
         /// </summary>
         /// <returns></returns>
         protected override MonoBehaviour constructResult()
@@ -97,14 +118,24 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         }
     }
 
+    /// <summary>
+    /// A wrapper for the Unity factory
+    /// </summary>
+    /// <typeparam name="InstanceClass">An intermediate result of the nodes (a shape instantiation for exmaple)</typeparam>
+    /// <typeparam name="ResultClass">The class that can be used to evaluate the creatures fitness</typeparam>
     public abstract class IUnityFactory<InstanceClass, ResultClass>
         where InstanceClass : UnityEngine.Object
-        where ResultClass : UnityEngine.MonoBehaviour
+        where ResultClass : UnityEngine.Behaviour
     {
         public IUnityFactory() { }
         
         protected LinkedList<InstanceClass> instances;
         protected IDictionary<EdgeMorph, UnityEngine.Joint> jointsMapping;
+
+        /// <summary>
+        /// This might be used in the future to only make it calculatable, exclude lightning and meshes to get faster results.
+        /// </summary>
+        public Boolean onlyCalc = false;
 
         public IDictionary<EdgeMorph, UnityEngine.Joint> getJointsMapping()
         {
@@ -134,12 +165,12 @@ namespace Assets.Scripts.Logic.VirtualCreatures
                 processJointRecursion(destination, destinationGameObject, edgelist);
             }
         }
-        
+
         /// <summary>
-        /// Construction by a morphology.
+        /// Construction of the ResultClass by a morphology.
         /// </summary>
         /// <param name="morphology">A predfined static morhology that defines this creature.</param>
-        /// <returns></returns>
+        /// <returns>An instance of ResultClass that can be used to simulate the fitness of this creature.</returns>
         public ResultClass constructNew(Morphology morphology)
         {
             this.instances = new LinkedList<InstanceClass>();
