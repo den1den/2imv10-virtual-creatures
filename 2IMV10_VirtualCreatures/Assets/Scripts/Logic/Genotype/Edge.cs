@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace Assets.Scripts.Logic.Genotype
 {
@@ -41,11 +43,26 @@ namespace Assets.Scripts.Logic.Genotype
 
     public class MultStrategy
     {
-        //TODO
+        /// <summary>
+        /// Multiplication not yet used
+        /// </summary>
+        public MultStrategy() { }
     }
 
     public class NNMapping
     {
-        //TODO
+        private IDictionary<InConnection, OutConnection> incomming;
+        private IList<OutConnection> jointActorConnections;
+        private IList<InConnection> jointSensorConnections;
+        private IDictionary<OutConnection, InConnection> outgoing;
+
+        public NNMapping(IList<OutConnection> jointActorConnections, IList<InConnection> jointSensorConnections, IDictionary<OutConnection, InConnection> outgoing, IDictionary<InConnection, OutConnection> incomming)
+        {
+            this.jointActorConnections = jointActorConnections;
+            this.jointSensorConnections = jointSensorConnections;
+            this.outgoing = outgoing;
+            this.incomming = incomming;
+        }
     }
 }
+
