@@ -6,7 +6,10 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
-    class Morphology
+    /// <summary>
+    /// The instantiation of a Genotype
+    /// </summary>
+    public class Morphology
     {
         public NNSpecification brain;
         public IList<EdgeMorph> edges;
@@ -26,7 +29,10 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.edges = edges;
             this.nodes = nodes;
         }
-
+        /// <summary>
+        /// A first morhology to test the evolution algorithm with.
+        /// </summary>
+        /// <returns>Morphology of a ball with two fins</returns>
         static public Morphology test1()
         {
             NNSpecification brain = NNSpecification.test1();

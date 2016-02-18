@@ -7,6 +7,9 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
+    /// <summary>
+    /// An edge from the Morhology Graph
+    /// </summary>
     public class EdgeMorph
     {
         public Node destination;
@@ -24,6 +27,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.mapping = mapping;
         }
     }
+    /// <summary>
+    /// An edge from the Genotype Graph
+    /// </summary>
     public class EdgeGen
     {
         public Node destination;
@@ -45,7 +51,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.strategy = strategy;
         }
     }
-
+    /// <summary>
+    /// An notation of symmetry constraints on some EdgeGen, includes the cardinatlity/multiplicity of an EdgeGen. Is not included in the Morhology.
+    /// </summary>
     public class Symmetry
     {
         public Vector3 axis;
@@ -58,6 +66,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         }
     }
 
+    /// <summary>
+    /// Paramters of the Evolutionairy Algorithm on how multiple neural networks are connected when the NNSpecification of a genotype is multiple times in a Morhology.
+    /// </summary>
     public class MultStrategy
     {
         /// <summary>
@@ -66,6 +77,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         public MultStrategy() { }
     }
 
+    /// <summary>
+    /// Defines how a NNSpecification is connected to a Joint.
+    /// </summary>
     public class NNMapping
     {
         public IList<OutConnection> jointActorConnections;
@@ -78,7 +92,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         public NNMapping(IList<InConnection> jointSensorConnections) : this(new List<OutConnection>(), jointSensorConnections) { }
         public NNMapping(IList<OutConnection> jointActorConnections) : this(jointActorConnections, new List<InConnection>()) { }
     }
-
+    /// <summary>
+    /// Defines how a NNSpecification is connected to a Joint and to other NNSpecifications
+    /// </summary>
     public class NNMappingComplete : NNMapping
     {
         private IDictionary<InConnection, IList<OutConnection>> incomming;

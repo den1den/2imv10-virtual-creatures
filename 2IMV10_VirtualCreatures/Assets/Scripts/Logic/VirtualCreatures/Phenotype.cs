@@ -6,11 +6,16 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
+    /// <summary>
+    /// A creature that is executable. This class basically consists of a UnityObject and a NeuralNetwork that is connected to it.
+    /// </summary>
     class Phenotype
     {
         Morphology morphology; //for tracking only
         SomeUnityObject someUnityOutput;
         ExplicitNN theNetwork;
+
+        float fitness;
 
         public Phenotype(Morphology morphology, SomeUnityObject someUnityOutput, ExplicitNN theNetwork)
         {
@@ -30,8 +35,16 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         }
     }
 
+    /// <summary>
+    /// The Unity Classes, this still has to be defined
+    /// </summary>
     public class SomeUnityObject
     {
+        /// <summary>
+        /// Construction by a morphology.
+        /// </summary>
+        /// <param name="morphology">A predfined static morhology that defines this creature.</param>
+        /// <returns></returns>
         internal static SomeUnityObject createNew(Morphology morphology)
         {
             processNode(morphology.root);
@@ -63,7 +76,10 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         {
 
         }
-
+        /// <summary>
+        /// Get the Unity Joints. This is used by the neural network to controll the creature.
+        /// </summary>
+        /// <returns>All joints such that joints.get(i) is the joint of the edges.get(i) from the used morhology for generation of this instance.</returns>
         internal IList<Joint> getJoints()
         {
             throw new NotImplementedException();
