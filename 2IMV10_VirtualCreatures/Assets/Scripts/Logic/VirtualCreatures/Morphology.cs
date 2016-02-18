@@ -22,8 +22,14 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             IList<Node> nodes = edges.SelectMany(e => new Node[] { e.source, e.destination }).Distinct().ToList();
             if (!edges.Select(e => e.network).Contains(brain))
             {
-                throw new ArgumentException();
+                throw new ArgumentException(); //brain can only be added once
             }
+            
+            if (edges.Where(a => edges.Where(b => a.source == b.source && a.destination == b.destination).Count() > 1).Count() > 0)
+            {
+                throw new ArgumentException(); //check for edges with same source en destination, this should not happen and nodes should be repeated
+            }
+
             this.root = root;
             this.brain = brain;
             this.edges = edges;
@@ -63,6 +69,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             }.ToList();
 
             return new Morphology(root, brain, edges, genotype);
+        }
+
+        internal IList<EdgeMorph> getEdges()
+        {
+            return new List<EdgeMorph>(this.edges);
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -38,7 +39,7 @@ namespace Assets.Scripts.Logic.VirtualCreatures
     /// <summary>
     /// The Unity Classes, this still has to be defined
     /// </summary>
-    public class SomeUnityObject
+    public class SomeUnityObject : MonoBehaviour
     {
         /// <summary>
         /// Construction by a morphology.
