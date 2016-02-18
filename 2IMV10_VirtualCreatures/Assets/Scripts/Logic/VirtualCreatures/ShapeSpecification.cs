@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Assets.Scripts.Logic.Genotype
+namespace Assets.Scripts.Logic.VirtualCreatures
 {
     /// <summary>
     /// This defines a shape, excluding position and rotation. 

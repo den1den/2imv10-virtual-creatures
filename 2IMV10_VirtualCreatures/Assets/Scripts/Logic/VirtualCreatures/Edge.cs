@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Assets.Scripts.Logic.Genotype
+namespace Assets.Scripts.Logic.VirtualCreatures
 {
     public class Edge
     {
