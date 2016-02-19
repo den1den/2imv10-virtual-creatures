@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
+    /// <summary>
+    /// The specification of a Neural Network with input and output.
+    /// </summary>
     public class NNSpecification
     {
         public IList<InConnection> incommingConnections;
@@ -36,7 +39,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
                 throw new ArgumentException("neuron specification within this network is not valid");
             }
         }
-
+        /// <summary>
+        /// Create an empty network that simply maps to the input and output of a joint.
+        /// </summary>
+        /// <param name="joint"></param>
+        /// <returns></returns>
         public static NNSpecification createReadWriteNetwork(JointSpecification joint)
         {
             Neuron copy = Neuron.createCopyNeuron();
@@ -45,7 +52,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             IList<InConnection> inCon = new InConnection[] { new InConnection(copy, 1.0f) }.ToList();
             return new NNSpecification(interCon, inCon, outCon);
         }
-
+        /// <summary>
+        /// Create an empty network that simply maps to the output of a joint.
+        /// </summary>
+        /// <param name="rightJoint"></param>
+        /// <returns></returns>
         internal static NNSpecification createWriteOnlyNetwork(JointSpecification rightJoint)
         {
             Neuron copy = Neuron.createCopyNeuron();
@@ -55,6 +66,10 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             return new NNSpecification(interCon, inCon, outCon);
         }
 
+        /// <summary>
+        /// A network that genrates a periodical sinus wave at its outputs.
+        /// </summary>
+        /// <returns></returns>
         internal static NNSpecification test1()
         {
             Neuron n1 = new Neuron(Function.SAW);
@@ -76,14 +91,24 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             return new NNSpecification(interCon, inCon, outCon);
         }
 
+        /// <summary>
+        /// Check for unused nodes
+        /// </summary>
         private void checkDummies()
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// These function require at least two values
+        /// </summary>
         public static readonly Function[] binaryOperators = {Function.MIN, Function.MAX, Function.DEVISION, Function.PRODUCT, Function.SUM,
             Function.GTE, Function.IF, Function.INTERPOLATE, Function.IFSUM, };
 
+        /// <summary>
+        /// Check if this neuron is in this network
+        /// </summary>
+        /// <param name="n"></param>
         private void check(Neuron n)
         {
             if (!neurons.Contains(n))
@@ -92,6 +117,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             }
         }
 
+        /// <summary>
+        /// Get the incomming edges of a neuron in this network
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
         public int getIncomming(Neuron n)
         {
             check(n);
@@ -99,6 +129,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
                 + this.incommingConnections.Where(con => n == con.destination).Count();
         }
 
+        /// <summary>
+        /// Get the outgoing edges of a neuron in this network
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
         public int getOutgoing(Neuron n)
         {
             check(n);
@@ -106,6 +141,10 @@ namespace Assets.Scripts.Logic.VirtualCreatures
                 + this.outgoingConnections.Where(con => n == con.source).Count();
         }
 
+        /// <summary>
+        /// Check the binary restrictions of the neurons in this network
+        /// </summary>
+        /// <returns>True iff all constraints are met.</returns>
         public Boolean isValid()
         {
             foreach (Neuron n in neurons) {
@@ -120,6 +159,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         }
     }
 
+    /// <summary>
+    /// A single neuron in a network.
+    /// </summary>
     public class Neuron
     {
         public Function function;
@@ -129,12 +171,18 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.function = function;
         }
 
+        /// <summary>
+        /// A neuron that simply copies its input to its output. This should model the behaviour of an empty network.
+        /// </summary>
+        /// <returns></returns>
         internal static Neuron createCopyNeuron()
         {
             return new Neuron(Function.SUM);
         }
     }
-
+    /// <summary>
+    /// An internal connection between two neurons.
+    /// </summary>
     public class Connection : InConnection
     {
         public Neuron source;
@@ -144,7 +192,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.source = source;
         }
     }
-
+    /// <summary>
+    /// A connection from the outside towards on of the neurons in this network.
+    /// </summary>
     public class InConnection
     {
         public Neuron destination;
@@ -156,7 +206,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             this.weight = weight;
         }
     }
-
+    /// <summary>
+    /// A connection from one of these neurons to outside the network. This could be connected to another neuron or to some force on a joint.
+    /// </summary>
     public class OutConnection
     {
         public Neuron source;
@@ -166,6 +218,9 @@ namespace Assets.Scripts.Logic.VirtualCreatures
         }
     }
 
+    /// <summary>
+    /// A the different functions that a neuron could have
+    /// </summary>
     public enum Function {
         ABS, ATAN, SIN, COS, EXP, LOG,
         DIFFERENTIATE, INTERGRATE, MEMORY, SMOOTH,

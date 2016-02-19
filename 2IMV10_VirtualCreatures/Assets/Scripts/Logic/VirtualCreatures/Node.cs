@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
+    /// <summary>
+    /// An node from the Morhology or Genotype graph.
+    /// </summary>
     public class Node
     {
         public ShapeSpecification shape;

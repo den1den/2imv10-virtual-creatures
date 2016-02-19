@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
+    /// <summary>
+    /// An executable Neural Network
+    /// </summary>
     public class ExplicitNN
     {
         public static ExplicitNN createNew(Morphology morphology, IList<Joint> joints)

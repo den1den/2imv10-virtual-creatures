@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
+    /// <summary>
+    /// The Genotype of a creature
+    /// </summary>
     public class Genotype
     {
         public NNSpecification brain;

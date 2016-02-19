@@ -6,7 +6,10 @@ using UnityEngine;
 
 namespace Assets.Scripts.Logic.VirtualCreatures
 {
-    class Morphology
+    /// <summary>
+    /// The instantiation of a Genotype
+    /// </summary>
+    public class Morphology
     {
         public NNSpecification brain;
         public IList<EdgeMorph> edges;
@@ -19,14 +22,23 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             IList<Node> nodes = edges.SelectMany(e => new Node[] { e.source, e.destination }).Distinct().ToList();
             if (!edges.Select(e => e.network).Contains(brain))
             {
-                throw new ArgumentException();
+                throw new ArgumentException(); //brain can only be added once
             }
+            
+            if (edges.Where(a => edges.Where(b => a.source == b.source && a.destination == b.destination).Count() > 1).Count() > 0)
+            {
+                throw new ArgumentException(); //check for edges with same source en destination, this should not happen and nodes should be repeated
+            }
+
             this.root = root;
             this.brain = brain;
             this.edges = edges;
             this.nodes = nodes;
         }
-
+        /// <summary>
+        /// A first morhology to test the evolution algorithm with.
+        /// </summary>
+        /// <returns>Morphology of a ball with two fins</returns>
         static public Morphology test1()
         {
             NNSpecification brain = NNSpecification.test1();
@@ -57,6 +69,11 @@ namespace Assets.Scripts.Logic.VirtualCreatures
             }.ToList();
 
             return new Morphology(root, brain, edges, genotype);
+        }
+
+        internal IList<EdgeMorph> getEdges()
+        {
+            return new List<EdgeMorph>(this.edges);
         }
     }
 
