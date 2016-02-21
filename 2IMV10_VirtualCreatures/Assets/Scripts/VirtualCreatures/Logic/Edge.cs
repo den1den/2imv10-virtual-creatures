@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Assets.Scripts.Logic.VirtualCreatures
+namespace VirtualCreatures
 {
     /// <summary>
     /// An edge from the Morhology Graph

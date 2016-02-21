@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Assets.Scripts.Logic.VirtualCreatures
+namespace VirtualCreatures
 {
     /// <summary>
     /// This defines a single joint between two shapes.

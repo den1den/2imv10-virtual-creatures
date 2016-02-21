@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Assets.Scripts.Logic.VirtualCreatures
+namespace VirtualCreatures
 {
     /// <summary>
     /// An executable Neural Network

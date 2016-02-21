@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Assets.Scripts.Logic.VirtualCreatures
+namespace VirtualCreatures
 {
     /// <summary>
     /// The specification of a Neural Network with input and output.
