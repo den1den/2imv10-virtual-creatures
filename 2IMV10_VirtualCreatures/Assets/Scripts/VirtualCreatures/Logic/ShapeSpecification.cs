@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace VirtualCreatures
 {
+
     /// <summary>
     /// This defines a shape, excluding position and rotation. 
     /// The shape also has a right handed coordinate system with X, Y and Z.
@@ -33,7 +34,7 @@ namespace VirtualCreatures
 
         public Rectangle(float width, float depth, float height)
         {
-            if(width < 0 || depth < 0 || height < 0)
+            if (width < 0 || depth < 0 || height < 0)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -42,10 +43,10 @@ namespace VirtualCreatures
             this.height = height;
         }
 
-        public UnityEngine.Object createUnityObject()
+        /*public UnityEngine.Object createUnityObject()
         {
             throw new NotImplementedException();
-        }
+        }*/
     }
 
     /// <summary>
@@ -55,7 +56,7 @@ namespace VirtualCreatures
     {
         public Cube(float scale) : base(scale, scale, scale) { }
     }
-    
+
     public class LongRectangle : Rectangle
     {
         /// <summary>
@@ -65,7 +66,7 @@ namespace VirtualCreatures
         /// <param name="factor">the factor of the height of the beam, must be greater then 1</param>
         public LongRectangle(float size, float factor) : base(size, size, size * factor)
         {
-            if(factor <= 1)
+            if (factor <= 1)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -85,7 +86,7 @@ namespace VirtualCreatures
         /// <param name="factor">A factor to make the plane less square, same as in LongRectangle</param>
         public PlaneRectangle(float size, float factor) : base(size, width, size * factor)
         {
-            if(factor <= 1)
+            if (factor <= 1)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -103,9 +104,10 @@ namespace VirtualCreatures
         {
             this.r = r;
         }
-        public UnityEngine.Object createUnityObject()
+
+        /*public UnityEngine.Object createUnityObject()
         {
             throw new NotImplementedException();
-        }
+        }*/
     }
 }
