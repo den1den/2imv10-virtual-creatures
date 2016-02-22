@@ -82,29 +82,33 @@ namespace VirtualCreatures
         }
 
         /// <summary>
-        /// Check for unused nodes
-        /// </summary>
-        private void checkDummies()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// These function require at least two values
         /// </summary>
         public static readonly Function[] binaryOperators = {Function.MIN, Function.MAX, Function.DEVISION, Function.PRODUCT, Function.SUM,
             Function.GTE, Function.IF, Function.INTERPOLATE, Function.IFSUM, };
 
-        /// <summary>
-        /// Check if this neuron is in this network
-        /// </summary>
-        /// <param name="n"></param>
-        private void check(Neuron n)
+        public static bool checkBinaryOperators()
         {
-            if (!neurons.Contains(n))
+            throw new NotImplementedException();
+        }
+
+        public static NNSpecification testBrain1()
+        {
+            IList<Neuron> neurons = new Neuron[]
             {
-                throw new ArgumentException();
-            }
+            new Neuron(Function.SAW),
+            new Neuron(Function.SIN)
+            }.ToList();
+            IList<InterfaceNode> networkIO = new InterfaceNode[] { new InterfaceNode() }.ToList();
+            IList<InternalConnection> internalConnections = new InternalConnection[]
+            {
+            new InternalConnection(neurons[0], neurons[1], 1.0f)
+            }.ToList();
+            IList<ExternalConnection> externalConnections = new ExternalConnection[]
+            {
+            new ExternalConnection(neurons[1], networkIO[0])
+            }.ToList();
+            return new NNSpecification(neurons, networkIO, internalConnections, externalConnections);
         }
     }
 
@@ -196,14 +200,5 @@ namespace VirtualCreatures
         SIGMOID, SIGN,
         MIN, MAX, DEVISION, PRODUCT, SUM, GTE,
         IF, INTERPOLATE, IFSUM
-    }
-
-    public static NNSpecification test1()
-    {
-        Neuron n1 = new Neuron(Function.SAW);
-        Neuron n2 = new Neuron(Function.SIN);
-
-        //revert old test1 test case
-        return null;
     }
 }
