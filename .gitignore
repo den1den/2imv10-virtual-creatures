@@ -271,3 +271,6 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# removed the metadata from the repo
+*/Library/metadata/
