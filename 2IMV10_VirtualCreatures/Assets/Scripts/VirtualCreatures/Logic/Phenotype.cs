@@ -9,44 +9,44 @@ namespace VirtualCreatures
     // We shoud leave this class without any Unity thing related just as abstract as possible.
     class Phenotype
     {
-        public Joint[] joints;
-
-
-
-        private Morphology morphology; //for tracking only
-        //Creature creature;
-        private ExplicitNN theNetwork;
-
-        private float lastTime;
-
+        ExplicitNN nerves;
 
         public Phenotype(Morphology morphology, Joint[] joints)
         {
-            this.joints = joints;
-
-            this.morphology = morphology;
-            //this.creature = creature;
-            
-            theNetwork = ExplicitNN.createNew(morphology, joints);
+            this.nerves = new NaiveENN(morphology, joints);
         }
 
         public void update()
         {
             // Time.deltaTime;
             // Read and write values of Joints once
+            this.nerves.tick();
+            this.nerves.tick();
         }
 
-        /*public static Phenotype createNew(Morphology morphology)
+    }
+
+    internal class NaiveENN : ExplicitNN
+    {
+        public NaiveENN(Morphology morphology, Joint[] joints) : base(joints)
         {
-            Creature creature = CreatureFactory.createNewCreature(morphology);
 
-            IList<Joint> joints = PhenotypeObject.getJoints();
-            
-            ExplicitNN theNetwork = ExplicitNN.createNew(morphology, joints);
+        }
 
-            return new Phenotype(morphology, someUnityOutput, theNetwork);
-        }*/
+        internal override void tick()
+        {
+            throw new NotImplementedException();
+        }
+    }
 
+    internal abstract class ExplicitNN
+    {
+        Joint[] joints;
+        internal ExplicitNN(Joint[] joints)
+        {
+            this.joints = joints;
+        }
 
+        internal abstract void tick();
     }
 }
