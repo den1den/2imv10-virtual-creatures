@@ -13,7 +13,8 @@ namespace VirtualCreatures
 
         public Phenotype(Morphology morphology, Joint[] joints)
         {
-            this.nerves = new NaiveENN(morphology, joints);
+            NNSpecification brain = morphology.brain;
+            
         }
 
         public void update()
@@ -28,7 +29,7 @@ namespace VirtualCreatures
 
     internal class NaiveENN : ExplicitNN
     {
-        public NaiveENN(Morphology morphology, Joint[] joints) : base(joints)
+        public NaiveENN(NNSpecification main, IList<NNSpecification> subnetworks, Joint[] joints) : base(joints)
         {
 
         }

@@ -12,18 +12,19 @@ namespace VirtualCreatures
     public class NNSpecification
     {
         public IList<Neuron> neurons;
-        public IList<InterfaceNode> networkIO;
-        public IList<Sensor> sensors;
-        public IList<Actor> actors;
+        public IList<InterfaceNode> networkIn;
+        public IList<InterfaceNode> networkOut;
+        public IList<Sensor> sensors; //can be made integers
+        public IList<Actor> actors; //can be made integers
 
         public IList<InternalConnection> internalConnections;
         public IList<ExternalConnection> externalConnections;
 
-        public NNSpecification(IList<Neuron> neurons, IList<InterfaceNode> networkIO, IList<InternalConnection> internalConnections, IList<ExternalConnection> externalConnections) : this(neurons, networkIO, new List<Sensor>(0), new List<Actor>(0), internalConnections, externalConnections) { }
+        public NNSpecification(IList<Neuron> neurons, IList<InterfaceNode> networkIn, IList<InterfaceNode> networkOut, IList<InternalConnection> internalConnections, IList<ExternalConnection> externalConnections) : this(neurons, networkIn, networkOut, new List<Sensor>(0), new List<Actor>(0), internalConnections, externalConnections) { }
 
-        public NNSpecification(IList<Neuron> neurons, IList<InterfaceNode> networkIO, IList<Sensor> sensors, IList<Actor> actors, IList<InternalConnection> internalConnections, IList<ExternalConnection> externalConnections)
+        public NNSpecification(IList<Neuron> neurons, IList<InterfaceNode> networkIn, IList<InterfaceNode> networkOut, IList<Sensor> sensors, IList<Actor> actors, IList<InternalConnection> internalConnections, IList<ExternalConnection> externalConnections)
         {
-            IEnumerable<NeuralNode> given = neurons.Select(n => (NeuralNode)n).Union(networkIO.Select(n => (NeuralNode)n)).Union(networkIO.Select(n => (NeuralNode)n)).Union(sensors.Select(n => (NeuralNode)n)).Union(actors.Select(n => (NeuralNode)n));
+            IEnumerable<NeuralNode> given = neurons.Select(n => (NeuralNode)n).Union(networkIn.Select(n => (NeuralNode)n)).Union(networkOut.Select(n => (NeuralNode)n)).Union(sensors.Select(n => (NeuralNode)n)).Union(actors.Select(n => (NeuralNode)n));
             IEnumerable<NeuralNode> found = internalConnections.SelectMany(c => new NeuralNode[] { c.source, c.destination }).Union(externalConnections.SelectMany(c => new NeuralNode[] { c.source, c.destination }));
             if(given.Where(nn => nn is Neuron).Except(found).Count() > 0)
             {
@@ -33,52 +34,79 @@ namespace VirtualCreatures
             {
                 throw new ArgumentException("Non given NeuralNodes found");
             }
+            if(internalConnections
+                .Select(c => c.source)
+                .Where(source => source is InterfaceNode && !(networkIn.Contains((InterfaceNode)source)))
+                .Count() > 0)
+            {
+                throw new ArgumentException();
+            }
+            if (externalConnections
+                .Select(c => c.destination)
+                .Where(destination => destination is InterfaceNode && !(networkOut.Contains((InterfaceNode)destination)))
+                .Count() > 0)
+            {
+                throw new ArgumentException();
+            }
         }
 
-        public NNSpecification createEmptyWriteNetwork(IList<Actor> actors, IList<InterfaceNode> actorInterfaces)
+        public static NNSpecification createEmptyWriteNetwork(JointType jt, IList<InterfaceNode> networkIn)
         {
-            if(actors.Count() != actorInterfaces.Count())
+            return createEmptyWriteNetwork(jt.createActors(), networkIn);
+        }
+
+        public static NNSpecification createEmptyWriteNetwork(IList<Actor> actors, IList<InterfaceNode> networkIn)
+        {
+            if(actors.Count() != networkIn.Count())
             {
                 throw new ArgumentException();
             }
             IList<Neuron> neurons = new List<Neuron>(0);
-            IList<InterfaceNode> networkIO = new List<InterfaceNode>(actorInterfaces);
+            IList<InterfaceNode> networkOut = new List<InterfaceNode>(0);
+            networkIn = new List<InterfaceNode>(networkIn);
             IList<Sensor> sensors = new List<Sensor>(0);
             actors = new List<Actor>(actors);
             IList<InternalConnection> internalConnections = new List<InternalConnection>();
             IList<ExternalConnection> externalConnections = new List<ExternalConnection>();
             for (int i = 0; i < actors.Count(); i++)
             {
-                ExternalConnection c = new ExternalConnection(actorInterfaces[i], actors[i]);
+                ExternalConnection c = new ExternalConnection(networkIn[i], actors[i]);
                 externalConnections.Add(c);
             }
-            return new NNSpecification(neurons, networkIO, sensors, actors, internalConnections, externalConnections);
+            return new NNSpecification(neurons, networkIn, networkOut, sensors, actors, internalConnections, externalConnections);
         }
 
-        public NNSpecification createEmptyReadWriteNetwork(IList<Sensor> sensors, IList<Actor> actors, IList<InterfaceNode> interfaces)
+        public static NNSpecification createEmptyReadWriteNetwork(JointType jt, IList<InterfaceNode> networkOut, IList<InterfaceNode> networkIn)
         {
-            if (actors.Count() + sensors.Count() != interfaces.Count())
-            {
-                throw new ArgumentException();
-            }
+            return createEmptyReadWriteNetwork(jt.createSensors(), networkOut, jt.createActors(), networkIn);
+        }
+
+        public static NNSpecification createEmptyReadWriteNetwork(IList<Sensor> sensors, IList<InterfaceNode> networkOut, IList<Actor> actors, IList<InterfaceNode> networkIn)
+        {
+            if (sensors.Count() != networkOut.Count()){ throw new ArgumentException(); }
+            if (actors.Count() != networkIn.Count()) { throw new ArgumentException(); }
+
             IList<Neuron> neurons = new List<Neuron>(0);
-            IList<InterfaceNode> networkIO = new List<InterfaceNode>(interfaces);
+
             sensors = new List<Sensor>(sensors);
-            actors = new List<Actor>(actors);
-            IList<InternalConnection> internalConnections = new List<InternalConnection>();
+            networkOut = new List<InterfaceNode>(networkOut);
             IList<ExternalConnection> externalConnections = new List<ExternalConnection>();
             for (int i = 0; i < sensors.Count(); i++)
             {
-                ExternalConnection c = new ExternalConnection(sensors[i], interfaces[i]);
+                ExternalConnection c = new ExternalConnection(sensors[i], networkOut[i]); //this specific constructuror is only used here
                 externalConnections.Add(c);
             }
-            int iOffset = sensors.Count();
+
+            actors = new List<Actor>(actors);
+            networkIn = new List<InterfaceNode>(networkIn);
+            IList<InternalConnection> internalConnections = new List<InternalConnection>();
+            
             for (int i = 0; i < actors.Count(); i++)
             {
-                ExternalConnection c = new ExternalConnection(interfaces[iOffset + i], actors[i]);
+                ExternalConnection c = new ExternalConnection(networkIn[i], actors[i]);
                 externalConnections.Add(c);
             }
-            return new NNSpecification(neurons, networkIO, sensors, actors, internalConnections, externalConnections);
+            return new NNSpecification(neurons, networkIn, networkOut, sensors, actors, internalConnections, externalConnections);
         }
 
         /// <summary>
@@ -99,16 +127,17 @@ namespace VirtualCreatures
             new Neuron(Function.SAW),
             new Neuron(Function.SIN)
             }.ToList();
-            IList<InterfaceNode> networkIO = new InterfaceNode[] { new InterfaceNode() }.ToList();
+            IList<InterfaceNode> networkIn = new List<InterfaceNode>();
+            IList<InterfaceNode> networkOut = new InterfaceNode[] { new InterfaceNode() }.ToList();
             IList<InternalConnection> internalConnections = new InternalConnection[]
             {
             new InternalConnection(neurons[0], neurons[1], 1.0f)
             }.ToList();
             IList<ExternalConnection> externalConnections = new ExternalConnection[]
             {
-            new ExternalConnection(neurons[1], networkIO[0])
+            new ExternalConnection(neurons[1], networkOut[0])
             }.ToList();
-            return new NNSpecification(neurons, networkIO, internalConnections, externalConnections);
+            return new NNSpecification(neurons, networkIn, networkOut, internalConnections, externalConnections);
         }
     }
 

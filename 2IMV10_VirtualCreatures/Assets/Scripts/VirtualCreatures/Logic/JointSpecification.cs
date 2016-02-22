@@ -93,6 +93,26 @@ namespace VirtualCreatures
         {
             return this.dof;
         }
+
+        public IList<Sensor> createSensors()
+        {
+            List<Sensor> r = new List<Sensor>(this.dof);
+            for(int i = 0; i < this.dof; i++)
+            {
+                r.Add(new Sensor());
+            }
+            return r;
+        }
+
+        public IList<Actor> createActors()
+        {
+            List<Actor> r = new List<Actor>(this.dof);
+            for (int i = 0; i < this.dof; i++)
+            {
+                r.Add(new Actor());
+            }
+            return r;
+        }
     }
 
     /// <summary>

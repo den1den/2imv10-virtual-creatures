@@ -41,27 +41,28 @@ namespace VirtualCreatures
         /// <returns>Morphology of a ball with two fins</returns>
         static public Morphology test1()
         {
-            NNSpecification brain = NNSpecification.test1();
-            IList<OutConnection> outConn = brain.outgoingConnections; //thse are only read from left
-            IList<InConnection> inConn = brain.incommingConnections; //these need to be duplicated towards 
+            NNSpecification brain = NNSpecification.testBrain1();
+            InterfaceNode io1 = brain.networkOut[0];
 
             Genotype genotype = null;
-
             Node root = new Node(new Sphere(1f/4));
+
+            //right
             Node fin = new Node(new PlaneRectangle(2, 0.5f));
-            Node fin2 = new Node(new PlaneRectangle(2, 0.5f));
 
             float[] limits = new float[] { (float)(Math.PI / 2 * 0.8) };
             JointPosition right = new JointPosition(0, 0, 2, 0.1f, 0);
             JointSpecification rightJoint = new JointSpecification(right, 0, 0, JointType.HINDGE, limits);
+
+            NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.type, brain.networkOut);
+
+            //left
+            Node fin2 = new Node(new PlaneRectangle(2, 0.5f));
+
             JointPosition left = new JointPosition(0, 0, 4, 0.1f, 0);
             JointSpecification leftJoint = new JointSpecification(left, 0, 0, JointType.HINDGE, limits);
 
-            NNSpecification leftReadWriteNNS = NNSpecification.createReadWriteNetwork(leftJoint);
-            NNMapping leftNNSMapping = new NNMapping(outConn, inConn);
-
-            NNSpecification rightWriteOnlyNNS = NNSpecification.createWriteOnlyNetwork(rightJoint);
-            NNMapping rightNNSMapping = new NNMapping(outConn);
+            NNSpecification leftReadWriteNNS = NNSpecification.createEmptyWriteNetwork(leftJoint.type, brain.networkOut);
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
                 new EdgeMorph(root, fin, rightJoint, rightWriteOnlyNNS),
