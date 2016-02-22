@@ -10,16 +10,25 @@ namespace VirtualCreatures {
     /// </summary>
     public class Creature : MonoBehaviour {
 
+        private Morphology morphology;
+        private Phenotype phenotype;
+        private Joint[] joints;
+
+        public Creature(Morphology morphology)
+        {
+            phenotype = new Phenotype(Morphology, joints)
+        }
+
         // Use this for initialization
         void Start()
         {
-
+            
         }
 
         // Update is called once per frame
         void Update()
         {
-
+            phenotype.update();
         }
 
         

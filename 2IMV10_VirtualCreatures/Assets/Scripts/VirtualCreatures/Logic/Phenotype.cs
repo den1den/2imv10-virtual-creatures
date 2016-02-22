@@ -9,18 +9,32 @@ namespace VirtualCreatures
     // We shoud leave this class without any Unity thing related just as abstract as possible.
     class Phenotype
     {
+        public Joint[] joints;
 
-        Morphology morphology; //for tracking only
+
+
+        private Morphology morphology; //for tracking only
         //Creature creature;
-        ExplicitNN theNetwork;
+        private ExplicitNN theNetwork;
 
-        public Phenotype(Morphology morphology /*, Creature creature*/, ExplicitNN theNetwork)
+        private float lastTime;
+
+
+        public Phenotype(Morphology morphology, Joint[] joints)
         {
+            this.joints = joints;
+
             this.morphology = morphology;
             //this.creature = creature;
-            this.theNetwork = theNetwork;
+            
+            theNetwork = ExplicitNN.createNew(morphology, joints);
         }
 
+        public void update()
+        {
+            // Time.deltaTime;
+            // Read and write values of Joints once
+        }
 
         /*public static Phenotype createNew(Morphology morphology)
         {

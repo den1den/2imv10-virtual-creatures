@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace VirtualCreatures
 {
-    /// <summary>
+    /// <summary>C:\Users\s157641\Desktop\Visual Computing\Repo\2IMV10_VirtualCreatures\Assets\Scripts\VirtualCreatures\Logic\ExplicitNN.cs
     /// An edge from the Morhology Graph
     /// </summary>
     public class EdgeMorph

@@ -3,10 +3,29 @@ using System.Collections;
 
 namespace VirtualCreatures
 {
-    public class PhenotypeFactory : MonoBehaviour
+    public class CreatureFactory : MonoBehaviour
     {
+        public int N = 300;
+        public IList<Creature> creatures;
+        // Use this for initialization
+        void Start()
+        {
 
-        public static Creature createNewCreature(Morphology morphology)
+            Morphology = EvolutionAlgorithm.Result()
+
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+
+            creat
+        }
+
+
+
+
+        /*public static Creature createNewCreature(Morphology morphology)
         {
             processNode(morphology.root);
             processJointRec(morphology.root, morphology.edges);
@@ -38,6 +57,8 @@ namespace VirtualCreatures
         private static processJoint(Node a, EdgeMorph edge, Node b)
         {
 
-        }
+        }*/
+
+
     }
 }
