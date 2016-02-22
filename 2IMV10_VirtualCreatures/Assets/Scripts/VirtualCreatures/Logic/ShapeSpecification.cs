@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace VirtualCreatures
 {
-
     /// <summary>
     /// This defines a shape, excluding position and rotation. 
     /// The shape also has a right handed coordinate system with X, Y and Z.
