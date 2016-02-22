@@ -11,84 +11,74 @@ namespace VirtualCreatures
     /// </summary>
     public class NNSpecification
     {
-        public IList<InConnection> incommingConnections;
-        public IList<OutConnection> outgoingConnections;
-        public IList<Connection> internalConnections;
         public IList<Neuron> neurons;
+        public IList<InterfaceNode> networkIO;
+        public IList<Sensor> sensors;
+        public IList<Actor> actors;
 
-        public NNSpecification(IList<Connection> internalConnections, IList<InConnection> incommingConnections, IList<OutConnection> outgoingConnections)
+        public IList<InternalConnection> internalConnections;
+        public IList<ExternalConnection> externalConnections;
+
+        public NNSpecification(IList<Neuron> neurons, IList<InterfaceNode> networkIO, IList<InternalConnection> internalConnections, IList<ExternalConnection> externalConnections) : this(neurons, networkIO, new List<Sensor>(0), new List<Actor>(0), internalConnections, externalConnections) { }
+
+        public NNSpecification(IList<Neuron> neurons, IList<InterfaceNode> networkIO, IList<Sensor> sensors, IList<Actor> actors, IList<InternalConnection> internalConnections, IList<ExternalConnection> externalConnections)
         {
-            //check for nodes that have no use in incomming edges
-            if(this.incommingConnections.Select(c => c.destination)
-                .Except(this.internalConnections.Select(c => c.source))
-                .Except(this.outgoingConnections.Select(c => c.source))
-                .Count() > 0)
+            IEnumerable<NeuralNode> given = neurons.Select(n => (NeuralNode)n).Union(networkIO.Select(n => (NeuralNode)n)).Union(networkIO.Select(n => (NeuralNode)n)).Union(sensors.Select(n => (NeuralNode)n)).Union(actors.Select(n => (NeuralNode)n));
+            IEnumerable<NeuralNode> found = internalConnections.SelectMany(c => new NeuralNode[] { c.source, c.destination }).Union(externalConnections.SelectMany(c => new NeuralNode[] { c.source, c.destination }));
+            if(given.Where(nn => nn is Neuron).Except(found).Count() > 0)
+            {
+                throw new ArgumentException("Not used Neuron given");
+            }
+            if (found.Except(given).Count() > 0) //check for foreigh neurons
+            {
+                throw new ArgumentException("Non given NeuralNodes found");
+            }
+        }
+
+        public NNSpecification createEmptyWriteNetwork(IList<Actor> actors, IList<InterfaceNode> actorInterfaces)
+        {
+            if(actors.Count() != actorInterfaces.Count())
             {
                 throw new ArgumentException();
             }
-
-            IList<Neuron> neurons = internalConnections.SelectMany(c => new Neuron[] { c.source, c.destination })
-                .Union(outgoingConnections.Select(c => c.source)).ToList();
-
-            this.incommingConnections = incommingConnections;
-            this.outgoingConnections = outgoingConnections;
-            this.internalConnections = internalConnections;
-            this.neurons = neurons;
-            if (!this.isValid())
+            IList<Neuron> neurons = new List<Neuron>(0);
+            IList<InterfaceNode> networkIO = new List<InterfaceNode>(actorInterfaces);
+            IList<Sensor> sensors = new List<Sensor>(0);
+            actors = new List<Actor>(actors);
+            IList<InternalConnection> internalConnections = new List<InternalConnection>();
+            IList<ExternalConnection> externalConnections = new List<ExternalConnection>();
+            for (int i = 0; i < actors.Count(); i++)
             {
-                throw new ArgumentException("neuron specification within this network is not valid");
+                ExternalConnection c = new ExternalConnection(actorInterfaces[i], actors[i]);
+                externalConnections.Add(c);
             }
-        }
-        /// <summary>
-        /// Create an empty network that simply maps to the input and output of a joint.
-        /// </summary>
-        /// <param name="joint"></param>
-        /// <returns></returns>
-        public static NNSpecification createReadWriteNetwork(JointSpecification joint)
-        {
-            Neuron copy = Neuron.createCopyNeuron();
-            IList<Connection> interCon = new List<Connection>();
-            IList<OutConnection> outCon = new OutConnection[] { new OutConnection(copy) }.ToList();
-            IList<InConnection> inCon = new InConnection[] { new InConnection(copy, 1.0f) }.ToList();
-            return new NNSpecification(interCon, inCon, outCon);
-        }
-        /// <summary>
-        /// Create an empty network that simply maps to the output of a joint.
-        /// </summary>
-        /// <param name="rightJoint"></param>
-        /// <returns></returns>
-        internal static NNSpecification createWriteOnlyNetwork(JointSpecification rightJoint)
-        {
-            Neuron copy = Neuron.createCopyNeuron();
-            IList<Connection> interCon = new List<Connection>();
-            IList<OutConnection> outCon = new List<OutConnection>();
-            IList<InConnection> inCon = new InConnection[] { new InConnection(copy, 1.0f) }.ToList();
-            return new NNSpecification(interCon, inCon, outCon);
+            return new NNSpecification(neurons, networkIO, sensors, actors, internalConnections, externalConnections);
         }
 
-        /// <summary>
-        /// A network that genrates a periodical sinus wave at its outputs.
-        /// </summary>
-        /// <returns></returns>
-        internal static NNSpecification test1()
+        public NNSpecification createEmptyReadWriteNetwork(IList<Sensor> sensors, IList<Actor> actors, IList<InterfaceNode> interfaces)
         {
-            Neuron n1 = new Neuron(Function.SAW);
-            Neuron n2 = new Neuron(Function.SIN);
-
-            IList<Connection> interCon = new Connection[]
+            if (actors.Count() + sensors.Count() != interfaces.Count())
             {
-                    new Connection(n1, n2, 0.5f)
-            }.ToList();
-            IList<OutConnection> outCon = new OutConnection[]
+                throw new ArgumentException();
+            }
+            IList<Neuron> neurons = new List<Neuron>(0);
+            IList<InterfaceNode> networkIO = new List<InterfaceNode>(interfaces);
+            sensors = new List<Sensor>(sensors);
+            actors = new List<Actor>(actors);
+            IList<InternalConnection> internalConnections = new List<InternalConnection>();
+            IList<ExternalConnection> externalConnections = new List<ExternalConnection>();
+            for (int i = 0; i < sensors.Count(); i++)
             {
-                new OutConnection(n2)
-            }.ToList();
-            IList<InConnection> inCon = new InConnection[]
+                ExternalConnection c = new ExternalConnection(sensors[i], interfaces[i]);
+                externalConnections.Add(c);
+            }
+            int iOffset = sensors.Count();
+            for (int i = 0; i < actors.Count(); i++)
             {
-                new InConnection(n1, 1f)
-            }.ToList();
-
-            return new NNSpecification(interCon, inCon, outCon);
+                ExternalConnection c = new ExternalConnection(interfaces[iOffset + i], actors[i]);
+                externalConnections.Add(c);
+            }
+            return new NNSpecification(neurons, networkIO, sensors, actors, internalConnections, externalConnections);
         }
 
         /// <summary>
@@ -116,53 +106,31 @@ namespace VirtualCreatures
                 throw new ArgumentException();
             }
         }
-
-        /// <summary>
-        /// Get the incomming edges of a neuron in this network
-        /// </summary>
-        /// <param name="n"></param>
-        /// <returns></returns>
-        public int getIncomming(Neuron n)
-        {
-            check(n);
-            return this.internalConnections.Where(con => n == con.destination).Count()
-                + this.incommingConnections.Where(con => n == con.destination).Count();
-        }
-
-        /// <summary>
-        /// Get the outgoing edges of a neuron in this network
-        /// </summary>
-        /// <param name="n"></param>
-        /// <returns></returns>
-        public int getOutgoing(Neuron n)
-        {
-            check(n);
-            return this.internalConnections.Where(con => n == con.source).Count()
-                + this.outgoingConnections.Where(con => n == con.source).Count();
-        }
-
-        /// <summary>
-        /// Check the binary restrictions of the neurons in this network
-        /// </summary>
-        /// <returns>True iff all constraints are met.</returns>
-        public Boolean isValid()
-        {
-            foreach (Neuron n in neurons) {
-                if (binaryOperators.Contains(n.function)){
-                    if (this.getIncomming(n) < 2)
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
     }
+
+    public abstract class NeuralNode { }
+
+    /// <summary>
+    /// A sensor of this network
+    /// </summary>
+    public class Sensor : NeuralNode { }
+
+    /// <summary>
+    /// An actor of this network
+    /// </summary>
+    public class Actor : NeuralNode {
+        float weight; //could be usefull?
+    }
+
+    /// <summary>
+    /// A node that is in the interface of the network
+    /// </summary>
+    public class InterfaceNode : NeuralNode { }
 
     /// <summary>
     /// A single neuron in a network.
     /// </summary>
-    public class Neuron
+    public class Neuron : NeuralNode
     {
         public Function function;
 
@@ -170,54 +138,54 @@ namespace VirtualCreatures
         {
             this.function = function;
         }
-
-        /// <summary>
-        /// A neuron that simply copies its input to its output. This should model the behaviour of an empty network.
-        /// </summary>
-        /// <returns></returns>
-        internal static Neuron createCopyNeuron()
-        {
-            return new Neuron(Function.SUM);
-        }
     }
-    /// <summary>
-    /// An internal connection between two neurons.
-    /// </summary>
-    public class Connection : InConnection
-    {
-        public Neuron source;
 
-        public Connection(Neuron source, Neuron destination, float weight) : base(destination, weight)
+    public class BaseConnection
+    {
+        public NeuralNode source;
+        public NeuralNode destination;
+
+        public BaseConnection(NeuralNode source, NeuralNode destination)
         {
             this.source = source;
+            this.destination = destination;
         }
     }
-    /// <summary>
-    /// A connection from the outside towards on of the neurons in this network.
-    /// </summary>
-    public class InConnection
-    {
-        public Neuron destination;
-        public float weight;
 
-        public InConnection(Neuron destination, float weight)
+    public class BaseWConnection : BaseConnection
+    {
+        float weight;
+        protected BaseWConnection(NeuralNode source, NeuralNode destination, float weight) : base(source, destination)
         {
-            this.destination = destination;
             this.weight = weight;
         }
     }
+
     /// <summary>
-    /// A connection from one of these neurons to outside the network. This could be connected to another neuron or to some force on a joint.
+    /// A connection that goes to an internal Neuron
     /// </summary>
-    public class OutConnection
+    public class InternalConnection : BaseWConnection
     {
-        public Neuron source;
-        public OutConnection(Neuron source)
-        {
-            this.source = source;
-        }
+        public InternalConnection(Neuron source, Neuron destination, float weight) : base(source, destination, weight) { }
+        public InternalConnection(Sensor source, Neuron destination, float weight) : base(source, destination, weight) { }
+        public InternalConnection(InterfaceNode source, Neuron destination, float weight) : base(source, destination, weight) { }
     }
 
+    /// <summary>
+    /// An connection that goes towards a Interface or Actor
+    /// </summary>
+    public class ExternalConnection : BaseConnection
+    {
+        public ExternalConnection(Neuron source, InterfaceNode destination) : base(source, destination) { }
+        public ExternalConnection(InterfaceNode source, Actor destination) : base(source, destination) { }
+        public ExternalConnection(Neuron source, Actor destination) : base(source, destination) { }
+
+        /// <summary>
+        /// Only for usage by an Empty network!!!
+        /// </summary>
+        internal ExternalConnection(Sensor source, InterfaceNode destination) : base(source, destination) { }
+    }
+    
     /// <summary>
     /// A the different functions that a neuron could have
     /// </summary>
@@ -229,5 +197,13 @@ namespace VirtualCreatures
         MIN, MAX, DEVISION, PRODUCT, SUM, GTE,
         IF, INTERPOLATE, IFSUM
     }
-}
 
+    public static NNSpecification test1()
+    {
+        Neuron n1 = new Neuron(Function.SAW);
+        Neuron n2 = new Neuron(Function.SIN);
+
+        //revert old test1 test case
+        return null;
+    }
+}
