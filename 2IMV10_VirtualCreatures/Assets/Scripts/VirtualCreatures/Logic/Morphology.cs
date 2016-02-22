@@ -64,8 +64,8 @@ namespace VirtualCreatures
             NNMapping rightNNSMapping = new NNMapping(outConn);
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, fin, rightJoint, rightWriteOnlyNNS, rightNNSMapping),
-                new EdgeMorph(root, fin2, leftJoint, leftReadWriteNNS, leftNNSMapping)
+                new EdgeMorph(root, fin, rightJoint, rightWriteOnlyNNS),
+                new EdgeMorph(root, fin2, leftJoint, leftReadWriteNNS)
             }.ToList();
 
             return new Morphology(root, brain, edges, genotype);

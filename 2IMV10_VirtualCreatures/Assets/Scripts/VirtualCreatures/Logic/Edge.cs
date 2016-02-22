@@ -14,17 +14,15 @@ namespace VirtualCreatures
     {
         public Node destination;
         public JointSpecification joint;
-        public NNMapping mapping;
         public NNSpecification network;
         public Node source;
 
-        public EdgeMorph(Node source, Node destination, JointSpecification joint, NNSpecification network, NNMapping mapping)
+        public EdgeMorph(Node source, Node destination, JointSpecification joint, NNSpecification network)
         {
             this.source = source;
             this.destination = destination;
             this.joint = joint;
             this.network = network;
-            this.mapping = mapping;
         }
     }
     /// <summary>
@@ -34,20 +32,18 @@ namespace VirtualCreatures
     {
         public Node destination;
         public JointSpecification joint;
-        public NNMappingComplete mapping;
         public NNSpecification network;
         public Node source;
         public MultStrategy strategy;
         public Symmetry symmetry;
 
-        public EdgeGen(Node source, Node destination, Symmetry symmetry, JointSpecification joint, NNSpecification network, NNMappingComplete mapping, MultStrategy strategy)
+        public EdgeGen(Node source, Node destination, Symmetry symmetry, JointSpecification joint, NNSpecification network, MultStrategy strategy)
         {
             this.source = source;
             this.destination = destination;
             this.symmetry = symmetry;
             this.joint = joint;
             this.network = network;
-            this.mapping = mapping;
             this.strategy = strategy;
         }
     }
@@ -73,38 +69,9 @@ namespace VirtualCreatures
     {
         /// <summary>
         /// Multiplication not yet used
+        /// Should contain the neural network mapping strategy
         /// </summary>
         public MultStrategy() { }
-    }
-
-    /// <summary>
-    /// Defines how a NNSpecification is connected to a Joint.
-    /// </summary>
-    public class NNMapping
-    {
-        public IList<OutConnection> jointActorConnections;
-        public IList<InConnection> jointSensorConnections;
-        public NNMapping(IList<OutConnection> jointActorConnections, IList<InConnection> jointSensorConnections)
-        {
-            this.jointActorConnections = jointActorConnections;
-            this.jointSensorConnections = jointSensorConnections;
-        }
-        public NNMapping(IList<InConnection> jointSensorConnections) : this(new List<OutConnection>(), jointSensorConnections) { }
-        public NNMapping(IList<OutConnection> jointActorConnections) : this(jointActorConnections, new List<InConnection>()) { }
-    }
-    /// <summary>
-    /// Defines how a NNSpecification is connected to a Joint and to other NNSpecifications
-    /// </summary>
-    public class NNMappingComplete : NNMapping
-    {
-        private IDictionary<InConnection, IList<OutConnection>> incomming;
-        private IDictionary<OutConnection, IList<InConnection>> outgoing;
-
-        public NNMappingComplete(IList<OutConnection> jointActorConnections, IList<InConnection> jointSensorConnections, IDictionary<OutConnection, IList<InConnection>> outgoing, IDictionary<InConnection, IList<OutConnection>> incomming) : base(jointActorConnections, jointSensorConnections)
-        {
-            this.outgoing = outgoing;
-            this.incomming = incomming;
-        }
     }
 }
 
