@@ -24,7 +24,7 @@ namespace VirtualCreatures
             {
                 throw new ArgumentException(); //brain can only be added once
             }
-            
+            if(brain.actors.Count > 0 || brain.sensors.Count > 0) { throw new ArgumentException("Brain should not have sensors for now"); }
             if (edges.Where(a => edges.Where(b => a.source == b.source && a.destination == b.destination).Count() > 1).Count() > 0)
             {
                 throw new ArgumentException(); //check for edges with same source en destination, this should not happen and nodes should be repeated
@@ -42,7 +42,6 @@ namespace VirtualCreatures
         static public Morphology test1()
         {
             NNSpecification brain = NNSpecification.testBrain1();
-            InterfaceNode io1 = brain.networkOut[0];
 
             Genotype genotype = null;
             Node root = new Node(new Sphere(1f/4));

@@ -94,22 +94,22 @@ namespace VirtualCreatures
             return this.dof;
         }
 
-        public IList<Sensor> createSensors()
+        public IList<SensorSpec> createSensors()
         {
-            List<Sensor> r = new List<Sensor>(this.dof);
+            List<SensorSpec> r = new List<SensorSpec>(this.dof);
             for(int i = 0; i < this.dof; i++)
             {
-                r.Add(new Sensor());
+                r.Add(new SensorSpec());
             }
             return r;
         }
 
-        public IList<Actor> createActors()
+        public IList<ActorSpec> createActors()
         {
-            List<Actor> r = new List<Actor>(this.dof);
+            List<ActorSpec> r = new List<ActorSpec>(this.dof);
             for (int i = 0; i < this.dof; i++)
             {
-                r.Add(new Actor());
+                r.Add(new ActorSpec());
             }
             return r;
         }
