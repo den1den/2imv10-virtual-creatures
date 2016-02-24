@@ -12,7 +12,7 @@ namespace VirtualCreatures {
 
         private Phenotype phenotype;
         private IList<Joint> joints;
-        private IList<> shapes;
+        private IList<GameObject> primitives;
 
         public Creature(Morphology morphology)
         {
