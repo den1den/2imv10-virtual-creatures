@@ -64,10 +64,15 @@ namespace VirtualCreatures
         }
 
 
-        public Joint createJoint()
+        public Joint createJoint(GameObject parent)
         {
+            Joint joint = (Joint)parent.AddComponent<HingeJoint>();
+            
+            // Change initial joint parameters here
+            // ****************
+
             // create Joint to load it from creature
-            return new HingeJoint();
+            return joint;
         }
     }
 
