@@ -42,7 +42,7 @@ namespace VirtualCreatures
                 if(limit < 0) throw new ArgumentOutOfRangeException();
             }
             if (type == JointType.FIXED) { }
-            else if (type == JointType.HINDGE)
+            else if (type == JointType.HINGE)
             {
                 if (limits[0] > Math.PI / 2) throw new ArgumentOutOfRangeException();
             }
@@ -62,6 +62,13 @@ namespace VirtualCreatures
             this.type = type;
             this.limits = limits;
         }
+
+
+        public Joint createJoint()
+        {
+            // create Joint to load it from creature
+            return new HingeJoint();
+        }
     }
 
     public class JointType
@@ -71,9 +78,9 @@ namespace VirtualCreatures
         /// </summary>
         static public readonly JointType FIXED = new JointType(0);
         /// <summary>
-        /// A hindge joint, like in a door. The turning direction is defined via the JointSpecification.initAngle
+        /// A hinge joint, like in a door. The turning direction is defined via the JointSpecification.initAngle
         /// </summary>
-        static public readonly JointType HINDGE = new JointType(1);
+        static public readonly JointType HINGE = new JointType(1);
         /// <summary>
         /// A piston joint, can only contract and extend in the initial direction.
         /// </summary>
