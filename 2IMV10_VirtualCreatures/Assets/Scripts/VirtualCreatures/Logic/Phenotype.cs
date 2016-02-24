@@ -32,24 +32,59 @@ namespace VirtualCreatures
     internal class NaiveENN : ExplicitNN
     {
         internal float dt = float.NaN;
-        private readonly List<NeuronSpec> neurons;
+        private readonly List<NeuronSpec> neurons = null;
 
-        public NaiveENN(NNSpecification main, IEnumerable<NNSpecification> subnetworks, Joint[] joints) : base(joints)
+        public NaiveENN(Joint[] joints) : base(joints) { }
+
+        public NaiveENN create(NNSpecification main, IEnumerable<NNSpecification> subnetworks, Joint[] joints)
         {
+            NaiveENN N = new NaiveENN(joints);
+
             IEnumerable<NNSpecification> allNetworks = subnetworks.Union(Enumerable.Repeat(main, 1));
             //connect the networks
             IDictionary<InterfaceNode, IEnumerable<NNSpecification>> nnmappings = subnetworks.SelectMany(n => n.networkIn).ToDictionary(intnode => intnode, intn => allNetworks.Where(n => n.networkOut.Contains(intn)));
 
-            //per node collect the weights and create the implemenetation
-            IDictionary<SensorSpec, INeuron> created = allNetworks.SelectMany(net => net.getAllNeurals()).ToDictionary(n => n, n => INeuron.create(n));
+            //per node create the implemenetation and store it in a map from Spec->Impl
+            IDictionary<SensorSpec, Neural> created = allNetworks.SelectMany(net => net.getAllNeurals()).ToDictionary(n => n, n => N.create(n));
 
-
+            //now set all the appropiate weights
             foreach (NNSpecification network in allNetworks)
             {
                 foreach (NeuronSpec n in network.getNeuronsAndActors())
                 {
-                    float[] weights = network.getSourceEdges(n).Select(e => e.weight).ToArray();
-
+                    IList<WeightConnection> wcs = network.getSourceEdges(n).ToList();
+                    double[] weights = new double[wcs.Count];
+                    int i = 0;
+                    foreach (WeightConnection w in wcs)
+                    {
+                        weights[i] = w.weight;
+                        Neural input;
+                        if (!w.source.isInterface())
+                        {
+                            //normal edge
+                            SensorSpec source = (SensorSpec)w.source;
+                            input = created[source];
+                        } else
+                        {
+                            //edge that is from a different network
+                            InterfaceNode hiddenSource = (InterfaceNode)w.source;
+                            NNSpecification sourceNetwork = allNetworks.Where(net => net.networkOut == hiddenSource).Single();
+                            SimpleConnection sourceConnection = sourceNetwork.getSourceEdges(hiddenSource).Single();
+                            if(sourceConnection.source.isNeuron())
+                            {
+                                //edge from a different neuron
+                                NeuronSpec source = (NeuronSpec)sourceConnection.source;
+                                input = created[source];
+                            }
+                            else if (sourceConnection.source.isSensor())
+                            {
+                                //edge from a different sensor
+                                SensorSpec source = (SensorSpec)sourceConnection.source;
+                                input = created[source];
+                            }
+                        }
+                        i++;
+                    }
                 }
             }
 
@@ -89,7 +124,7 @@ namespace VirtualCreatures
 
             IList<SensorSpec> sensors = subnetworks.SelectMany(n => n.sensors).ToList();
             if (sensors.Count != joints.Length) { throw new ArgumentException("sensors and joints do not match"); }
-            IEnumerable<IConnection> startIncomming = edges.Where(e => e.source is SensorSpec);
+            IEnumerable<IConnection> startIncomming = edges.Where(e => e.source.isSensor());
 
             //IDictionary<VirtualCreatures.Neuron, Neuron> createdN = main.neurons.Union(subnetworks.SelectMany(sn => sn.neurons)).ToDictionary(
             //    (neuronkey => neuronkey),
@@ -107,34 +142,86 @@ namespace VirtualCreatures
             throw new NotImplementedException();
         }
 
-        internal abstract class INeuron
+        internal Neural create(SensorSpec ns)
+        {
+            if (ns .isActor())
+            {
+                return new SUM();
+            }
+            else if (ns.isNeuron())
+            {
+                NeuronSpec n = (NeuronSpec)ns;
+                switch (n.function)
+                {
+                    case NeuronSpec.NFunc.ABS:
+                        return new ABS();
+                    case NeuronSpec.NFunc.ATAN:
+                        return new ATAN();
+                    case NeuronSpec.NFunc.SIN:
+                        return new SIN();
+                    case NeuronSpec.NFunc.COS:
+                        return new COS();
+                    case NeuronSpec.NFunc.SIGN:
+                        return new SIGN();
+                    case NeuronSpec.NFunc.SIGMOID:
+                        return new SIGMOID();
+                    case NeuronSpec.NFunc.EXP:
+                        return new EXP();
+                    case NeuronSpec.NFunc.LOG:
+                        return new LOG();
+                    case NeuronSpec.NFunc.DIFFERENTIATE:
+                        return new DIFFERENTIATE(0);
+                    case NeuronSpec.NFunc.INTERGRATE:
+                        return new INTERGRATE();
+                    case NeuronSpec.NFunc.MEMORY:
+                        return new MEMORY();
+                    case NeuronSpec.NFunc.SMOOTH:
+                        return new SMOOTH();
+                    case NeuronSpec.NFunc.SAW:
+                        return new SAW(this);
+                    case NeuronSpec.NFunc.WAVE:
+                        return new WAVE(this);
+                    case NeuronSpec.NFunc.MIN:
+                        return new MIN();
+                    case NeuronSpec.NFunc.MAX:
+                        return new MAX();
+                    case NeuronSpec.NFunc.SUM:
+                        return new SUM();
+                    case NeuronSpec.NFunc.PRODUCT:
+                        return new PRODUCT();
+                    case NeuronSpec.NFunc.DEVISION:
+                        //double
+                        return new DEVISION();
+                    case NeuronSpec.NFunc.GTE:
+                        //triple
+                        return new GTE();
+                    case NeuronSpec.NFunc.IF:
+                        return new IF();
+                    case NeuronSpec.NFunc.INTERPOLATE:
+                        return new INTERPOLATE();
+                    case NeuronSpec.NFunc.IFSUM:
+                        return new IFSUM();
+                    default:
+                        throw new NotImplementedException("Function not known?");
+                }
+            }
+            else
+            {
+                return new Neural();
+            }
+        }
+
+        internal class Neural
         {
             internal double value = double.NaN;
+        }
+
+        internal abstract class INeuron : Neural
+        {
             internal INeuron[] inputs = null;
             internal double[] weights = null;
 
             internal abstract void tick();
-
-            internal static INeuron create(SensorSpec ns)
-            {
-                if (ns is ActorSpec)
-                {
-                    return new SUM();
-                }
-                else if (ns is NeuronSpec)
-                {
-                    NeuronSpec n = (NeuronSpec)ns;
-                    switch (n.function)
-                    {
-                        case NeuronSpec.NFunc.MIN:
-
-                    }
-                }
-                else
-                {
-
-                }
-            }
         }
 
         internal abstract class SingleFunction : INeuron
@@ -242,10 +329,10 @@ namespace VirtualCreatures
                 return Math.Max(-1, C * Math.Log(x, Base));
             }
         }
-        internal class DIFF : SingleFunction
+        internal class DIFFERENTIATE : SingleFunction
         {
             double last;
-            public DIFF(double initValue) { this.last = initValue; }
+            public DIFFERENTIATE(double initValue) { this.last = initValue; }
             public override double y(double x)
             {
                 double x0 = last;
@@ -253,14 +340,14 @@ namespace VirtualCreatures
                 return x - x0;
             }
         }
-        internal class INTEGRATE : SingleFunction
+        internal class INTERGRATE : SingleFunction
         {
             public override double y(double x)
             {
                 throw new NotImplementedException();
             }
         }
-        internal class MEM : SingleFunction
+        internal class MEMORY : SingleFunction
         {
             static int size = 30;
             double[] vals = new double[size];
