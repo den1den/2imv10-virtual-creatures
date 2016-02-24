@@ -17,7 +17,7 @@ namespace VirtualCreatures
             this.shape = shape;
         }
 
-        public IList<EdgeMorph> edges(IList<EdgeMorph> alledges)
+        public IList<EdgeMorph> getEdges(IList<EdgeMorph> alledges)
         {
             return alledges.Where<EdgeMorph>(e => e.source == this).ToList<EdgeMorph>();
         }
