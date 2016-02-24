@@ -16,7 +16,7 @@ namespace VirtualCreatures {
 
         public Creature(Morphology morphology)
         {
-            phenotype = new Phenotype(Morphology, joints)
+            phenotype = new Phenotype(morphology, joints);
         }
 
         // Use this for initialization

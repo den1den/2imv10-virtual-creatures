@@ -39,7 +39,11 @@ namespace VirtualCreatures {
 
         public void CameraKeyboardControl()
         {
-            if (Input.GetAxis("Vertical") != 0)
+
+            if(Input.GetKeyDown(KeyCode.W) != false)
+                transform.Translate(transform.forward * speed * Time.deltaTime);
+
+            /*if (Input.GetAxis("Vertical") != 0)
             {
                 transform.Translate(transform.forward * speed * Input.GetAxis("Vertical") * Time.deltaTime);
             }
@@ -48,7 +52,7 @@ namespace VirtualCreatures {
             if (Input.GetAxis("Horizontal") != 0)
             {
                 transform.Translate(transform.right * speed * Input.GetAxis("Horizontal") * Time.deltaTime);
-            }
+            }*/
 
         }
 

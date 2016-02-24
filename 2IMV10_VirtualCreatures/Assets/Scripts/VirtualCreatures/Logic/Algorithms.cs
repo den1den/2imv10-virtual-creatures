@@ -13,12 +13,12 @@ namespace VirtualCreatures
             {
                 Morphology testMorhology = Morphology.test1();
 
-                MyUnityFactory factory = new MyUnityFactory(); //this might need a scene to construct right???
+                //MyUnityFactory factory = new MyUnityFactory(); //this might need a scene to construct right???
 
                 SelectionAlgorithm sa = null;
                 MutationAlgorithm ma = null;
                 Fitness fitness = Fitness.WALKING;
-                List<IPhenotype> population = new List<IPhenotype>(new IPhenotype[] { IPhenotype.createNew(factory, testMorhology) });
+                List<IPhenotype> population = new List<IPhenotype>(new IPhenotype[] { /*IPhenotype.createNew(factory, testMorhology) */});
 
                 EvolutionAlgorithm algorithm = new EvolutionAlgorithm(sa, ma, fitness, population);
             }
