@@ -157,12 +157,18 @@ namespace VirtualCreatures
         }
     }
 
-    public abstract class INeuralNodeSpec {}
+    public abstract class INeuralNodeSpec
+    {
+        public virtual bool isInterface() { return false; }
+        public virtual bool isSensor() { return false; }
+        public virtual bool isActor() { return false; }
+        public virtual bool isNeuron() { return false; }
+    }
 
     /// <summary>
     /// A sensor of this network
     /// </summary>
-    public class SensorSpec : INeuralNodeSpec { }
+    public class SensorSpec : INeuralNodeSpec { public override bool isSensor() { return true; } }
 
     /// <summary>
     /// An actor of this network
@@ -170,12 +176,13 @@ namespace VirtualCreatures
     public class ActorSpec : NeuronSpec
     {
         public ActorSpec() : base(NFunc.SUM) { }
+        public override bool isActor() { return true; }
     }
 
     /// <summary>
     /// A node that is in the interface of the network
     /// </summary>
-    public class InterfaceNode : INeuralNodeSpec { }
+    public class InterfaceNode : INeuralNodeSpec { public override bool isInterface() { return true; } }
 
     /// <summary>
     /// A single neuron in a network.
@@ -231,6 +238,8 @@ namespace VirtualCreatures
         {
             return TERTIARE.Contains(this.function);
         }
+
+        public override bool isNeuron() { return true; }
     }
 
     public class IConnection
