@@ -83,10 +83,15 @@ namespace VirtualCreatures
             return Enumerable.Repeat(0.0, this.type.dof).ToArray();
         }
 
-        public Joint createJoint()
+        public Joint createJoint(GameObject parent)
         {
+            Joint joint = (Joint)parent.AddComponent<HingeJoint>();
+            
+            // Change initial joint parameters here
+            // ****************
+
             // create Joint to load it from creature
-            return new HingeJoint();
+            return joint;
         }
     }
 

@@ -13,7 +13,7 @@ namespace VirtualCreatures
     /// </summary>
     public interface ShapeSpecification
     {
-        UnityEngine.Object createUnityObject();
+        GameObject createPrimitive();
     }
 
     public class Rectangle : ShapeSpecification
@@ -42,10 +42,19 @@ namespace VirtualCreatures
             this.height = height;
         }
 
-        /*public UnityEngine.Object createUnityObject()
+        public GameObject createPrimitive()
         {
-            throw new NotImplementedException();
-        }*/
+            // Create a primitive with mesh renderer and collider attached.
+            GameObject rectangle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+            // Attach a Rigid body to the mesh
+            rectangle.AddComponent<Rigidbody>();
+            
+            // Transform mesh to the scale of this shape specification
+            rectangle.transform.localScale = new Vector3(width, depth, height);
+
+            return rectangle;
+        }
     }
 
     /// <summary>
@@ -104,9 +113,9 @@ namespace VirtualCreatures
             this.r = r;
         }
 
-        /*public UnityEngine.Object createUnityObject()
+        public GameObject createPrimitive()
         {
-            throw new NotImplementedException();
-        }*/
+            return null;
+        }
     }
 }

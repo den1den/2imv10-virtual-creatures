@@ -11,17 +11,9 @@ namespace VirtualCreatures {
     public class Creature : MonoBehaviour {
 
         private Phenotype phenotype;
-        private IList<Joint> joints;
-        private IList<> shapes;
 
-        public Creature(Morphology morphology)
-        {
-            phenotype = new Phenotype(morphology, joints.ToArray<Joint>());
-
-            // Load the joints from the morphology to this Creature list of joints
-
-            joints = Creature.createJointsFromMorphology(morphology);
-        }
+        private IList<Joint> joints = new List<Joint>();
+        private IList<GameObject> primitives = new List<GameObject>();
 
         // Use this for initialization
         void Start()
@@ -43,40 +35,95 @@ namespace VirtualCreatures {
         /// <returns></returns>
         public IList<Joint> getJoints()
         {
-            return joints.ToList();
+            return joints;
         }
 
         /// <summary>
-        /// Load all joints from the morphology
+        /// 
+        /// </summary>
+        /// <param name="joint"></param>
+        public void AddJoint(Joint joint)
+        {
+            joints.Add(joint);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="primitive"></param>
+        public void AddPrimitive(GameObject primitive)
+        {
+            primitives.Add(primitive);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="phenotype"></param>
+        public void setPhenotype(Phenotype phenotype)
+        {
+            this.phenotype = phenotype;
+        }
+
+        /// <summary>
+        /// 
         /// </summary>
         /// <param name="morphology"></param>
-        /// <returns>Joints objects</returns>
-        public static IList<Joint> createJointsFromMorphology(Morphology morphology)
+        /// <returns></returns>
+        public static Creature Create(Morphology morphology)
         {
-            IList<Joint> jointsList = new List<Joint>();
+            // Instantiate empty creature prefab to scene
+            GameObject creatureObject = (GameObject)Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
+
+            // New creature instance
+            Creature newCreature = (Creature)creatureObject.GetComponent<Creature>();
 
             // This function is just a deeper step to abstract more the createJointsFromMorphology function
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, jointsList);
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, newCreature);
 
-            return jointsList;
+            // Creature Phenotype from morphology
+            newCreature.setPhenotype(new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>()));
+            
+            //GameObject primitiveObject = Creature.createPrimitive();
+            //primitiveObject.transform.parent = creatureObject.transform;
+            newCreature.transform.position = new Vector3(Random.Range(0, 10), 10, 0);
+
+            return newCreature;
         }
 
+     
         /// <summary>
-        /// Recursive function to create joints from morphology
+        /// 
         /// </summary>
         /// <param name="morphology"></param>
         /// <param name="node"></param>
-        /// <param name="jointsList"></param>
-        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, IList<Joint> jointsList)
+        /// <param name="lastJoint"></param>
+        /// <param name="parent"></param>
+        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint lastJoint, Creature parent)
         {
+            // Create a primitive from the current node
+            GameObject primitive = node.shape.createPrimitive();
+
+            // Connect the last joint created to the current destination primitive
+            if(lastJoint != null)
+                lastJoint.connectedBody = primitive.GetComponent<Rigidbody>();
+
+            // Get the edges of the current node
             IList<EdgeMorph> edges = node.edges(morphology.edges);
 
-            // Iterate over each edge that we have on the next node of the recursion
+            // Iterate over each edge that we have for the current node
             foreach (EdgeMorph e in edges)
             {
-                jointsList.Add(e.joint.createJoint());
-                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, jointsList);
+                // Create a joint and add it to the parent joint list
+                Joint joint = e.joint.createJoint(primitive);
+                parent.AddJoint(joint);
+
+                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, joint, parent);
             }
+
+            // Add primitive to the creature
+            parent.AddPrimitive(primitive);
+
         }
     }
 }
