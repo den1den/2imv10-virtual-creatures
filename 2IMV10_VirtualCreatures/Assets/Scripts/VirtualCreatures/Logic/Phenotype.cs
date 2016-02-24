@@ -9,7 +9,7 @@ namespace VirtualCreatures
     // We shoud leave this class without any Unity thing related just as abstract as possible.
     class Phenotype
     {
-        ExplicitNN nerves;
+        NaiveENN nerves;
         static double speed = 1.5; //factor for all dt related functions
 
         public Phenotype(Morphology morphology, Joint[] joints)
@@ -17,10 +17,12 @@ namespace VirtualCreatures
             this.nerves = new NaiveENN(morphology.brain, morphology.edges.Select(e => e.network), joints);
         }
 
-        public void update()
+        public void update(float dt)
         {
             // Time.deltaTime;
             // Read and write values of Joints once
+            // When the dt changes to much we should do more ticks in the network to keep it consistent with Update and Fixedupdate functionalities.
+            this.nerves.dt = dt / 2;
             this.nerves.tick();
             this.nerves.tick();
         }
@@ -29,6 +31,7 @@ namespace VirtualCreatures
 
     internal class NaiveENN : ExplicitNN
     {
+        internal float dt = float.NaN;
         private readonly List<NeuronSpec> neurons;
 
         public NaiveENN(NNSpecification main, IEnumerable<NNSpecification> subnetworks, Joint[] joints) : base(joints)
@@ -106,19 +109,26 @@ namespace VirtualCreatures
 
         internal abstract class INeuron
         {
-            float value = float.NaN;
-            IList<INeuron> inputs = null;
+            internal double value = double.NaN;
+            internal INeuron[] inputs = null;
+            internal double[] weights = null;
+
             internal abstract void tick();
 
-            internal static INeuron create(SensorSpec n)
+            internal static INeuron create(SensorSpec ns)
             {
-                if (n is ActorSpec)
+                if (ns is ActorSpec)
                 {
-                    return new Neuron();
+                    return new SUM();
                 }
-                else if (n is NeuronSpec)
+                else if (ns is NeuronSpec)
                 {
+                    NeuronSpec n = (NeuronSpec)ns;
+                    switch (n.function)
+                    {
+                        case NeuronSpec.NFunc.MIN:
 
+                    }
                 }
                 else
                 {
@@ -133,14 +143,54 @@ namespace VirtualCreatures
 
             internal override void tick()
             {
-
+                this.value = 0;
+                for (int i = 0; i < this.weights.Length; i++)
+                {
+                    this.value += this.weights[i] * this.inputs[i].value;
+                }
+                this.value = y(value);
             }
         }
-        internal abstract class SingleFunction { public abstract double y(double x); }
-        internal abstract class TimeFunction { public abstract double y(double x, double dtf); }
-        internal abstract class DoubleFunction { public abstract double y(double x, double y); }
-        internal abstract class TripleFunction { public abstract double y(double x, double y, double z); }
-        internal abstract class MultipleFunction { public abstract double y(double[] x); }
+        internal abstract class TimeFunction : SingleFunction
+        {
+            NaiveENN parent;
+            internal TimeFunction(NaiveENN parent)
+            {
+                this.parent = parent;
+            }
+            public override double y(double x)
+            {
+                return y(x, parent.dt);
+            }
+            public abstract double y(double x, double dtf);
+        }
+        internal abstract class DoubleFunction : INeuron
+        {
+            public abstract double y(double x, double y);
+
+            internal override void tick()
+            {
+                this.value = y(this.weights[0] * this.inputs[0].value, this.weights[1] * this.inputs[1].value);
+            }
+        }
+        internal abstract class TripleFunction : INeuron
+        {
+            public abstract double y(double x, double y, double z);
+
+            internal override void tick()
+            {
+                this.value = y(this.weights[0] * this.inputs[0].value, this.weights[1] * this.inputs[1].value, this.weights[2] * this.inputs[2].value);
+            }
+        }
+        internal abstract class MultipleFunction : INeuron
+        {
+            public abstract double y(INeuron[] x);
+
+            internal override void tick()
+            {
+                this.value = y(this.inputs);
+            }
+        }
 
         internal class ABS : SingleFunction
         {
@@ -238,6 +288,7 @@ namespace VirtualCreatures
         }
         internal class SAW : TimeFunction
         {
+            public SAW(NaiveENN n) : base(n) { }
             double theta = 0;
             public override double y(double x, double dtf)
             {
@@ -247,6 +298,7 @@ namespace VirtualCreatures
         }
         internal class WAVE : TimeFunction
         {
+            public WAVE(NaiveENN n) : base(n) { }
             static double CX = Math.PI * 2;
             double theta = 0;
             public override double y(double x, double dtf)
@@ -276,35 +328,38 @@ namespace VirtualCreatures
             }
         }
 
-
         internal class MIN : MultipleFunction
         {
-            public override double y(double[] x)
+            public override double y(INeuron[] ns)
             {
-                double min = x[0];
-                for (int i = 1; i < x.Length; i++)
+                double min = ns[0].value;
+                int index = 0;
+                for (int i = 1; i < ns.Length; i++)
                 {
-                    if (x[i] < min)
+                    if (ns[i].value < min)
                     {
-                        min = x[i];
+                        min = ns[i].value;
+                        index = i;
                     }
                 }
-                return min;
+                return min * this.weights[index];
             }
         }
         internal class MAX : MultipleFunction
         {
-            public override double y(double[] x)
+            public override double y(INeuron[] ns)
             {
-                double max = x[0];
-                for (int i = 1; i < x.Length; i++)
+                double max = ns[0].value;
+                int index = 0;
+                for (int i = 1; i < ns.Length; i++)
                 {
-                    if (x[i] > max)
+                    if (ns[i].value > max)
                     {
-                        max = x[i];
+                        max = ns[i].value;
+                        index = i;
                     }
                 }
-                return max;
+                return max * this.weights[index];
             }
         }
         internal class DEVISION : DoubleFunction
