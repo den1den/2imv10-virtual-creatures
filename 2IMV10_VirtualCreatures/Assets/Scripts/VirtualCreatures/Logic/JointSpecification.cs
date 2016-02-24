@@ -63,6 +63,25 @@ namespace VirtualCreatures
             this.limits = limits;
         }
 
+        internal double[] getActorFactor()
+        {
+            return Enumerable.Repeat(1.0, this.type.dof).ToArray();
+        }
+
+        internal double[] getActorOffset()
+        {
+            return Enumerable.Repeat(0.0, this.type.dof).ToArray();
+        }
+
+        internal double[] getSensorFactor()
+        {
+            return Enumerable.Repeat(1.0, this.type.dof).ToArray();
+        }
+
+        internal double[] getSensorOffset()
+        {
+            return Enumerable.Repeat(0.0, this.type.dof).ToArray();
+        }
 
         public Joint createJoint()
         {
@@ -93,7 +112,7 @@ namespace VirtualCreatures
         /// It is more like a ball and socket joint without rotation, thus a special king of Condyloid in spherical coordinates.
         /// </summary>
         static public readonly JointType ROTATIONAL = new JointType(2);
-        private int dof;
+        internal int dof;
         internal JointType(int degreesOfFreedom) { this.dof = degreesOfFreedom; }
 
         internal int getDegreesOfFreedom()
