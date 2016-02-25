@@ -5,6 +5,11 @@ using System.Text;
 
 namespace VirtualCreatures
 {
+    public class IPhenotype
+    {
+
+    }
+
     public class Main
     {
         public static void main(String[] args)

@@ -56,10 +56,6 @@ namespace VirtualCreatures {
             primitives.Add(primitive);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="phenotype"></param>
         public void setPhenotype(Phenotype phenotype)
         {
             this.phenotype = phenotype;
@@ -80,12 +76,14 @@ namespace VirtualCreatures {
 
             IDictionary<int, Joint> joints = new Dictionary<int, Joint>();
 
+            // This function is just a deeper step to abstract more the createJointsFromMorphology function
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, null, joints);
+
+            // Order 
             var items = from pair in joints
                         orderby pair.Value ascending
                         select pair;
-
-            // This function is just a deeper step to abstract more the createJointsFromMorphology function
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, null, newCreature, joints);
+           
 
             // Creature Phenotype from morphology
             newCreature.setPhenotype(new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>()));
@@ -105,7 +103,7 @@ namespace VirtualCreatures {
         /// <param name="node"></param>
         /// <param name="lastJoint"></param>
         /// <param name="parent"></param>
-        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint lastJoint, GameObject parent, Creature creature, IDictionary<int, Joint> joints)
+        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint lastJoint, GameObject parent, IDictionary<int, Joint> joints)
         {
             // Create a primitive from the current node
             GameObject primitive = node.shape.createPrimitive();
@@ -129,15 +127,8 @@ namespace VirtualCreatures {
 
                 joints[morphology.edges.IndexOf(e)] = joint;
 
-                //creature.AddJoint(joint);
-                
-
-
-                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, joint, primitive, creature);
+                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, joint, primitive, joints);
             }
-
-            // Add primitive to the creature
-            creature.AddPrimitive(primitive);
         }
     }
 }

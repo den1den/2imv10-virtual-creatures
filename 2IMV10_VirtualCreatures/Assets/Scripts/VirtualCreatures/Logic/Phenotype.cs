@@ -7,7 +7,7 @@ using UnityEngine;
 namespace VirtualCreatures
 {
     // We shoud leave this class without any Unity thing related just as abstract as possible.
-    class Phenotype
+    public class Phenotype
     {
         NaiveENN nerves;
         static double speed = 1.5; //factor for all dt related functions
