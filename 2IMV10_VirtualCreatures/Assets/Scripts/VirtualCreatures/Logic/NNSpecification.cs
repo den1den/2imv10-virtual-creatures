@@ -24,8 +24,8 @@ namespace VirtualCreatures
 
         public NNSpecification(IList<NeuronSpec> neurons, IList<InterfaceNode> networkIn, IList<InterfaceNode> networkOut, IList<SensorSpec> sensors, IList<ActorSpec> actors, IList<WeightConnection> internalConnections, IList<SimpleConnection> externalConnections)
         {
-            IEnumerable<INeuralNodeSpec> given = neurons.Select(n => (INeuralNodeSpec)n).Union(networkIn.Select(n => (INeuralNodeSpec)n)).Union(networkOut.Select(n => (INeuralNodeSpec)n)).Union(sensors.Select(n => (INeuralNodeSpec)n)).Union(actors.Select(n => (INeuralNodeSpec)n));
-            IEnumerable<INeuralNodeSpec> found = internalConnections.SelectMany(c => new INeuralNodeSpec[] { c.source, c.destination }).Union(externalConnections.SelectMany(c => new INeuralNodeSpec[] { c.source, c.destination }));
+            IEnumerable<InterfaceNode> given = neurons.Select(n => (InterfaceNode)n).Union(networkIn.Select(n => (InterfaceNode)n)).Union(networkOut.Select(n => (InterfaceNode)n)).Union(sensors.Select(n => (InterfaceNode)n)).Union(actors.Select(n => (InterfaceNode)n));
+            IEnumerable<InterfaceNode> found = internalConnections.SelectMany(c => new InterfaceNode[] { c.source, c.destination }).Union(externalConnections.SelectMany(c => new InterfaceNode[] { c.source, c.destination }));
             if(given.Where(nn => nn is NeuronSpec).Except(found).Count() > 0)
             {
                 throw new ArgumentException("Not used Neuron given");
@@ -157,32 +157,39 @@ namespace VirtualCreatures
         }
     }
 
-    public abstract class INeuralNodeSpec
+    
+
+    /// <summary>
+    /// A node that is in the interface of the network
+    /// </summary>
+    public class InterfaceNode
     {
-        public virtual bool isInterface() { return false; }
-        public virtual bool isSensor() { return false; }
-        public virtual bool isActor() { return false; }
-        public virtual bool isNeuron() { return false; }
+        internal InterfaceNode() : this(NeuronType.INTERFACE) { }
+        protected InterfaceNode(NeuronType type) { this.type = type; }
+        protected enum NeuronType{ INTERFACE, SENSOR, NEURON, ACTOR }
+        private readonly NeuronType type;
+        public bool isInterface() { return this.type == NeuronType.INTERFACE; }
+        public bool isSensor() { return this.type == NeuronType.SENSOR; }
+        public bool isNeuron() { return this.type == NeuronType.NEURON; }
+        public bool isActor() { return this.type == NeuronType.ACTOR; }
     }
 
     /// <summary>
     /// A sensor of this network
     /// </summary>
-    public class SensorSpec : INeuralNodeSpec { public override bool isSensor() { return true; } }
+    public class SensorSpec : InterfaceNode
+    {
+        internal SensorSpec() : this(NeuronType.SENSOR) { }
+        protected SensorSpec(NeuronType type) : base(type) { }
+    }
 
     /// <summary>
     /// An actor of this network
     /// </summary>
     public class ActorSpec : NeuronSpec
     {
-        public ActorSpec() : base(NFunc.SUM) { }
-        public override bool isActor() { return true; }
+        internal ActorSpec() : base(NeuronType.ACTOR, NFunc.SUM) { }
     }
-
-    /// <summary>
-    /// A node that is in the interface of the network
-    /// </summary>
-    public class InterfaceNode : INeuralNodeSpec { public override bool isInterface() { return true; } }
 
     /// <summary>
     /// A single neuron in a network.
@@ -190,11 +197,8 @@ namespace VirtualCreatures
     public class NeuronSpec : SensorSpec
     {
         public NFunc function;
-
-        public NeuronSpec(NFunc function)
-        {
-            this.function = function;
-        }
+        internal NeuronSpec(NFunc function) : this(NeuronType.NEURON, function) { }
+        protected NeuronSpec(NeuronType type, NFunc function) : base(type) { this.function = function; }
 
         /// <summary>
         /// A the different functions that a neuron could have
@@ -238,16 +242,14 @@ namespace VirtualCreatures
         {
             return TERTIARE.Contains(this.function);
         }
-
-        public override bool isNeuron() { return true; }
     }
 
     public class IConnection
     {
-        public INeuralNodeSpec source;
-        public INeuralNodeSpec destination;
+        internal InterfaceNode source;
+        internal InterfaceNode destination;
 
-        public IConnection(INeuralNodeSpec source, INeuralNodeSpec destination)
+        protected IConnection(InterfaceNode source, InterfaceNode destination)
         {
             this.source = source;
             this.destination = destination;
@@ -257,7 +259,7 @@ namespace VirtualCreatures
     public class IWeightConnection : IConnection
     {
         public float weight;
-        protected IWeightConnection(INeuralNodeSpec source, INeuralNodeSpec destination, float weight) : base(source, destination)
+        protected IWeightConnection(InterfaceNode source, NeuronSpec destination, float weight) : base(source, destination)
         {
             this.weight = weight;
         }
