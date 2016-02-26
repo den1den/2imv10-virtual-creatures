@@ -430,7 +430,7 @@ namespace VirtualCreatures
         {
             public override double y(double x)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("I do not know how?");
             }
         }
         internal class MEMORY : SingleFunction
