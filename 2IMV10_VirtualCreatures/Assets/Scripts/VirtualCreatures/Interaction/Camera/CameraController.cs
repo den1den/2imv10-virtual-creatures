@@ -5,13 +5,16 @@ namespace VirtualCreatures {
     [AddComponentMenu("Camera Controller")]
     public class CameraController : MonoBehaviour {
 
-        public enum CameraType { Free, Focus };
+        public enum CameraMode { Free, Tope, Focus };
 
-        public UnityEngine.Object virtualCreature;
+        // Default camera mode
+        public CameraMode mode = CameraMode.Free;
+
 
         // Properties for camera motion
         public float speed = 0.5f;
         public Vector3 translation;
+
         // Properties for camera look at
         Vector2 _mouseAbsolute;
         Vector2 _smoothMouse;
@@ -24,7 +27,6 @@ namespace VirtualCreatures {
 
         void Start()
         {
-
             // Set target direction to the camera's initial orientation.
             targetDirection = transform.localRotation.eulerAngles;
         }
@@ -39,10 +41,12 @@ namespace VirtualCreatures {
 
         public void CameraKeyboardControl()
         {
+            CameraModeFree();
 
+            /*
             if(Input.GetKeyDown(KeyCode.W) != false)
                 transform.Translate(transform.forward * speed * Time.deltaTime);
-
+            */
             /*if (Input.GetAxis("Vertical") != 0)
             {
                 transform.Translate(transform.forward * speed * Input.GetAxis("Vertical") * Time.deltaTime);
@@ -54,6 +58,17 @@ namespace VirtualCreatures {
                 transform.Translate(transform.right * speed * Input.GetAxis("Horizontal") * Time.deltaTime);
             }*/
 
+        }
+
+        public void CameraModeFree()
+        {
+            if(mode == CameraMode.Free)
+            {
+                float orthogonalAxisValue = Input.GetAxis("Horizontal");
+                float forwardAxisValue = Input.GetAxis("Vertical");
+
+                transform.Translate(Vector3.forward * forwardAxisValue * Time.deltaTime * speed);
+            }
         }
 
 
