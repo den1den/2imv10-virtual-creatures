@@ -68,6 +68,8 @@ namespace VirtualCreatures {
                 float forwardAxisValue = Input.GetAxis("Vertical");
 
                 transform.Translate(Vector3.forward * forwardAxisValue * Time.deltaTime * speed);
+
+                transform.Translate(Vector3.right * orthogonalAxisValue * Time.deltaTime * speed);
             }
         }
 
@@ -75,7 +77,7 @@ namespace VirtualCreatures {
         public void CameraLookAt()
         {
             // Lock cursor
-            Screen.lockCursor = lockCursor;
+            //creen.lockCursor = lockCursor;
 
             // Allow the script to clamp based on a desired target value.
             var targetOrientation = Quaternion.Euler(targetDirection);
