@@ -83,7 +83,7 @@ namespace VirtualCreatures
             return Enumerable.Repeat(0.0, this.type.dof).ToArray();
         }
 
-        public Joint createJoint(GameObject parent)
+        public Joint createJoint(GameObject parent, ShapeSpecification parentShape)
         {
             Joint joint = null;
 
@@ -104,16 +104,43 @@ namespace VirtualCreatures
                 joint = (Joint)parent.AddComponent<HingeJoint>();
             }
 
-            /*switch (position.face)
+
+            float x, y, z;
+            switch (position.face)
             {
                 case 1: // Same Direction
-                    joint.anchor = Vector3.zero;
+                    x = this.position.faceX;
+                    y = this.position.faceY;
+                    z = 1;
                     break;
                 case 2: // Right
-
-                case 3:
-                case 4:
-            }*/
+                    x = 1;
+                    y = this.position.faceX;
+                    z = this.position.faceY;
+                    break;
+                case 3: //downwards
+                    x = -this.position.faceX;
+                    y = 1;
+                    z = this.position.faceY;
+                    break;
+                case 4: // Left
+                    x = -1;
+                    y = this.position.faceY;
+                    z = -this.position.faceX;
+                    break;
+                case 5: //towards
+                    x = this.position.faceX;
+                    y = -1;
+                    z = this.position.faceY;
+                    break;
+                case 6:
+                default:
+                    x = this.position.faceX;
+                    y = -this.position.faceY;
+                    z = -1;
+                    throw new ArgumentException(); //for now no joints that go backwards
+            }
+            joint.anchor = new Vector3(x * parentShape.getXBound(), y * parentShape.getYBound(), z * parentShape.getZBound());
             // Change initial joint parameters here
             // ****************
 

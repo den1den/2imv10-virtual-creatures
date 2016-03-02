@@ -128,7 +128,7 @@ namespace VirtualCreatures {
             foreach (EdgeMorph e in edges)
             {
                 // Create a joint and add it to the parent joint list
-                Joint joint = e.joint.createJoint(primitive);
+                Joint joint = e.joint.createJoint(primitive, e.source.shape);
 
                 joints[morphology.edges.IndexOf(e)] = joint;
 

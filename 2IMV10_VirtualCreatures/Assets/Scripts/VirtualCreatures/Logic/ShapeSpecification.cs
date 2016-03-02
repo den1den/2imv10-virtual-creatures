@@ -14,6 +14,9 @@ namespace VirtualCreatures
     public interface ShapeSpecification
     {
         GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint);
+        float getXBound();
+        float getYBound();
+        float getZBound();
     }
 
     public class Rectangle : ShapeSpecification
@@ -33,7 +36,7 @@ namespace VirtualCreatures
 
         public Rectangle(float width, float depth, float height)
         {
-            if (width < 0 || depth < s0 || height < 0)
+            if (width < 0 || depth < 0 || height < 0)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -60,6 +63,10 @@ namespace VirtualCreatures
 
             return rectangle;
         }
+
+        public float getXBound() { return this.width; }
+        public float getYBound() { return this.depth; }
+        public float getZBound() { return this.height; }
     }
 
     /// <summary>
@@ -137,5 +144,9 @@ namespace VirtualCreatures
 
             return sphere;
         }
+
+        public float getXBound() { return this.r; }
+        public float getYBound() { return this.r; }
+        public float getZBound() { return this.r; }
     }
 }
