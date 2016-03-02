@@ -85,17 +85,17 @@ namespace VirtualCreatures {
             // This function is just a deeper step to abstract more the createJointsFromMorphology function
             recursiveCreateJointsFromMorphology(morphology, morphology.root, null, creatureObject, joints);
 
+            //
             newCreature.joints = joints.ToList<Joint>();
 
+            //
             Debug.Log(newCreature.joints[0]);
             Debug.Log(newCreature.joints[1]);
-
 
             Phenotype phenotype = new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>());
 
             // Creature Phenotype from morphology
             newCreature.setPhenotype(phenotype);
-            
 
             return newCreature;
         }
@@ -108,18 +108,18 @@ namespace VirtualCreatures {
         /// <param name="node"></param>
         /// <param name="lastJoint"></param>
         /// <param name="parent"></param>
-        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint lastJoint, GameObject parent, IList<Joint> joints)
+        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint parentJoint, GameObject parent, IList<Joint> joints)
         {
             // Create a primitive from the current node
-            GameObject primitive = node.shape.createPrimitive();
+            GameObject primitive = node.shape.createPrimitive(parent, parentJoint);
 
             // Set parent of primitive to the last primitive
             if(parent != null)
                 primitive.transform.parent = parent.transform;
 
             // Connect the last joint created to the current destination primitive
-            if(lastJoint != null)
-                lastJoint.connectedBody = primitive.GetComponent<Rigidbody>();
+            if(parentJoint != null)
+                parentJoint.connectedBody = primitive.GetComponent<Rigidbody>();
 
             // Get the edges of the current node
             IList<EdgeMorph> edges = node.getEdges(morphology.edges);
@@ -131,6 +131,7 @@ namespace VirtualCreatures {
                 Joint joint = e.joint.createJoint(primitive);
 
                 joints[morphology.edges.IndexOf(e)] = joint;
+
 
                 Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, joint, primitive, joints);
             }

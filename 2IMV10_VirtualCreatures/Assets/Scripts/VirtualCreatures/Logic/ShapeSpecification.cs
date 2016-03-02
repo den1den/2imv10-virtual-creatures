@@ -13,7 +13,7 @@ namespace VirtualCreatures
     /// </summary>
     public interface ShapeSpecification
     {
-        GameObject createPrimitive();
+        GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint);
     }
 
     public class Rectangle : ShapeSpecification
@@ -33,7 +33,7 @@ namespace VirtualCreatures
 
         public Rectangle(float width, float depth, float height)
         {
-            if (width < 0 || depth < 0 || height < 0)
+            if (width < 0 || depth < s0 || height < 0)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -42,7 +42,7 @@ namespace VirtualCreatures
             this.height = height;
         }
 
-        public GameObject createPrimitive()
+        public GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint)
         {
             // Create a primitive with mesh renderer and collider attached.
             GameObject rectangle = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -52,6 +52,11 @@ namespace VirtualCreatures
             
             // Transform mesh to the scale of this shape specification
             rectangle.transform.localScale = new Vector3(width, depth, height);
+
+            if (parentJoint != null)
+                rectangle.transform.position = parentPrimitive.transform.position + parentJoint.anchor ;
+            else
+                rectangle.transform.position = parentPrimitive.transform.position;
 
             return rectangle;
         }
@@ -113,7 +118,7 @@ namespace VirtualCreatures
             this.r = r;
         }
 
-        public GameObject createPrimitive()
+        public GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint)
         {
             // Create a primitive with mesh renderer and collider attached.
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -123,6 +128,12 @@ namespace VirtualCreatures
 
             // Transform mesh to the scale of this shape specification
             sphere.transform.localScale = new Vector3(r, r, r);
+
+            // 
+            if(parentJoint != null)
+                sphere.transform.position = parentPrimitive.transform.position + parentJoint.anchor;
+            else
+                sphere.transform.position = parentPrimitive.transform.position;
 
             return sphere;
         }
