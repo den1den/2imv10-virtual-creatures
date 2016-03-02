@@ -26,7 +26,7 @@ namespace VirtualCreatures
         {
             IEnumerable<InterfaceNode> given = neurons.Select(n => (InterfaceNode)n).Union(networkIn.Select(n => (InterfaceNode)n)).Union(networkOut.Select(n => (InterfaceNode)n)).Union(sensors.Select(n => (InterfaceNode)n)).Union(actors.Select(n => (InterfaceNode)n));
             IEnumerable<InterfaceNode> found = internalConnections.SelectMany(c => new InterfaceNode[] { c.source, c.destination }).Union(externalConnections.SelectMany(c => new InterfaceNode[] { c.source, c.destination }));
-            if(given.Where(nn => nn is NeuronSpec).Except(found).Count() > 0)
+            if(given.Where(nn => nn.isNeuron()).Except(found).Count() > 0)
             {
                 throw new ArgumentException("Not used Neuron given");
             }
@@ -36,14 +36,14 @@ namespace VirtualCreatures
             }
             if(internalConnections
                 .Select(c => c.source)
-                .Where(source => source is InterfaceNode && !(networkIn.Contains((InterfaceNode)source)))
+                .Where(source => source.isInterface() && !(networkIn.Contains((InterfaceNode)source)))
                 .Count() > 0)
             {
                 throw new ArgumentException(); //foreigh?
             }
             if (externalConnections
                 .Select(c => c.destination)
-                .Where(destination => destination is InterfaceNode && !(networkOut.Contains((InterfaceNode)destination)))
+                .Where(destination => destination.isInterface() && !(networkOut.Contains((InterfaceNode)destination)))
                 .Count() > 0)
             {
                 throw new ArgumentException(); //foreigh?
