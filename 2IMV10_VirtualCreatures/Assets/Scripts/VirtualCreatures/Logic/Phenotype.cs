@@ -150,26 +150,44 @@ namespace VirtualCreatures
                             {
                                 source = created[(SensorSpec)w.source];
                             }
+                            inputs[i] = source;
                         }
                         else
                         {
                             //edge that is from a different network
                             InterfaceNode hiddenSource = (InterfaceNode)w.source;
-                            NNSpecification sourceNetwork = allNetworks.Where(net => net.networkOut == hiddenSource).Single(); //should be connected to one network?
-                            SimpleConnection sourceConnection = sourceNetwork.getSourceEdges(hiddenSource).Single(); //should be connected to one neuron/sensor!
-                            if (sourceConnection.source.isNeuron())
+                            IList<NNSpecification> sourceNetworks = allNetworks.Where(net => net.networkOut.Contains(hiddenSource)).ToList();
+
+                            if (sourceNetworks.Count == 0) throw new ArgumentException(); //source should be connected to at least one network?
+                            if (sourceNetworks.Count > 1)
                             {
-                                //edge from a different neuron
-                                source = created[(NeuronSpec)sourceConnection.source];
+                                int tailLength = weights.Length - 1 - i;
+                                //increase the weights by repeatingly adding the same weight
+                                weights = weights.Take(i).Concat(Enumerable.Repeat(weights[i], sourceNetworks.Count)).Concat(Enumerable.Repeat(Double.NaN, tailLength)).ToArray();
+                                //increase the input by adding some null values that are filled in below
+                                Neural nullNeural = null;
+                                inputs = inputs.Take(i).Concat(Enumerable.Repeat(nullNeural, sourceNetworks.Count)).Concat(Enumerable.Repeat(nullNeural, tailLength)).ToArray();
                             }
-                            else if (sourceConnection.source.isSensor())
+                            for(int j = 0; j < sourceNetworks.Count; j++)
                             {
-                                //edge from a different sensor
-                                source = created[(SensorSpec)sourceConnection.source];
+                                NNSpecification sourceNetwork = sourceNetworks[j];
+
+                                SimpleConnection sourceConnection = sourceNetwork.getSourceEdges(hiddenSource).Single(); //should be connected to one neuron/sensor!
+                                if (sourceConnection.source.isNeuron())
+                                {
+                                    //edge from a different neuron
+                                    source = created[(NeuronSpec)sourceConnection.source];
+                                }
+                                else if (sourceConnection.source.isSensor())
+                                {
+                                    //edge from a different sensor
+                                    source = created[(SensorSpec)sourceConnection.source];
+                                }
+                                else throw new ArgumentException();
+
+                                inputs[i + j] = source;
                             }
-                            else throw new ArgumentException();
                         }
-                        inputs[i] = source;
                         i++;
                     }
                     subject.weights = weights;
@@ -243,13 +261,13 @@ namespace VirtualCreatures
         private Neural createActor(ActorSpec sen) { if (sen.isActor()) return new SUM(); else throw new ArgumentException(); }
 
         private Neural createSensor(SensorSpec sen) { if (sen.isSensor()) return new Neural(); else throw new ArgumentException(); }
-    
+
 
         internal override void tick(int N)
         {
             int i = 0;
             //read sensors
-            for(int j = 0; j < this.sensorNeurons.Length; j++)
+            for (int j = 0; j < this.sensorNeurons.Length; j++)
             {
                 Joint joint = this.joints[j];
                 Neural[] sNeurons = this.sensorNeurons[j];
@@ -269,6 +287,8 @@ namespace VirtualCreatures
                 else if (sNeurons.Length == 1)
                 {
                     //1 degrees of freedom
+                    //hindge
+
                     //sNeurons[0].value = joint.X * sFactor[j][0] + sOffset[j][0];
                 }
                 else
@@ -286,7 +306,7 @@ namespace VirtualCreatures
                     n.tick();
                 }
             } while (++i < N);
-            
+
             i = 0;
             //write to actors
             for (int j = 0; j < this.sensorNeurons.Length; j++)
@@ -309,7 +329,7 @@ namespace VirtualCreatures
                 else if (aNeurons.Length == 1)
                 {
                     //1 degrees of freedom
-                    HingeJoint h = (HingeJoint) joint;
+                    HingeJoint h = (HingeJoint)joint;
                     JointMotor m = h.motor;
                     float force = (float)(aOffset[j][0] + aFactor[j][0] * aNeurons[0].value);
                     Console.WriteLine(String.Format("Appling force {0} to joint {1}", force, h));
