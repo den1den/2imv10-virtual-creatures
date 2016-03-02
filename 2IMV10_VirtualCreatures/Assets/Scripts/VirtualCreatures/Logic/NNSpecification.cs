@@ -53,6 +53,13 @@ namespace VirtualCreatures
                 //each outinterface should be connected to exactly one neuron
                 if(externalConnections.Select(c => c.destination).Where(dest => dest == outInterface).Count() != 1) { throw new ArgumentException(); }
             }
+            this.neurons = neurons;
+            this.networkIn = networkIn;
+            this.networkOut = networkOut;
+            this.sensors = sensors;
+            this.actors = actors;
+            this.internalConnections = internalConnections;
+            this.externalConnections = externalConnections;
         }
 
         public IEnumerable<SensorSpec> getAllNeurals()

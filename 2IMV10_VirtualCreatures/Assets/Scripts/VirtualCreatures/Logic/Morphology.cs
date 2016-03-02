@@ -20,9 +20,9 @@ namespace VirtualCreatures
         public Morphology(Node root, NNSpecification brain, IList<EdgeMorph> edges, Genotype genotype)
         {
             IList<Node> nodes = edges.SelectMany(e => new Node[] { e.source, e.destination }).Distinct().ToList();
-            if (!edges.Select(e => e.network).Contains(brain))
+            if (edges.Select(e => e.network).Where(net => net == brain).Count() > 0)
             {
-                throw new ArgumentException(); //brain can only be added once
+                throw new ArgumentException(); //brain can only be added once, and that should not be in one of the edges
             }
             if(brain.actors.Count > 0 || brain.sensors.Count > 0) { throw new ArgumentException("Brain should not have sensors for now"); }
             if (edges.Where(a => edges.Where(b => a.source == b.source && a.destination == b.destination).Count() > 1).Count() > 0)
