@@ -85,7 +85,24 @@ namespace VirtualCreatures
 
         public Joint createJoint(GameObject parent)
         {
-            Joint joint = (Joint)parent.AddComponent<HingeJoint>();
+            Joint joint = null;
+
+            if (type.Equals(JointType.FIXED))
+            {
+                joint = (Joint)parent.AddComponent<FixedJoint>();
+            }
+            else if (type.Equals(JointType.HINGE))
+            {
+                joint = (Joint)parent.AddComponent<HingeJoint>();
+            }
+            else if (type.Equals(JointType.PISTON))
+            {
+                joint = (Joint)parent.AddComponent<SpringJoint>();
+            }
+            else if (type.Equals(JointType.ROTATIONAL))
+            {
+                joint = (Joint)parent.AddComponent<HingeJoint>();
+            }
             
             // Change initial joint parameters here
             // ****************
@@ -93,6 +110,7 @@ namespace VirtualCreatures
             // create Joint to load it from creature
             return joint;
         }
+
     }
 
     public class JointType

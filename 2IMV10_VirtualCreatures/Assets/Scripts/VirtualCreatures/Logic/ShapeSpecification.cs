@@ -115,7 +115,16 @@ namespace VirtualCreatures
 
         public GameObject createPrimitive()
         {
-            return null;
+            // Create a primitive with mesh renderer and collider attached.
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+
+            // Attach a Rigid body to the mesh
+            sphere.AddComponent<Rigidbody>();
+
+            // Transform mesh to the scale of this shape specification
+            sphere.transform.localScale = new Vector3(r, r, r);
+
+            return sphere;
         }
     }
 }
