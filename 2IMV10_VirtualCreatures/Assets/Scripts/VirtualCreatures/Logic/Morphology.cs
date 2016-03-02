@@ -47,7 +47,7 @@ namespace VirtualCreatures
             Node root = new Node(new Sphere(1f/4));
 
             //right
-            Node fin = new Node(new PlaneRectangle(2, 0.5f));
+            Node fin = new Node(new PlaneRectangle(1, 2));
 
             float[] limits = new float[] { (float)(Math.PI / 2 * 0.8) };
             JointPosition right = new JointPosition(0, 0, 2, 0.1f, 0);
@@ -56,7 +56,7 @@ namespace VirtualCreatures
             NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.type, brain.networkOut);
 
             //left
-            Node fin2 = new Node(new PlaneRectangle(2, 0.5f));
+            Node fin2 = new Node(new PlaneRectangle(1, 2));
 
             JointPosition left = new JointPosition(0, 0, 4, 0.1f, 0);
             JointSpecification leftJoint = new JointSpecification(left, 0, 0, JointType.HINGE, limits);
