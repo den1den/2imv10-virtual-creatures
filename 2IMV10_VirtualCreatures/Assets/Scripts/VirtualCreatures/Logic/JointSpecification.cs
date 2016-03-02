@@ -118,7 +118,7 @@ namespace VirtualCreatures
                     y = this.position.faceX;
                     z = this.position.faceY;
                     break;
-                case 3: //downwards
+                case 3: // Away
                     x = -this.position.faceX;
                     y = 1;
                     z = this.position.faceY;
@@ -128,12 +128,12 @@ namespace VirtualCreatures
                     y = this.position.faceY;
                     z = -this.position.faceX;
                     break;
-                case 5: //towards
+                case 5: // Towards
                     x = this.position.faceX;
                     y = -1;
                     z = this.position.faceY;
                     break;
-                case 6:
+                case 6: // Backwards
                 default:
                     x = this.position.faceX;
                     y = -this.position.faceY;
@@ -146,6 +146,26 @@ namespace VirtualCreatures
 
             // create Joint to load it from creature
             return joint;
+        }
+
+        Vector3 normal()
+        {
+            switch (position.face)
+            {
+                case 1: // Same Direction
+                default:
+                    return new Vector3(0, 0, 1);
+                case 2: // Right
+                    return new Vector3(1, 0, 0);
+                case 3: // Away
+                    return new Vector3(0, 1, 0);
+                case 4: // Left
+                    return new Vector3(-1, 0, 0);
+                case 5: // Towards
+                    return new Vector3(0, -1, 0);
+                case 6: // Backwards
+                    return new Vector3(0, 0, -1);
+            }
         }
 
     }
