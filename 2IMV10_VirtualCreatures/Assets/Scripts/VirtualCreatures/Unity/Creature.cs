@@ -26,7 +26,12 @@ namespace VirtualCreatures {
         void FixedUpdate()
         {
             // Update phenotype in each physics engine step
-            phenotype.update(Time.fixedDeltaTime);
+            //phenotype.update(Time.fixedDeltaTime);
+            if (phenotype != null)
+            {
+                Debug.Log("P E");
+                phenotype.update(Time.fixedDeltaTime);
+            }
         }
 
         /// <summary>
@@ -83,10 +88,12 @@ namespace VirtualCreatures {
             var items = from pair in joints
                         orderby pair.Value ascending
                         select pair;
-           
+
+
+            Phenotype phenotype = new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>());
 
             // Creature Phenotype from morphology
-            newCreature.setPhenotype(new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>()));
+            newCreature.setPhenotype(phenotype);
             
             //GameObject primitiveObject = Creature.createPrimitive();
             //primitiveObject.transform.parent = creatureObject.transform;
