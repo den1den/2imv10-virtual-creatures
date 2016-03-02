@@ -57,9 +57,10 @@ namespace VirtualCreatures
             rectangle.transform.localScale = new Vector3(width, depth, height);
 
             if (parentJoint != null)
-                rectangle.transform.position = parentPrimitive.transform.position + parentJoint.anchor ;
-            else
-                rectangle.transform.position = parentPrimitive.transform.position;
+                rectangle.transform.position = parentJoint.anchor;
+
+            //else
+            //    rectangle.transform.position = parentPrimitive.transform.position;*/
 
             return rectangle;
         }
@@ -138,9 +139,9 @@ namespace VirtualCreatures
 
             // 
             if(parentJoint != null)
-                sphere.transform.position = parentPrimitive.transform.position + parentJoint.anchor;
-            else
-                sphere.transform.position = parentPrimitive.transform.position;
+                sphere.transform.position = parentJoint.anchor;
+            /*else
+                sphere.transform.position = parentPrimitive.transform.position;*/
 
             return sphere;
         }
