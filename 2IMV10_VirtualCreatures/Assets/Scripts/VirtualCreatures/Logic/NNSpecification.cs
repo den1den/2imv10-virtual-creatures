@@ -120,7 +120,7 @@ namespace VirtualCreatures
             IList<SimpleConnection> externalConnections = new List<SimpleConnection>();
             for (int i = 0; i < sensors.Count(); i++)
             {
-                SimpleConnection c = new SimpleConnection(sensors[i], networkOut[i]); //this specific constructuror is only used here
+                SimpleConnection c = SimpleConnection.createSimpleEmptyConnection(sensors[i], networkOut[i]); //this specific constructuror is only used here
                 externalConnections.Add(c);
             }
 
@@ -281,11 +281,12 @@ namespace VirtualCreatures
     public class SimpleConnection : IConnection
     {
         public SimpleConnection(NeuronSpec source, InterfaceNode destination) : base(source, destination) { }
-
+        
         /// <summary>
         /// Only for usage by an Empty network!!!
         /// </summary>
-        internal SimpleConnection(SensorSpec source, InterfaceNode destination) : base(source, destination) { }
+        internal static SimpleConnection createSimpleEmptyConnection(SensorSpec source, InterfaceNode destination) { return new SimpleConnection(source, destination); }
+        private SimpleConnection(SensorSpec source, InterfaceNode destination) : base(source, destination) { }
     }
     
     
