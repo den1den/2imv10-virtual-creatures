@@ -58,10 +58,10 @@ namespace VirtualCreatures
             NaiveENN N = new NaiveENN(joints);
             
             //create all neurons of the brain
-            IDictionary<INeuralNodeSpec, Neural> created = Enumerable
+            IDictionary<InterfaceNode, Neural> created = Enumerable
                 .Repeat(morphology.brain, 1)
                 .SelectMany(nn => nn.neurons) //brain has only normal neurons
-                .ToDictionary(n => (INeuralNodeSpec)n, n => N.createNeuron(n));
+                .ToDictionary(n => (InterfaceNode)n, n => N.createNeuron(n));
 
             //create all the sensors and actors for the edges
             for (int i = 0; i < morphology.edges.Count; i++)
@@ -430,7 +430,7 @@ namespace VirtualCreatures
         {
             public override double y(double x)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("I do not know how?");
             }
         }
         internal class MEMORY : SingleFunction

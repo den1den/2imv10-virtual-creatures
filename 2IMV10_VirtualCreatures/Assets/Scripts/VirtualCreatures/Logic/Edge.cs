@@ -30,10 +30,10 @@ namespace VirtualCreatures
     /// </summary>
     public class EdgeGen
     {
+        public Node source;
         public Node destination;
         public JointSpecification joint;
         public NNSpecification network;
-        public Node source;
         public MultStrategy strategy;
         public Symmetry symmetry;
 
