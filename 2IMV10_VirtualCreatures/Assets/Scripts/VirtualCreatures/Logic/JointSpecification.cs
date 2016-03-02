@@ -103,7 +103,17 @@ namespace VirtualCreatures
             {
                 joint = (Joint)parent.AddComponent<HingeJoint>();
             }
-            
+
+            /*switch (position.face)
+            {
+                case 1: // Same Direction
+                    joint.anchor = Vector3.zero;
+                    break;
+                case 2: // Right
+
+                case 3:
+                case 4:
+            }*/
             // Change initial joint parameters here
             // ****************
 
@@ -208,6 +218,7 @@ namespace VirtualCreatures
             {
                 throw new ArgumentOutOfRangeException();
             }
+
             this.faceX = offsetHorizontal;
             this.faceY = offsetVertical;
             this.face = face;
