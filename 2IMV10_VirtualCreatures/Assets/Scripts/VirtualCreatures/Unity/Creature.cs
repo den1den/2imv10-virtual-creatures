@@ -29,7 +29,6 @@ namespace VirtualCreatures {
             //phenotype.update(Time.fixedDeltaTime);
             if (phenotype != null)
             {
-                Debug.Log("P E");
                 phenotype.update(Time.fixedDeltaTime);
             }
         }
@@ -123,7 +122,7 @@ namespace VirtualCreatures {
 
             // Get the edges of the current node
             IList<EdgeMorph> edges = node.getEdges(morphology.edges);
-
+            
             // Iterate over each edge that we have for the current node
             foreach (EdgeMorph e in edges)
             {
