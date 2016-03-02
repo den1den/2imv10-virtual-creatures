@@ -63,22 +63,22 @@ namespace VirtualCreatures
             this.limits = limits;
         }
 
-        internal double[] getActorFactor()
+        internal double[] getActorFactors()
         {
             return Enumerable.Repeat(1.0, this.type.dof).ToArray();
         }
 
-        internal double[] getActorOffset()
+        internal double[] getActorOffsets()
         {
             return Enumerable.Repeat(0.0, this.type.dof).ToArray();
         }
 
-        internal double[] getSensorFactor()
+        internal double[] getSensorFactors()
         {
             return Enumerable.Repeat(1.0, this.type.dof).ToArray();
         }
 
-        internal double[] getSensorOffset()
+        internal double[] getSensorOffsets()
         {
             return Enumerable.Repeat(0.0, this.type.dof).ToArray();
         }

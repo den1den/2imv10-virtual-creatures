@@ -42,6 +42,10 @@ namespace VirtualCreatures
 
         private Neural[] internalNeurons = null;
 
+        /// <summary>
+        /// Create a NaiveENN network that controlles an couple of joints.
+        /// </summary>
+        /// <param name="joints"></param>
         public NaiveENN(Joint[] joints) : base(joints)
         {
             this.sensorNeurons = new Neural[joints.Length][];
@@ -54,9 +58,11 @@ namespace VirtualCreatures
 
         public static NaiveENN create(Morphology morphology, Joint[] joints)
         {
+            if (morphology.edges.Count != joints.Length) throw new ArgumentException(); //every edge should correspond to exactly one joint
+
             //create reference for the creation of neurons
             NaiveENN N = new NaiveENN(joints);
-            
+
             //create all neurons of the brain
             IDictionary<InterfaceNode, Neural> created = Enumerable
                 .Repeat(morphology.brain, 1)
@@ -66,30 +72,45 @@ namespace VirtualCreatures
             //create all the sensors and actors for the edges
             for (int i = 0; i < morphology.edges.Count; i++)
             {
+                //pick the corresponsing joint and network
                 JointSpecification joint = morphology.edges[i].joint;
                 NNSpecification nn = morphology.edges[i].network;
 
-                int dof = joint.type.getDegreesOfFreedom();
-                
-                N.sOffset[i] = joint.getSensorOffset();
-                N.sFactor[i] = joint.getSensorFactor();
+                N.sOffset[i] = joint.getSensorOffsets();
+                N.sFactor[i] = joint.getSensorFactors();
 
-                N.aOffset[i] = joint.getActorOffset();
-                N.aFactor[i] = joint.getActorFactor();
+                N.aOffset[i] = joint.getActorOffsets();
+                N.aFactor[i] = joint.getActorFactors();
 
-                //create the actual sensors and actors
+                //create the actual sensors
                 N.sensorNeurons[i] = nn.sensors.Select(sen => N.createSensor(sen)).ToArray();
-                N.actorNeurons[i] = nn.actors.Select(act => N.createActor(act)).ToArray();
-
-                //and add them to the created list
-                for(int d = 0; d < dof; d++)
+                //and add them
+                for (int j = 0; j < N.sensorNeurons[i].Length; j++)
                 {
-                    created[nn.sensors[d]] = N.sensorNeurons[i][d];
-                    created[nn.actors[d]] = N.actorNeurons[i][d];
+                    Neural createdSensor = N.sensorNeurons[i][j];
+                    created[nn.sensors[j]] = createdSensor;
                 }
 
+                //and create the actual actors
+                N.actorNeurons[i] = nn.actors.Select(act => N.createActor(act)).ToArray();
+                //and add them also
+                for (int j = 0; j < N.actorNeurons[i].Length; j++)
+                {
+                    Neural createdActor = N.actorNeurons[i][j];
+                    created[nn.actors[j]] = createdActor;
+                }
+
+                //check that that nothing is overspecified
+                int dof = joint.type.getDegreesOfFreedom();
+                if (dof < N.sOffset[i].Length ||
+                    dof < N.sFactor[i].Length ||
+                    dof < N.aOffset[i].Length ||
+                    dof < N.aFactor[i].Length ||
+                    dof < N.sensorNeurons[i].Length ||
+                    dof < N.actorNeurons[i].Length) throw new ArgumentException(); //more paramaters were specified then there are degrees of freedom
+
                 //also create all normal neurons in this network
-                foreach(NeuronSpec n in nn.neurons)
+                foreach (NeuronSpec n in nn.neurons)
                 {
                     created[n] = N.createNeuron(n);
                 }
