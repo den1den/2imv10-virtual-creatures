@@ -12,7 +12,7 @@ namespace VirtualCreatures {
 
         private Phenotype phenotype;
 
-        private IList<Joint> joints = new List<Joint>();
+        public IList<Joint> joints = new List<Joint>();
         private IList<GameObject> primitives = new List<GameObject>();
 
         // Use this for initialization
@@ -51,7 +51,7 @@ namespace VirtualCreatures {
         {
             joints.Add(joint);
         }
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -76,18 +76,19 @@ namespace VirtualCreatures {
             // Instantiate empty creature prefab to scene
             GameObject creatureObject = (GameObject)Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
 
+            creatureObject.transform.position = new Vector3(UnityEngine.Random.Range(0, 10), 10, 0);
+
             // New creature instance
             Creature newCreature = (Creature)creatureObject.GetComponent<Creature>();
 
-            IDictionary<int, Joint> joints = new Dictionary<int, Joint>();
-
+            Joint[] joints = new Joint[morphology.edges.Count];
             // This function is just a deeper step to abstract more the createJointsFromMorphology function
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, null, joints);
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, creatureObject, joints);
 
-            // Order 
-            var items = from pair in joints
-                        orderby pair.Value ascending
-                        select pair;
+            newCreature.joints = joints.ToList<Joint>();
+
+            Debug.Log(newCreature.joints[0]);
+            Debug.Log(newCreature.joints[1]);
 
 
             Phenotype phenotype = new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>());
@@ -95,9 +96,6 @@ namespace VirtualCreatures {
             // Creature Phenotype from morphology
             newCreature.setPhenotype(phenotype);
             
-            //GameObject primitiveObject = Creature.createPrimitive();
-            //primitiveObject.transform.parent = creatureObject.transform;
-            newCreature.transform.position = new Vector3(UnityEngine.Random.Range(0, 10), 10, 0);
 
             return newCreature;
         }
@@ -110,7 +108,7 @@ namespace VirtualCreatures {
         /// <param name="node"></param>
         /// <param name="lastJoint"></param>
         /// <param name="parent"></param>
-        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint lastJoint, GameObject parent, IDictionary<int, Joint> joints)
+        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint lastJoint, GameObject parent, IList<Joint> joints)
         {
             // Create a primitive from the current node
             GameObject primitive = node.shape.createPrimitive();
@@ -122,7 +120,6 @@ namespace VirtualCreatures {
             // Connect the last joint created to the current destination primitive
             if(lastJoint != null)
                 lastJoint.connectedBody = primitive.GetComponent<Rigidbody>();
-
 
             // Get the edges of the current node
             IList<EdgeMorph> edges = node.getEdges(morphology.edges);
