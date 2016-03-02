@@ -82,7 +82,7 @@ namespace VirtualCreatures {
             IDictionary<int, Joint> joints = new Dictionary<int, Joint>();
 
             // This function is just a deeper step to abstract more the createJointsFromMorphology function
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, null, joints);
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, creatureObject, joints);
 
             // Order 
             var items = from pair in joints
