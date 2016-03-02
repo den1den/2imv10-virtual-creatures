@@ -288,7 +288,11 @@ namespace VirtualCreatures
                 else if (aNeurons.Length == 1)
                 {
                     //1 degrees of freedom
-                    //joint.X = aOffset[j][0] + aFactor[j][0] * aNeurons[0].value;
+                    HingeJoint h = (HingeJoint) joint;
+                    JointMotor m = h.motor;
+                    float force = (float)(aOffset[j][0] + aFactor[j][0] * aNeurons[0].value);
+                    Console.WriteLine(String.Format("Appling force {0} to joint {1}", force, h));
+                    m.force = force;
                 }
                 else
                 {
