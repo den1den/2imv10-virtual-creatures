@@ -116,6 +116,7 @@ namespace VirtualCreatures {
             if(lastJoint != null)
                 lastJoint.connectedBody = primitive.GetComponent<Rigidbody>();
 
+
             // Get the edges of the current node
             IList<EdgeMorph> edges = node.getEdges(morphology.edges);
 
