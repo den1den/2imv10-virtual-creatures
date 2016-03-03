@@ -10,19 +10,21 @@ namespace VirtualCreatures
     public class Phenotype
     {
         NaiveENN nerves;
-        static double speed = 1.5; //factor for all dt related functions
 
         public Phenotype(Morphology morphology, Joint[] joints)
         {
             this.nerves = NaiveENN.create(morphology, joints);
         }
 
+        /// <summary>
+        /// This function invokes 2 updates in the neural network and then writes the output forces to the joints directly
+        /// </summary>
+        /// <param name="dt"></param>
         public void update(float dt)
         {
-            // Time.deltaTime;
             // Read and write values of Joints once
-            // When the dt changes to much we should do more ticks in the network to keep it consistent with Update and Fixedupdate functionalities.
-            this.nerves.dt = dt / 2;
+            // ? When the dt changes to much we should do more ticks in the network to keep it consistent with Update and Fixedupdate functionalities.
+            this.nerves.tickDt = dt / 2;
             this.nerves.tick(2);
         }
 
@@ -30,7 +32,7 @@ namespace VirtualCreatures
 
     internal class NaiveENN : ExplicitNN
     {
-        internal float dt = float.NaN;
+        internal float tickDt = float.NaN;
         /// <summary>
         /// The first ones are the joints then the rest
         /// </summary>
@@ -378,7 +380,7 @@ namespace VirtualCreatures
             }
             public override double y(double x)
             {
-                return y(x, parent.dt);
+                return y(x, parent.tickDt);
             }
             public abstract double y(double x, double dtf);
         }

@@ -13,7 +13,7 @@ namespace VirtualCreatures
     /// </summary>
     public interface ShapeSpecification
     {
-        GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint);
+        GameObject createPrimitive(GameObject parentPrimitive);
         float getXBound();
         float getYBound();
         float getZBound();
@@ -45,7 +45,7 @@ namespace VirtualCreatures
             this.height = height;
         }
 
-        public GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint)
+        public GameObject createPrimitive(GameObject parentPrimitive)
         {
             // Create a primitive with mesh renderer and collider attached.
             GameObject rectangle = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -55,12 +55,6 @@ namespace VirtualCreatures
             
             // Transform mesh to the scale of this shape specification
             rectangle.transform.localScale = new Vector3(width, depth, height);
-
-            if (parentJoint != null)
-                rectangle.transform.position = parentJoint.anchor;
-
-            //else
-            //    rectangle.transform.position = parentPrimitive.transform.position;*/
 
             return rectangle;
         }
@@ -126,7 +120,7 @@ namespace VirtualCreatures
             this.r = r;
         }
 
-        public GameObject createPrimitive(GameObject parentPrimitive, Joint parentJoint)
+        public GameObject createPrimitive(GameObject parentPrimitive)
         {
             // Create a primitive with mesh renderer and collider attached.
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -136,12 +130,6 @@ namespace VirtualCreatures
 
             // Transform mesh to the scale of this shape specification
             sphere.transform.localScale = new Vector3(r, r, r);
-
-            // 
-            if(parentJoint != null)
-                sphere.transform.position = parentJoint.anchor;
-            /*else
-                sphere.transform.position = parentPrimitive.transform.position;*/
 
             return sphere;
         }

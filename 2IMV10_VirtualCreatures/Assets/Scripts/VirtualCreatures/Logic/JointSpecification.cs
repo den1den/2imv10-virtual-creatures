@@ -12,8 +12,8 @@ namespace VirtualCreatures
     /// </summary>
     public class JointSpecification
     {
-        public float angle;
-        public float inclination;
+        public float angle; //(-Pi, Pi)
+        public float inclination; //(0, Pi/2)
         public JointPosition position;
         public JointType type;
         public float[] limits;
@@ -87,13 +87,16 @@ namespace VirtualCreatures
         {
             Joint joint = null;
 
+            //define the joint positioning and rotational direction
             if (type.Equals(JointType.FIXED))
             {
                 joint = (Joint)parent.AddComponent<FixedJoint>();
             }
             else if (type.Equals(JointType.HINGE))
             {
-                joint = (Joint)parent.AddComponent<HingeJoint>();
+                HingeJoint h = parent.AddComponent<HingeJoint>(); joint = h;
+                Vector3 axis = this.UnitVectorRProjected(this.angle - (float)(Math.PI / 2)); //positive angle is in the direction of the normal
+                h.axis = axis;
             }
             else if (type.Equals(JointType.PISTON))
             {
@@ -103,8 +106,9 @@ namespace VirtualCreatures
             {
                 joint = (Joint)parent.AddComponent<HingeJoint>();
             }
+            else throw new NotImplementedException();
 
-
+            //define the joint anchor
             float x, y, z;
             switch (position.face)
             {
@@ -138,17 +142,18 @@ namespace VirtualCreatures
                     x = this.position.faceX;
                     y = -this.position.faceY;
                     z = -1;
-                    throw new ArgumentException(); //for now no joints that go backwards
+                    throw new NotImplementedException(); //for now no joints that go backwards
             }
             joint.anchor = new Vector3(x * parentShape.getXBound(), y * parentShape.getYBound(), z * parentShape.getZBound());
-            // Change initial joint parameters here
-            // ****************
 
-            // create Joint to load it from creature
             return joint;
         }
 
-        Vector3 normal()
+        /// <summary>
+        /// Unitvector perpendicular to the face
+        /// </summary>
+        /// <returns></returns>
+        Vector3 UnitVectorNormal()
         {
             switch (position.face)
             {
@@ -167,36 +172,12 @@ namespace VirtualCreatures
                     return new Vector3(0, 0, -1);
             }
         }
-
-        /// <summary>
-        /// Unitvector in the direction of this.Angle
-        /// </summary>
-        /// <returns></returns>
-        Vector3 anlgeUnitVector()
-        {
-            switch (position.face)
-            {
-                case 1: // Same Direction
-                case 6: // Backwards
-                default:
-                    return new Vector3(1, 0, 0);
-                case 2: // Right
-                    return new Vector3(0, 1, 0);
-                case 3: // Away
-                    return new Vector3(-1, 0, 0);
-                case 4: // Left
-                    return new Vector3(0, -1, 0);
-                case 5: // Towards
-                    return new Vector3(1, 0, 0);
-                
-            }
-        }
-
+        
         /// <summary>
         /// Unitvector in the upward direction
         /// </summary>
         /// <returns></returns>
-        Vector3 upUnitVector()
+        Vector3 UnitVectorUp()
         {
             switch (position.face)
             {
@@ -211,6 +192,37 @@ namespace VirtualCreatures
                 case 6: // Backwards
                     return new Vector3(0, -1, 0);
             }
+        }
+
+
+        /// <summary>
+        /// Unitvector with the direction angle relative to up direction. The r vector projected on the face
+        /// </summary>
+        /// <returns></returns>
+        Vector3 UnitVectorRProjected(float angle)
+        {
+            Vector3 angle0Direction;
+            switch (position.face)
+            {
+                case 1: // Same Direction
+                case 6: // Backwards
+                default:
+                    angle0Direction = new Vector3(1, 0, 0);
+                    break;
+                case 2: // Right
+                    angle0Direction = new Vector3(0, 1, 0);
+                    break;
+                case 3: // Away
+                    angle0Direction = new Vector3(-1, 0, 0);
+                    break;
+                case 4: // Left
+                    angle0Direction = new Vector3(0, -1, 0);
+                    break;
+                case 5: // Towards
+                    angle0Direction = new Vector3(1, 0, 0);
+                    break;
+            }
+            return (float)Math.Cos(angle) * this.UnitVectorUp() + (float)Math.Sin(angle) * angle0Direction;
         }
     }
 

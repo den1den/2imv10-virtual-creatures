@@ -77,12 +77,16 @@ namespace VirtualCreatures {
 
             creatureObject.transform.position = new Vector3(UnityEngine.Random.Range(0, 10), 10, 0);
 
-            // New creature instance
+            // New creature instance (top of unity hierachy)
             Creature newCreature = (Creature)creatureObject.GetComponent<Creature>();
 
             Joint[] joints = new Joint[morphology.edges.Count];
-            // This function is just a deeper step to abstract more the createJointsFromMorphology function
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, null, creatureObject, joints);
+
+            //recursivaly create and connect all components
+            //start with the root, with no special transformation
+            GameObject creatureRootNode = morphology.root.shape.createPrimitive(creatureObject); //transformation is default (0,0,0)
+            //then recursivly traverse all connected edges
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
 
             //
             newCreature.joints = joints.ToList<Joint>();
@@ -99,40 +103,35 @@ namespace VirtualCreatures {
             return newCreature;
         }
 
-     
+
         /// <summary>
-        /// 
+        /// Adds all the cildren recursivly to the parent node
         /// </summary>
-        /// <param name="morphology"></param>
-        /// <param name="node"></param>
-        /// <param name="lastJoint"></param>
-        /// <param name="parent"></param>
-        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node node, Joint parentJoint, GameObject parent, IList<Joint> joints)
+        /// <param name="morphology">invariant</param>
+        /// <param name="parentNode">parental node</param>
+        /// <param name="parentGO">created parental game object</param>
+        /// <param name="allJoints">result</param>
+        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
         {
-            // Create a primitive from the current node
-            GameObject primitive = node.shape.createPrimitive(parent, parentJoint);
-
-            // Set parent of primitive to the last primitive
-            if(parent != null)
-                primitive.transform.parent = parent.transform;
-
-            // Connect the last joint created to the current destination primitive
-            if(parentJoint != null)
-                parentJoint.connectedBody = primitive.GetComponent<Rigidbody>();
-
             // Get the edges of the current node
-            IList<EdgeMorph> edges = node.getEdges(morphology.edges);
-            
+            IList<EdgeMorph> edges = parentNode.getEdges(morphology.edges);
             // Iterate over each edge that we have for the current node
             foreach (EdgeMorph e in edges)
             {
-                // Create a joint and add it to the parent joint list
-                Joint joint = e.joint.createJoint(primitive, e.source.shape);
+                // Create a primitive for the next node from the current node
+                GameObject childGO = parentNode.shape.createPrimitive(parentGO);
 
-                joints[morphology.edges.IndexOf(e)] = joint;
+                // Calculate where the next shape should be by creating the joint
+                Joint joint = e.joint.createJoint(childGO, e.source.shape);
+                joint.connectedBody = childGO.GetComponent<Rigidbody>();
+                allJoints[morphology.edges.IndexOf(e)] = joint;
 
-
-                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, joint, primitive, joints);
+                //Place the primitive on that position
+                childGO.transform.parent = parentGO.transform;
+                childGO.transform.position = joint.anchor;
+                //primitive.transform.rotation = Calculate rotation from `e`
+                
+                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, childGO, allJoints);
             }
         }
     }
