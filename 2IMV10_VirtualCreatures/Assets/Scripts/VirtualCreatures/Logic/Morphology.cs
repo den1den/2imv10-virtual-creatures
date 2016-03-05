@@ -44,21 +44,21 @@ namespace VirtualCreatures
             NNSpecification brain = NNSpecification.testBrain1();
 
             Genotype genotype = null;
-            Node root = new Node(new Sphere(1f/4));
+            Node root = new Node(new Sphere(3));
 
             //right
-            Node fin = new Node(new PlaneRectangle(1, 2));
+            Node fin = new Node(new PlaneRectangle(6, 0.4f));
 
             float[] limits = new float[] { (float)(Math.PI / 2 * 0.8) };
-            JointPosition right = new JointPosition(0, 0, 2, 0.1f, 0);
+            JointPosition right = new JointPosition(0, 0, 2, 0.5f, 0);
             JointSpecification rightJoint = new JointSpecification(right, 0, 0, JointType.HINGE, limits);
 
             NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.type, brain.networkOut);
 
             //left
-            Node fin2 = new Node(new PlaneRectangle(1, 2));
+            Node fin2 = new Node(new PlaneRectangle(6, 0.4f));
 
-            JointPosition left = new JointPosition(0, 0, 4, 0.1f, 0);
+            JointPosition left = new JointPosition(0, 0, 4, 0.5f, 0);
             JointSpecification leftJoint = new JointSpecification(left, 0, 0, JointType.HINGE, limits);
 
             NNSpecification leftReadWriteNNS = NNSpecification.createEmptyWriteNetwork(leftJoint.type, brain.networkOut);

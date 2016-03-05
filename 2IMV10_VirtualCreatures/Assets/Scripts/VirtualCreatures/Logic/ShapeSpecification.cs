@@ -22,15 +22,15 @@ namespace VirtualCreatures
     public class Rectangle : ShapeSpecification
     {
         /// <summary>
-        /// The size of the rectangle from the center to the edge in the positive (and negatve) right direction (X)
+        /// The size of the rectangle from the center to the edge in the positive (and negatve) right direction
         /// </summary>
         internal float width;
         /// <summary>
-        /// The size of the rectangle from the center to the edge in the positive (and negatve) forwards direction (Y)
+        /// The size of the rectangle from the center to the edge in the positive (and negatve) forwards direction
         /// </summary>
         internal float depth;
         /// <summary>
-        /// The size of the rectangle from the center to the edge in the positive (and negatve) up direction (Z)
+        /// The size of the rectangle from the center to the edge in the positive (and negatve) up direction
         /// </summary>
         internal float height;
 
@@ -54,14 +54,14 @@ namespace VirtualCreatures
             rectangle.AddComponent<Rigidbody>();
             
             // Transform mesh to the scale of this shape specification
-            rectangle.transform.localScale = new Vector3(width, depth, height);
+            rectangle.transform.localScale = new Vector3(width, height, depth);
 
             return rectangle;
         }
 
         public float getXBound() { return this.width; }
-        public float getYBound() { return this.depth; }
-        public float getZBound() { return this.height; }
+        public float getYBound() { return this.height; }
+        public float getZBound() { return this.depth; }
     }
 
     /// <summary>
@@ -77,11 +77,11 @@ namespace VirtualCreatures
         /// <summary>
         /// A beam with has a scaled extension in the up direction (for arms)
         /// </summary>
-        /// <param name="size">the width of the beam</param>
-        /// <param name="factor">the factor of the height of the beam, must be greater then 1</param>
-        public LongRectangle(float size, float factor) : base(size, size, size * factor)
+        /// <param name="length">the width of the beam</param>
+        /// <param name="widthRatio">the factor of the height of the beam, must be greater then 1</param>
+        public LongRectangle(float length, float widthRatio) : base(length * widthRatio, length * widthRatio, length)
         {
-            if (factor <= 1)
+            if (widthRatio > 1)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -93,15 +93,15 @@ namespace VirtualCreatures
         /// <summary>
         /// The with of all the planes.
         /// </summary>
-        public static float width = 0.2f;
+        public static float WIDTH = 0.2f;
         /// <summary>
         /// A plane like rectangle standing upwards.
         /// </summary>
-        /// <param name="size">The size of the plane</param>
-        /// <param name="factor">A factor to make the plane less square, same as in LongRectangle</param>
-        public PlaneRectangle(float size, float factor) : base(size, width, size * factor)
+        /// <param name="length">The size of the plane</param>
+        /// <param name="widthRatio">A factor to make the plane less square, same as in LongRectangle</param>
+        public PlaneRectangle(float length, float widthRatio) : base(length * widthRatio, WIDTH, length)
         {
-            if (factor <= 1)
+            if (widthRatio > 1)
             {
                 throw new ArgumentOutOfRangeException();
             }

@@ -83,7 +83,7 @@ namespace VirtualCreatures
             return Enumerable.Repeat(0.0, this.type.dof).ToArray();
         }
 
-        public Joint createJoint(GameObject parent, ShapeSpecification parentShape)
+        public Joint createJoint(GameObject parent)
         {
             Joint joint = null;
 
@@ -95,7 +95,7 @@ namespace VirtualCreatures
             else if (type.Equals(JointType.HINGE))
             {
                 HingeJoint h = parent.AddComponent<HingeJoint>(); joint = h;
-                Vector3 axis = this.UnitVectorRProjected(this.angle - (float)(Math.PI / 2)); //positive angle is in the direction of the normal
+                Vector3 axis = this.getUnityRProjected(this.angle - (float)(Math.PI / 2)); //positive angle is in the direction of the normal
                 h.axis = axis;
             }
             else if (type.Equals(JointType.PISTON))
@@ -108,7 +108,16 @@ namespace VirtualCreatures
             }
             else throw new NotImplementedException();
 
-            //define the joint anchor
+            return joint;
+        }
+
+        /// <summary>
+        /// Return the positional vector of the point on the face where the next shape is attached
+        /// </summary>
+        /// <param name="parentShape"></param>
+        /// <returns></returns>
+        public Vector3 getUnityFaceAnchorPosition(ShapeSpecification parentShape)
+        {
             float x, y, z;
             switch (position.face)
             {
@@ -144,16 +153,26 @@ namespace VirtualCreatures
                     z = -1;
                     throw new NotImplementedException(); //for now no joints that go backwards
             }
-            joint.anchor = new Vector3(x * parentShape.getXBound(), y * parentShape.getYBound(), z * parentShape.getZBound());
-
-            return joint;
+            return new Vector3(x * parentShape.getXBound(), y * parentShape.getYBound(), z * parentShape.getZBound());
         }
+
+        /// <summary>
+        /// Get the direction that points towards the second shape
+        /// </summary>
+        /// <returns>Unitvector</returns>
+        public Vector3 getUnityDirection()
+        {
+            Vector3 r = Vector3.RotateTowards(this.getUnityNormalVector(), this.getUnityRProjected(this.angle), this.inclination, 0);
+            return r;
+        }
+
+
 
         /// <summary>
         /// Unitvector perpendicular to the face
         /// </summary>
         /// <returns></returns>
-        Vector3 UnitVectorNormal()
+        Vector3 getUnityNormalVector()
         {
             switch (position.face)
             {
@@ -177,7 +196,7 @@ namespace VirtualCreatures
         /// Unitvector in the upward direction
         /// </summary>
         /// <returns></returns>
-        Vector3 UnitVectorUp()
+        Vector3 getUnityUpVector()
         {
             switch (position.face)
             {
@@ -199,7 +218,7 @@ namespace VirtualCreatures
         /// Unitvector with the direction angle relative to up direction. The r vector projected on the face
         /// </summary>
         /// <returns></returns>
-        Vector3 UnitVectorRProjected(float angle)
+        Vector3 getUnityRProjected(float angle)
         {
             Vector3 angle0Direction;
             switch (position.face)
@@ -222,7 +241,35 @@ namespace VirtualCreatures
                     angle0Direction = new Vector3(1, 0, 0);
                     break;
             }
-            return (float)Math.Cos(angle) * this.UnitVectorUp() + (float)Math.Sin(angle) * angle0Direction;
+            return (float)Math.Cos(angle) * this.getUnityUpVector() + (float)Math.Sin(angle) * angle0Direction;
+        }
+
+        public Quaternion getUnityRotation()
+        {
+            Quaternion r;
+            switch (position.face)
+            {
+                case 1: // Same Direction
+                default:
+                    r = Quaternion.identity;
+                    break;
+                case 2: // Right
+                    r = Quaternion.Euler(0, 0, -90);
+                    break;
+                case 3: // Away
+                    r = Quaternion.Euler(0, -90, -90);
+                    break;
+                case 4: // Left
+                    r = Quaternion.Euler(0, -180, -90);
+                    break;
+                case 5: // Towards
+                    r = Quaternion.Euler(0, -270, -90);
+                    break;
+                case 6: // Backwards
+                    r = Quaternion.Euler(0, 180, 180);
+                    break;
+            }
+            return r;
         }
     }
 

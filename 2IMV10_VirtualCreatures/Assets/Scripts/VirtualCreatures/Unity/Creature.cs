@@ -119,17 +119,22 @@ namespace VirtualCreatures {
             foreach (EdgeMorph e in edges)
             {
                 // Create a primitive for the next node from the current node
-                GameObject childGO = parentNode.shape.createPrimitive(parentGO);
+                GameObject childGO = e.destination.shape.createPrimitive(parentGO);
 
                 // Calculate where the next shape should be by creating the joint
-                Joint joint = e.joint.createJoint(childGO, e.source.shape);
-                joint.connectedBody = childGO.GetComponent<Rigidbody>();
+                Vector3 facePosition = e.joint.getUnityFaceAnchorPosition(parentNode.shape);
+                Vector3 childCenterPosition = facePosition + (e.joint.position.hover + e.destination.shape.getZBound() / 2) * e.joint.getUnityDirection();
+
+                //create the joint
+                Joint joint = e.joint.createJoint(childGO);
                 allJoints[morphology.edges.IndexOf(e)] = joint;
+                joint.anchor = facePosition;
+                joint.connectedBody = childGO.GetComponent<Rigidbody>();
 
                 //Place the primitive on that position
                 childGO.transform.parent = parentGO.transform;
-                childGO.transform.position = joint.anchor;
-                //primitive.transform.rotation = Calculate rotation from `e`
+                childGO.transform.position = childCenterPosition;
+                childGO.transform.rotation = e.joint.getUnityRotation();
                 
                 Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, childGO, allJoints);
             }
