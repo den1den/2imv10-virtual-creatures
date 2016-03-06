@@ -118,21 +118,25 @@ namespace VirtualCreatures {
             ShapeSpecification ss3 = Rectangle.createWidthDepthHeight(1f, 1f, 3f);
             ShapeSpecification ss4 = new Cube(1f);
 
-            GameObject go1 = ss1.createNaive();
+            GameObject go1 = ss1.createPrimitive();
             go1.transform.parent = creatureContainer.transform;
-            go1.transform.position = new Vector3(0, 40f, 0); //create them high enough to make sure they do not collide with the ground
+            go1.transform.localPosition = new Vector3(0, 40f, 0); //create them high enough to make sure they do not collide with the ground
 
-            GameObject go2 = ss2.createNaive();
+            GameObject go2 = ss2.createPrimitive();
             go2.transform.parent = go1.transform;
-            go2.transform.position = new Vector3(2.25f, 0, 0);
+            go2.transform.localPosition = new Vector3(2.25f, 0, 0); //calculated
+            go2.transform.localPosition = new Vector3(1.75f, 0, 0); //why 1.75 on first time ?
+            go2.transform.localPosition = new Vector3(1.125f, 0, 0); //and it becomes stable at 1.125 ?
 
-            GameObject go3 = ss3.createNaive();
+            GameObject go3 = ss3.createPrimitive();
             go3.transform.parent = go2.transform;
-            go3.transform.position = new Vector3(5f, 0, 0);
+            go3.transform.localPosition = new Vector3(5f, 0, 0); //calculated
+            go3.transform.localPosition = new Vector3(3.5f, 0, 0); //why 3.5?
 
-            GameObject go4 = ss3.createNaive();
+            GameObject go4 = ss4.createPrimitive();
             go4.transform.parent = go3.transform;
-            go4.transform.position = new Vector3(8f, 0, 0);
+            go4.transform.localPosition = new Vector3(8f, 0, 0); //calculated
+            go4.transform.localPosition = new Vector3(2f, 0, 0); //why 2?
 
             return creatureContainer.GetComponent<Creature>();
         }

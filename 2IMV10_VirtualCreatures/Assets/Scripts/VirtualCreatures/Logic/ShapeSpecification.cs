@@ -13,7 +13,17 @@ namespace VirtualCreatures
     /// </summary>
     public abstract class ShapeSpecification
     {
-        public abstract GameObject createPrimitive();
+        protected virtual String getGameObjectName()
+        {
+            return this.GetType().Name + " [" + this.getSize().ToString() + "]";
+        }
+        protected abstract GameObject createPrimitiveImpl();
+        public GameObject createPrimitive()
+        {
+            GameObject primitive = createPrimitiveImpl();
+            primitive.name = this.getGameObjectName();
+            return primitive;
+        }
         public abstract void setMesh(Mesh mesh);
         public GameObject createNaive()
         {
@@ -212,7 +222,7 @@ namespace VirtualCreatures
             mesh.Optimize();
         }
 
-        public override GameObject createPrimitive()
+        protected override GameObject createPrimitiveImpl()
         {
             // Create a primitive with mesh renderer and collider attached.
             GameObject rectangle = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -387,7 +397,7 @@ namespace VirtualCreatures
             mesh.Optimize();
         }
 
-        public override GameObject createPrimitive()
+        protected override GameObject createPrimitiveImpl()
         {
             // Create a primitive with mesh renderer and collider attached.
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
