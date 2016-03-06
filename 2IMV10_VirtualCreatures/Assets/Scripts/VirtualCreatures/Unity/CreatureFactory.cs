@@ -14,10 +14,7 @@ namespace VirtualCreatures
         // Use this for initialization
         void Start()
         {
-            Morphology initialMorphology = Morphology.test1();
-
-            Creature.Create(initialMorphology);
-
+            Creature.CreateTest3();
             /* 
             Morphology initialMorphology;
 
@@ -26,10 +23,16 @@ namespace VirtualCreatures
             */
         }
 
+        bool pauzed = false;
+
         // Update is called once per frame
         void Update()
         {
-
+            if (!pauzed)
+            {
+                pauzed = true;
+                Debug.Break();
+            }
         }
     }
 }

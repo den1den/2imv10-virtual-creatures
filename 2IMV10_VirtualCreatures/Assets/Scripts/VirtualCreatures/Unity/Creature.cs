@@ -105,6 +105,39 @@ namespace VirtualCreatures {
 
 
         /// <summary>
+        /// See draw.io drawing.
+        /// For now forget the joints and rotational aspects
+        /// </summary>
+        /// <returns></returns>
+        public static Creature CreateTest3()
+        {
+            GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
+
+            ShapeSpecification ss1 = new Cube(2f);
+            ShapeSpecification ss2 = new Cube(.5f);
+            ShapeSpecification ss3 = Rectangle.createWidthDepthHeight(1f, 1f, 3f);
+            ShapeSpecification ss4 = new Cube(1f);
+
+            GameObject go1 = ss1.createNaive();
+            go1.transform.parent = creatureContainer.transform;
+            go1.transform.position = new Vector3(0, 40f, 0); //create them high enough to make sure they do not collide with the ground
+
+            GameObject go2 = ss2.createNaive();
+            go2.transform.parent = go1.transform;
+            go2.transform.position = new Vector3(2.25f, 0, 0);
+
+            GameObject go3 = ss3.createNaive();
+            go3.transform.parent = go2.transform;
+            go3.transform.position = new Vector3(5f, 0, 0);
+
+            GameObject go4 = ss3.createNaive();
+            go4.transform.parent = go3.transform;
+            go4.transform.position = new Vector3(8f, 0, 0);
+
+            return creatureContainer.GetComponent<Creature>();
+        }
+
+        /// <summary>
         /// Adds all the cildren recursivly to the parent node
         /// </summary>
         /// <param name="morphology">invariant</param>
