@@ -35,6 +35,7 @@ namespace VirtualCreatures
             this.edges = edges;
             this.nodes = nodes;
         }
+
         /// <summary>
         /// A first morhology to test the evolution algorithm with.
         /// </summary>
@@ -44,10 +45,12 @@ namespace VirtualCreatures
             NNSpecification brain = NNSpecification.testBrain1();
 
             Genotype genotype = null;
-            Node root = new Node(new Sphere(3));
+            ShapeSpecification body = new Sphere(6);
+            Node root = new Node(body);
 
             //right
-            Node fin = new Node(new PlaneRectangle(6, 0.4f));
+            ShapeSpecification fin = Rectangle.createWidthDepthHeight(4, 0.2f, 9);
+            Node rfin = new Node(fin);
 
             float[] limits = new float[] { (float)(Math.PI / 2 * 0.8) };
             JointPosition right = new JointPosition(0, 0, 2, 0.5f, 0);
@@ -56,7 +59,7 @@ namespace VirtualCreatures
             NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.type, brain.networkOut);
 
             //left
-            Node fin2 = new Node(new PlaneRectangle(6, 0.4f));
+            Node lfin = new Node(fin);
 
             JointPosition left = new JointPosition(0, 0, 4, 0.5f, 0);
             JointSpecification leftJoint = new JointSpecification(left, 0, 0, JointType.HINGE, limits);
@@ -64,8 +67,8 @@ namespace VirtualCreatures
             NNSpecification leftReadWriteNNS = NNSpecification.createEmptyWriteNetwork(leftJoint.type, brain.networkOut);
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, fin, rightJoint, rightWriteOnlyNNS),
-                new EdgeMorph(root, fin2, leftJoint, leftReadWriteNNS)
+                new EdgeMorph(root, rfin, rightJoint, rightWriteOnlyNNS),
+                new EdgeMorph(root, lfin, leftJoint, leftReadWriteNNS)
             }.ToList();
 
             return new Morphology(root, brain, edges, genotype);

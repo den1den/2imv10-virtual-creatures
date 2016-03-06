@@ -83,6 +83,11 @@ namespace VirtualCreatures
             return Enumerable.Repeat(0.0, this.type.dof).ToArray();
         }
 
+        /// <summary>
+        /// Create joint and set the axis and orentiation. Anchor should not be set as this is dependent on scaling.
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
         public Joint createJoint(GameObject parent)
         {
             Joint joint = null;

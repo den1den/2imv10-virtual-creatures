@@ -79,6 +79,11 @@ namespace VirtualCreatures
             return this.internalConnections.Where(c => c.destination == neuronOrActor);
         }
 
+        internal static NNSpecification createEmptyNetwork()
+        {
+            return new NNSpecification(new List<NeuronSpec>(0), new List<InterfaceNode>(0), new List<InterfaceNode>(0), new List<WeightConnection>(0), new List<SimpleConnection>(0));
+        }
+
         public IEnumerable<SimpleConnection> getSourceEdges(InterfaceNode i)
         {
             return this.externalConnections.Where(c => c.destination == i);
