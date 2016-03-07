@@ -164,8 +164,8 @@ namespace VirtualCreatures {
                 childGO.transform.parent = parentGO.transform; // silently applies correction factor for hiearchical scaling
                 
                 //Create the joint at the parent and set the direction of the joint
-                //Joint joint = e.joint.createJoint(parentGO);
-                //allJoints[morphology.edges.IndexOf(e)] = joint;
+                Joint joint = e.joint.createJoint(parentGO);
+                allJoints[morphology.edges.IndexOf(e)] = joint;
                 //joint.connectedBody = childGO.GetComponent<Rigidbody>();
 
                 // Calculate where the distance between center of child and parent
