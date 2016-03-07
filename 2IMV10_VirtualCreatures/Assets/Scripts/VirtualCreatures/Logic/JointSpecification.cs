@@ -90,30 +90,29 @@ namespace VirtualCreatures
         /// <returns></returns>
         public Joint createJoint(GameObject parent)
         {
-            Joint joint = null;
-
             //define the joint positioning and rotational direction
             if (type.Equals(JointType.FIXED))
             {
-                joint = (Joint)parent.AddComponent<FixedJoint>();
+                FixedJoint j = parent.AddComponent<FixedJoint>();
+                return j;
             }
             else if (type.Equals(JointType.HINGE))
             {
-                HingeJoint h = parent.AddComponent<HingeJoint>(); joint = h;
-                Vector3 axis = this.getUnityRProjected(this.angle - (float)(Math.PI / 2)); //positive angle is in the direction of the normal
-                h.axis = axis;
+                //positive angle is in the direction of the normal
+                HingeJoint j = parent.AddComponent<HingeJoint>();
+                Vector3 axis = new Vector3((float)(-Math.Cos(this.angle)), 0, (float)(Math.Sin(this.angle)));
+                j.axis = axis;
+                return j;
             }
             else if (type.Equals(JointType.PISTON))
             {
-                joint = (Joint)parent.AddComponent<SpringJoint>();
+                SpringJoint j = parent.AddComponent<SpringJoint>();
             }
             else if (type.Equals(JointType.ROTATIONAL))
             {
-                joint = (Joint)parent.AddComponent<HingeJoint>();
+                Joint j = null;
             }
-            else throw new NotImplementedException();
-
-            return joint;
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -123,42 +122,12 @@ namespace VirtualCreatures
         /// <returns></returns>
         public Vector3 getUnityFaceAnchorPosition(ShapeSpecification parentShape)
         {
-            float x, y, z;
-            switch (position.face)
-            {
-                case 1: // Same Direction
-                    x = this.position.faceX;
-                    y = this.position.faceY;
-                    z = 1;
-                    break;
-                case 2: // Right
-                    x = 1;
-                    y = this.position.faceX;
-                    z = this.position.faceY;
-                    break;
-                case 3: // Away
-                    x = -this.position.faceX;
-                    y = 1;
-                    z = this.position.faceY;
-                    break;
-                case 4: // Left
-                    x = -1;
-                    y = this.position.faceY;
-                    z = -this.position.faceX;
-                    break;
-                case 5: // Towards
-                    x = this.position.faceX;
-                    y = -1;
-                    z = this.position.faceY;
-                    break;
-                case 6: // Backwards
-                default:
-                    x = this.position.faceX;
-                    y = -this.position.faceY;
-                    z = -1;
-                    throw new NotImplementedException(); //for now no joints that go backwards
-            }
-            return new Vector3(x * parentShape.getXBound(), y * parentShape.getYBound(), z * parentShape.getZBound());
+            float x = this.position.faceX;
+            float z = -this.position.faceY;
+            Vector3 topFaceAnchorUnscaled = new Vector3(x, 1.0f, z);
+            Vector3 anchorUnscaled = this.getUnityRotation() * topFaceAnchorUnscaled;
+            Vector3 absAnchor = Vector3.Scale(anchorUnscaled, parentShape.getBounds());
+            return absAnchor;
         }
 
         /// <summary>
@@ -167,114 +136,32 @@ namespace VirtualCreatures
         /// <returns>Unitvector</returns>
         public Vector3 getUnityDirection()
         {
-            Vector3 r = Vector3.RotateTowards(this.getUnityNormalVector(), this.getUnityRProjected(this.angle), this.inclination, 0);
-            return r;
-        }
-
-
-
-        /// <summary>
-        /// Unitvector perpendicular to the face
-        /// </summary>
-        /// <returns></returns>
-        Vector3 getUnityNormalVector()
-        {
-            switch (position.face)
-            {
-                case 1: // Same Direction
-                default:
-                    return new Vector3(0, 0, 1);
-                case 2: // Right
-                    return new Vector3(1, 0, 0);
-                case 3: // Away
-                    return new Vector3(0, 1, 0);
-                case 4: // Left
-                    return new Vector3(-1, 0, 0);
-                case 5: // Towards
-                    return new Vector3(0, -1, 0);
-                case 6: // Backwards
-                    return new Vector3(0, 0, -1);
-            }
-        }
-        
-        /// <summary>
-        /// Unitvector in the upward direction
-        /// </summary>
-        /// <returns></returns>
-        Vector3 getUnityUpVector()
-        {
-            switch (position.face)
-            {
-                case 1: // Same Direction   
-                default:
-                    return new Vector3(0, 1, 0);
-                case 2: // Right
-                case 3: // Away
-                case 4: // Left
-                case 5: // Towards
-                    return new Vector3(0, 0, 1);
-                case 6: // Backwards
-                    return new Vector3(0, -1, 0);
-            }
-        }
-
-
-        /// <summary>
-        /// Unitvector with the direction angle relative to up direction. The r vector projected on the face
-        /// </summary>
-        /// <returns></returns>
-        Vector3 getUnityRProjected(float angle)
-        {
-            Vector3 angle0Direction;
-            switch (position.face)
-            {
-                case 1: // Same Direction
-                case 6: // Backwards
-                default:
-                    angle0Direction = new Vector3(1, 0, 0);
-                    break;
-                case 2: // Right
-                    angle0Direction = new Vector3(0, 1, 0);
-                    break;
-                case 3: // Away
-                    angle0Direction = new Vector3(-1, 0, 0);
-                    break;
-                case 4: // Left
-                    angle0Direction = new Vector3(0, -1, 0);
-                    break;
-                case 5: // Towards
-                    angle0Direction = new Vector3(1, 0, 0);
-                    break;
-            }
-            return (float)Math.Cos(angle) * this.getUnityUpVector() + (float)Math.Sin(angle) * angle0Direction;
+            //first get the directional vector of the topFace and then translate the rotation
+            Vector3 normalTopFace = Vector3.up;
+            Vector3 rProjectedTopFace = (float)Math.Cos(this.angle) * normalTopFace + (float)Math.Sin(this.angle) * Vector3.right;
+            Vector3 rTopFace = Vector3.RotateTowards(normalTopFace, rProjectedTopFace, this.inclination, 0);
+            //then translate the rotation
+            return this.getUnityRotation() * rTopFace;
         }
 
         public Quaternion getUnityRotation()
         {
-            Quaternion r;
             switch (position.face)
             {
                 case 1: // Same Direction
                 default:
-                    r = Quaternion.identity;
-                    break;
+                    return Quaternion.identity;
                 case 2: // Right
-                    r = Quaternion.Euler(0, 0, -90);
-                    break;
+                    return Quaternion.Euler(90, 90, 0);
                 case 3: // Away
-                    r = Quaternion.Euler(0, -90, -90);
-                    break;
+                    return Quaternion.Euler(90, 0, 0);
                 case 4: // Left
-                    r = Quaternion.Euler(0, -180, -90);
-                    break;
+                    return Quaternion.Euler(90, 270, 0);
                 case 5: // Towards
-                    r = Quaternion.Euler(0, -270, -90);
-                    break;
+                    return Quaternion.Euler(90, 180, 0);
                 case 6: // Backwards
-                    r = Quaternion.Euler(0, 180, 180);
-                    break;
+                    return Quaternion.Euler(180, 0, 0);
             }
-            return r;
         }
 
         public static JointSpecification createSimple(int face, float absHover)
