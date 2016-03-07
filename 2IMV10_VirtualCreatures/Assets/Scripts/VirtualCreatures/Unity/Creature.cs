@@ -81,8 +81,8 @@ namespace VirtualCreatures {
             //start with the root, with no special transformation
             GameObject creatureRootNode = morphology.root.shape.createPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
-            creatureRootNode.transform.position = new Vector3(0, 50, 0);
-
+            creatureRootNode.transform.localPosition = new Vector3(0, 50, 0);
+            
             Debug.Log("Created a root " + creatureRootNode.ToString() + " with position: " + creatureRootNode.transform.position.ToString());
 
             // then recursivly traverse all connected edges
@@ -184,8 +184,8 @@ namespace VirtualCreatures {
                 // Place the primitive on a specific position
                 float testPositionX = parentNode.shape.getXBound() + e.joint.position.hover + childNode.shape.getXBound();
                 Vector3 testPosition = new Vector3(testPositionX, 0, 0); //first everything to the right (so no direction)
-                childGO.transform.position = Vector3.Scale(testPosition, positionFactor);
-                childGO.transform.rotation = Quaternion.identity;
+                childGO.transform.localPosition = Vector3.Scale(testPosition, positionFactor);
+                childGO.transform.localRotation = Quaternion.identity;
 
                 Debug.Log("Created a child " + childGO.ToString() + " with position: " + childGO.transform.position.ToString());
 
