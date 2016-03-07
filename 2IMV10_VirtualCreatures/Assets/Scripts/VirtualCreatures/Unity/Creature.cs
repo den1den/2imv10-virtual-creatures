@@ -113,29 +113,26 @@ namespace VirtualCreatures {
         {
             GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
 
-            ShapeSpecification ss1 = new Cube(2f); //scaling of 2
-            ShapeSpecification ss2 = new Cube(.5f);//scaling of 1/2
-            ShapeSpecification ss3 = Rectangle.createWidthDepthHeight(1f, 1f, 3f); //scaling of (1, 1, 3)
-            ShapeSpecification ss4 = new Cube(1f);//scaling of 1
+            ShapeSpecification ss1 = new Cube(2f);
+            ShapeSpecification ss2 = new Cube(.5f);
+            ShapeSpecification ss3 = Rectangle.createWidthDepthHeight(1f, 1f, 3f);
+            ShapeSpecification ss4 = new Sphere(1f);
 
-            GameObject go1 = ss1.createPrimitive();
+            GameObject go1 = ss1.createNaive(); //no scaling!
             go1.transform.parent = creatureContainer.transform;
             go1.transform.localPosition = new Vector3(0, 40f, 0); //create them high enough to make sure they do not collide with the ground
 
-            GameObject go2 = ss2.createPrimitive();
+            GameObject go2 = ss2.createNaive(); //no scaling!
             go2.transform.parent = go1.transform;
-            go2.transform.localPosition = new Vector3(2.25f, 0, 0); // in world coordinates
-            go2.transform.localPosition = new Vector3(1.125f, 0, 0); // 2.25 / sclaing = 2.25 / 2 = 1.125?
+            go2.transform.localPosition = new Vector3(2.25f, 0, 0);
 
-            GameObject go3 = ss3.createPrimitive();
+            GameObject go3 = ss3.createNaive(); //no scaling!
             go3.transform.parent = go2.transform;
-            go3.transform.localPosition = new Vector3(5f, 0, 0); // in world coordinates
-            go3.transform.localPosition = new Vector3(5.5f, 0, 0); // why 5.5?
+            go3.transform.localPosition = new Vector3(2.75f, 0, 0);
 
-            GameObject go4 = ss4.createPrimitive();
+            GameObject go4 = ss4.createNaive(); //no scaling!
             go4.transform.parent = go3.transform;
-            go4.transform.localPosition = new Vector3(8f, 0, 0); // in world coordinates
-            go4.transform.localPosition = new Vector3(3f, 0, 0); // why 3?
+            go4.transform.localPosition = new Vector3(3f, 0, 0);
 
             return creatureContainer.GetComponent<Creature>();
         }
