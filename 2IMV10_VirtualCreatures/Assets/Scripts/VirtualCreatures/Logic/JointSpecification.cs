@@ -276,6 +276,12 @@ namespace VirtualCreatures
             }
             return r;
         }
+
+        public static JointSpecification createSimple(int face, float absHover)
+        {
+            JointPosition position = new JointPosition(0, 0, face, absHover, 0);
+            return new JointSpecification(position, 0, 0, JointType.FIXED, new float[0] { });
+        }
     }
 
     public class JointType
@@ -301,7 +307,7 @@ namespace VirtualCreatures
         /// </summary>
         static public readonly JointType ROTATIONAL = new JointType(2);
         internal int dof;
-        internal JointType(int degreesOfFreedom) { this.dof = degreesOfFreedom; }
+        private JointType(int degreesOfFreedom) { this.dof = degreesOfFreedom; }
 
         internal int getDegreesOfFreedom()
         {

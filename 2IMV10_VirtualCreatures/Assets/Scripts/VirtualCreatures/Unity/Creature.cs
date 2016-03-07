@@ -73,34 +73,37 @@ namespace VirtualCreatures {
         public static Creature Create(Morphology morphology)
         {
             // Instantiate empty creature prefab to scene
-            GameObject creatureObject = (GameObject)Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
-
-            creatureObject.transform.position = new Vector3(UnityEngine.Random.Range(0, 10), 10, 0);
-
-            // New creature instance (top of unity hierachy)
-            Creature newCreature = (Creature)creatureObject.GetComponent<Creature>();
+            GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
 
             Joint[] joints = new Joint[morphology.edges.Count];
 
             //recursivaly create and connect all components
             //start with the root, with no special transformation
-            GameObject creatureRootNode = morphology.root.shape.createPrimitive(creatureObject); //transformation is default (0,0,0)
-            //then recursivly traverse all connected edges
+            GameObject creatureRootNode = morphology.root.shape.createPrimitive();
+            creatureRootNode.transform.parent = creatureContainer.transform;
+            creatureRootNode.transform.position = new Vector3(0, 50, 0);
+
+            Debug.Log("Created a root " + creatureRootNode.ToString() + " with position: " + creatureRootNode.transform.position.ToString());
+
+            // then recursivly traverse all connected edges
             recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
 
             //
-            newCreature.joints = joints.ToList<Joint>();
+            Creature creatureScript = (Creature)creatureContainer.GetComponent<Creature>();
+            creatureScript.joints = joints.ToList<Joint>();
 
             //
-            Debug.Log(newCreature.joints[0]);
-            Debug.Log(newCreature.joints[1]);
+            Debug.Log(creatureScript.joints[0]);
+            Debug.Log(creatureScript.joints[1]);
 
-            Phenotype phenotype = new Phenotype(morphology, newCreature.getJoints().ToArray<Joint>());
+            Phenotype phenotype = new Phenotype(morphology, creatureScript.getJoints().ToArray<Joint>());
 
             // Creature Phenotype from morphology
-            newCreature.setPhenotype(phenotype);
+            creatureScript.setPhenotype(phenotype);
+            
+            creatureContainer.transform.position = new Vector3(UnityEngine.Random.Range(0, 50.0F), 3, 0);
 
-            return newCreature;
+            return creatureScript;
         }
 
 
@@ -111,66 +114,95 @@ namespace VirtualCreatures {
         /// <returns></returns>
         public static Creature CreateTest3()
         {
-            GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
+            ShapeSpecification b0 = new Cube(2);
+            Node root = new Node(b0);
 
-            ShapeSpecification ss1 = new Cube(2f);
-            ShapeSpecification ss2 = new Cube(.5f);
-            ShapeSpecification ss3 = Rectangle.createWidthDepthHeight(1f, 1f, 3f);
-            ShapeSpecification ss4 = new Sphere(1f);
+            ShapeSpecification b1 = new Cube(0.5f);
+            Node n1 = new Node(b1);
 
-            GameObject go1 = ss1.createNaive(); //no scaling!
-            go1.transform.parent = creatureContainer.transform;
-            go1.transform.localPosition = new Vector3(0, 40f, 0); //create them high enough to make sure they do not collide with the ground
+            ShapeSpecification b2 = new Cube(3);
+            Node n2 = new Node(b2);
 
-            GameObject go2 = ss2.createNaive(); //no scaling!
-            go2.transform.parent = go1.transform;
-            go2.transform.localPosition = new Vector3(2.25f, 0, 0);
+            ShapeSpecification b3 = new Cube(1);
+            Node n3 = new Node(b3);
 
-            GameObject go3 = ss3.createNaive(); //no scaling!
-            go3.transform.parent = go2.transform;
-            go3.transform.localPosition = new Vector3(2.75f, 0, 0);
+            float absHover = 1f;
+            JointSpecification j = JointSpecification.createSimple(1, absHover);
+            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
 
-            GameObject go4 = ss4.createNaive(); //no scaling!
-            go4.transform.parent = go3.transform;
-            go4.transform.localPosition = new Vector3(3f, 0, 0);
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, n1, j, emptyNN),
+                new EdgeMorph(n1, n2, j, emptyNN),
+                new EdgeMorph(n2, n3, j, emptyNN)
+            }.ToList();
 
-            return creatureContainer.GetComponent<Creature>();
+            Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
+
+            return Create(m);
         }
 
         /// <summary>
         /// Adds all the cildren recursivly to the parent node
         /// </summary>
-        /// <param name="morphology">invariant</param>
-        /// <param name="parentNode">parental node</param>
-        /// <param name="parentGO">created parental game object</param>
-        /// <param name="allJoints">result</param>
+        /// <param name="morphology">The full morhology (to traverse the edges)</param>
+        /// <param name="parentNode">The node ofwhich the children should be added</param>
+        /// <param name="parentGO">The created gameobject of the parent</param>
+        /// <param name="allJoints">A list of all the joints found thusfar (in the order of traversal)</param>
         private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
         {
-            // Get the edges of the current node
+            Vector3 positionFactor = new Vector3(1.0f / parentGO.transform.lossyScale.x, 1.0f / parentGO.transform.lossyScale.y, 1.0f / parentGO.transform.lossyScale.z);
+
+            // Get the connected edges of the current node
             IList<EdgeMorph> edges = parentNode.getEdges(morphology.edges);
             // Iterate over each edge that we have for the current node
             foreach (EdgeMorph e in edges)
             {
-                // Create a primitive for the next node from the current node
-                GameObject childGO = e.destination.shape.createPrimitive(parentGO);
+                // Create a primitive for the next node below the current node
+                Node childNode = e.destination;
+                GameObject childGO = childNode.shape.createPrimitive();
 
-                // Calculate where the next shape should be by creating the joint
+                childGO.transform.parent = parentGO.transform; // silently applies correction factor for hiearchical scaling
+
+#if false //backup of code
+                //Create the joint and set the direction of the joint
+                //Joint joint = e.joint.createJoint(parentGO);
+                //allJoints[morphology.edges.IndexOf(e)] = joint;
+                //joint.connectedBody = childGO.GetComponent<Rigidbody>();
+
+                // Calculate where the distance between center of child and parent
                 Vector3 facePosition = e.joint.getUnityFaceAnchorPosition(parentNode.shape);
-                Vector3 childCenterPosition = facePosition + (e.joint.position.hover + e.destination.shape.getZBound() / 2) * e.joint.getUnityDirection();
+                Vector3 direction = e.joint.getUnityDirection();
+                float absDist_Face_ChildCenter = e.joint.position.hover + childNode.shape.getBound(0); // attached in Z direction
+                Vector3 absPosition = facePosition + absDist_Face_ChildCenter * direction;
 
-                //create the joint
-                Joint joint = e.joint.createJoint(childGO);
-                allJoints[morphology.edges.IndexOf(e)] = joint;
-                joint.anchor = facePosition;
-                joint.connectedBody = childGO.GetComponent<Rigidbody>();
+                Quaternion rotation = e.joint.getUnityRotation();
 
-                //Place the primitive on that position
-                childGO.transform.parent = parentGO.transform;
-                childGO.transform.position = childCenterPosition;
-                childGO.transform.rotation = e.joint.getUnityRotation();
-                
-                Creature.recursiveCreateJointsFromMorphology(morphology, e.destination, childGO, allJoints);
+                // Calculate where the joint should be, relative to the child
+                //joint.anchor = direction * 0.5f;
+#endif
+
+                // Place the primitive on a specific position
+                float testPositionX = parentNode.shape.getXBound() + e.joint.position.hover + childNode.shape.getXBound();
+                Vector3 testPosition = new Vector3(testPositionX, 0, 0); //first everything to the right (so no direction)
+                childGO.transform.position = Vector3.Scale(testPosition, positionFactor);
+                childGO.transform.rotation = Quaternion.identity;
+
+                Debug.Log("Created a child " + childGO.ToString() + " with position: " + childGO.transform.position.ToString());
+
+                //position all the children
+                Creature.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
             }
+        }
+
+        /// <summary>
+        /// This is not defined for vectors but will do in this example
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b">Cannot have any component equal to 0</param>
+        /// <returns></returns>
+        private static Vector3 componentwiseDevision(Vector3 a, Vector3 b)
+        {
+            return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
         }
     }
 }
