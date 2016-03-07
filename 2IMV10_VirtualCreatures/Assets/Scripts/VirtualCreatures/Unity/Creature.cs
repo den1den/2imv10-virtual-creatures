@@ -74,6 +74,7 @@ namespace VirtualCreatures {
         {
             // Instantiate empty creature prefab to scene
             GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
+            creatureContainer.transform.position = new Vector3(0, 150, 0);
 
             Joint[] joints = new Joint[morphology.edges.Count];
 
@@ -81,7 +82,7 @@ namespace VirtualCreatures {
             //start with the root, with no special transformation
             GameObject creatureRootNode = morphology.root.shape.createPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
-            creatureRootNode.transform.localPosition = new Vector3(0, 150, 0);
+            creatureRootNode.transform.localPosition = Vector3.zero;
             //creatureRootNode.transform.localRotation = Quaternion.identity;
 
             Debug.Log("Created a root " + creatureRootNode.ToString() + " with ABSposition: " + creatureRootNode.transform.position.ToString()+" and localPosition: "+ creatureRootNode.transform.localPosition.ToString());
