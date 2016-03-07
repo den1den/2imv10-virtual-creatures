@@ -83,9 +83,9 @@ namespace VirtualCreatures {
             GameObject creatureRootNode = morphology.root.shape.createPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
             creatureRootNode.transform.localPosition = Vector3.zero;
-            //creatureRootNode.transform.localRotation = Quaternion.identity;
+            creatureRootNode.transform.localRotation = Quaternion.identity;
 
-            Debug.Log("Created a root " + creatureRootNode.ToString() + " with ABSposition: " + creatureRootNode.transform.position.ToString()+" and localPosition: "+ creatureRootNode.transform.localPosition.ToString());
+            Debug.Log("Created a root " + creatureRootNode.ToString() + " with ABSposition: " + creatureRootNode.transform.position.ToString());
 
             // then recursivly traverse all connected edges
             recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
@@ -105,8 +105,7 @@ namespace VirtualCreatures {
 
             return creatureScript;
         }
-
-
+        
         /// <summary>
         /// See draw.io drawing.
         /// For now forget the joints and rotational aspects
@@ -127,13 +126,14 @@ namespace VirtualCreatures {
             Node n3 = new Node(b3);
 
             float absHover = 1f;
-            JointSpecification j = JointSpecification.createSimple(1, absHover);
+            JointSpecification toTheRight = JointSpecification.createSimple(2, absHover);
+            JointSpecification forwards = JointSpecification.createSimple(1, absHover);
             NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, n1, j, emptyNN),
-                new EdgeMorph(n1, n2, j, emptyNN),
-                new EdgeMorph(n2, n3, j, emptyNN)
+                new EdgeMorph(root, n1, toTheRight, emptyNN),
+                new EdgeMorph(n1, n2, forwards, emptyNN),
+                new EdgeMorph(n2, n3, forwards, emptyNN)
             }.ToList();
 
             Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
@@ -180,12 +180,10 @@ namespace VirtualCreatures {
                 //joint.anchor = direction * 0.5f;
 
                 // Place the primitive on a specific position
-                float testPositionX = parentNode.shape.getXBound() + e.joint.position.hover + childNode.shape.getXBound();
-                Vector3 testPosition = new Vector3(testPositionX, 0, 0); //first everything to the right (so no direction)
-                childGO.transform.localPosition = Vector3.Scale(testPosition, positionFactor);
-                //childGO.transform.localRotation = rotation;
+                childGO.transform.localPosition = Vector3.Scale(absPosition, positionFactor);
+                childGO.transform.localRotation = rotation;
 
-                Debug.Log("Created a child " + childGO.ToString() + " with localPosition: " + childGO.transform.localPosition.ToString() + " and localRotation: " + childGO.transform.localRotation.ToString());
+                Debug.Log("Created a child " + childGO.ToString() + " with localPosition: " + childGO.transform.localPosition.ToString() + " and localRotation: " + childGO.transform.localRotation.eulerAngles.ToString());
 
                 //position all the children
                 Creature.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
