@@ -76,12 +76,15 @@ namespace VirtualCreatures {
             GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
             creatureContainer.transform.position = new Vector3(0, 150, 0);
 
+            // Create new joints list 
             Joint[] joints = new Joint[morphology.edges.Count];
 
-            //recursivaly create and connect all components
-            //start with the root, with no special transformation
+            // Recursivaly create and connect all components
+            // Start with the root, with no special transformation
             GameObject creatureRootNode = morphology.root.shape.createPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
+            
+            // ****************** REDUNDANT : It should be default already ***********************
             creatureRootNode.transform.localPosition = Vector3.zero;
             creatureRootNode.transform.localRotation = Quaternion.identity;
 
@@ -90,13 +93,10 @@ namespace VirtualCreatures {
             // then recursivly traverse all connected edges
             recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
 
-            //
+            // Get the container creature script to store the joints 
             Creature creatureScript = (Creature)creatureContainer.GetComponent<Creature>();
             creatureScript.joints = joints.ToList<Joint>();
 
-            //
-            Debug.Log(creatureScript.joints[0]);
-            Debug.Log(creatureScript.joints[1]);
 
             Phenotype phenotype = new Phenotype(morphology, creatureScript.getJoints().ToArray<Joint>());
 
