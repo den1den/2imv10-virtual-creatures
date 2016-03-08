@@ -51,25 +51,23 @@ namespace VirtualCreatures
             //right
             ShapeSpecification fin = Rectangle.createWidthDepthHeight(4, 0.2f, 9);
             Node rfin = new Node(fin);
-
-            float[] limits = new float[] { (float)(Math.PI / 2 * 0.8) };
-            JointPosition right = new JointPosition(0, 0, 2, 0.5f, 0);
-            JointSpecification rightJoint = new JointSpecification(right, 0, 0, JointType.HINGE, limits);
-
-            NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.type, brain.networkOut);
+            JointSpecification rightJoint = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 0.5f, JointType.HINDGE);
+            NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.getDegreesOfFreedom());
 
             //left
             Node lfin = new Node(fin);
-
-            JointPosition left = new JointPosition(0, 0, 4, 0.5f, 0);
-            JointSpecification leftJoint = new JointSpecification(left, 0, 0, JointType.HINGE, limits);
-
-            NNSpecification leftReadWriteNNS = NNSpecification.createEmptyWriteNetwork(leftJoint.type, brain.networkOut);
+            JointSpecification leftJoint = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 0.5f, JointType.HINDGE);
+            NNSpecification leftWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(leftJoint.getDegreesOfFreedom());
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
                 new EdgeMorph(root, rfin, rightJoint, rightWriteOnlyNNS),
-                new EdgeMorph(root, lfin, leftJoint, leftReadWriteNNS)
+                new EdgeMorph(root, lfin, leftJoint, leftWriteOnlyNNS)
             }.ToList();
+
+            //connect the brain to the other NNSpecifications
+            NeuralSpec outgoing = brain.outgoing[0];
+            rightWriteOnlyNNS.connectTo(outgoing, rightWriteOnlyNNS.sensors);
+            leftWriteOnlyNNS.connectTo(outgoing, leftWriteOnlyNNS.sensors);
 
             return new Morphology(root, brain, edges, genotype);
         }

@@ -11,295 +11,261 @@ namespace VirtualCreatures
     /// </summary>
     public class NNSpecification
     {
-        public IList<NeuronSpec> neurons;
-        public IList<InterfaceNode> networkIn;
-        public IList<InterfaceNode> networkOut;
-        public IList<SensorSpec> sensors; //can be made integers
-        public IList<ActorSpec> actors; //can be made integers
+        public IList<NeuralSpec> sensors;
+        public IList<NeuralSpec> neurons;
+        public IList<NeuralSpec> actors;
 
-        public IList<WeightConnection> internalConnections;
-        public IList<SimpleConnection> externalConnections;
+        public IList<Connection> connections;
 
-        public NNSpecification(IList<NeuronSpec> neurons, IList<InterfaceNode> networkIn, IList<InterfaceNode> networkOut, IList<WeightConnection> internalConnections, IList<SimpleConnection> externalConnections) : this(neurons, networkIn, networkOut, new List<SensorSpec>(0), new List<ActorSpec>(0), internalConnections, externalConnections) { }
+        public IList<NeuralSpec> outgoing;
+        private static readonly float DEFAULT_WEIGHT = 1.0f;
 
-        public NNSpecification(IList<NeuronSpec> neurons, IList<InterfaceNode> networkIn, IList<InterfaceNode> networkOut, IList<SensorSpec> sensors, IList<ActorSpec> actors, IList<WeightConnection> internalConnections, IList<SimpleConnection> externalConnections)
+        /// <summary>
+        /// Full neural network specification
+        /// </summary>
+        /// <param name="sensors"></param>
+        /// <param name="neurons"></param>
+        /// <param name="actors"></param>
+        /// <param name="connections"></param>
+        /// <param name="outgoing">Neurons or sensors that are interfaced to the outside</param>
+        public NNSpecification(IList<NeuralSpec> sensors, IList<NeuralSpec> neurons, IList<NeuralSpec> actors, IList<Connection> connections, IList<NeuralSpec> outgoing)
         {
-            IEnumerable<InterfaceNode> given = neurons.Select(n => (InterfaceNode)n).Union(networkIn.Select(n => (InterfaceNode)n)).Union(networkOut.Select(n => (InterfaceNode)n)).Union(sensors.Select(n => (InterfaceNode)n)).Union(actors.Select(n => (InterfaceNode)n));
-            IEnumerable<InterfaceNode> found = internalConnections.SelectMany(c => new InterfaceNode[] { c.source, c.destination }).Union(externalConnections.SelectMany(c => new InterfaceNode[] { c.source, c.destination }));
-            if(given.Where(nn => nn.isNeuron()).Except(found).Count() > 0)
+            if (outgoing.Except(neurons).Except(actors).Count() > 0)
             {
-                throw new ArgumentException("Not used Neuron given");
+                throw new ArgumentException("Outgoing nodes should only contain nodes that are of this network");
             }
-            if (found.Except(given).Count() > 0) //check for foreigh neurons
+            IEnumerable<NeuralSpec> allConnected = connections.SelectMany(con => new[] { con.source, con.destination });
+            if(allConnected.Except(sensors).Except(neurons).Except(actors).Count() > 0)
             {
-                throw new ArgumentException("Non given NeuralNodes found");
+                throw new ArgumentException("Connections should only contain nodes that are of this network");
             }
-            if(internalConnections
-                .Select(c => c.source)
-                .Where(source => source.isInterface() && !(networkIn.Contains((InterfaceNode)source)))
-                .Count() > 0)
-            {
-                throw new ArgumentException(); //foreigh?
-            }
-            if (externalConnections
-                .Select(c => c.destination)
-                .Where(destination => destination.isInterface() && !(networkOut.Contains((InterfaceNode)destination)))
-                .Count() > 0)
-            {
-                throw new ArgumentException(); //foreigh?
-            }
-            foreach(InterfaceNode outInterface in networkOut)
-            {
-                //each outinterface should be connected to exactly one neuron
-                if(externalConnections.Select(c => c.destination).Where(dest => dest == outInterface).Count() != 1) { throw new ArgumentException(); }
-            }
-            this.neurons = neurons;
-            this.networkIn = networkIn;
-            this.networkOut = networkOut;
             this.sensors = sensors;
+            this.neurons = neurons;
             this.actors = actors;
-            this.internalConnections = internalConnections;
-            this.externalConnections = externalConnections;
+            this.connections = connections;
+            this.outgoing = outgoing;
         }
 
-        public IEnumerable<SensorSpec> getAllNeurals()
+        /// <summary>
+        /// Without actors and sensors
+        /// </summary>
+        /// <param name="neurons"></param>
+        /// <param name="connections"></param>
+        /// <param name="outgoing"></param>
+        public NNSpecification(IList<NeuralSpec> neurons, IList<Connection> connections, IList<NeuralSpec> outgoing) : this(new List<NeuralSpec>(0), neurons, new List<NeuralSpec>(0), connections, outgoing) { }
+
+        public IEnumerable<NeuralSpec> getAllNeurals()
         {
-            return this.sensors.Union(
-                this.neurons.Cast<SensorSpec>()).Union(
-                this.actors.Cast<SensorSpec>());
+            return this.sensors
+                .Concat( this.neurons )
+                .Concat( this.actors );
         }
 
-        public IEnumerable<NeuronSpec> getNeuronsAndActors()
+        public IDictionary<NeuralSpec, NeuralSpec> cloneAllNeurals()
         {
-            return this.neurons.Union(this.actors.Cast<NeuronSpec>());
+            return this.getAllNeurals().ToDictionary(n => n, n => n.clone());
         }
 
-        public IEnumerable<WeightConnection> getSourceEdges(NeuronSpec neuronOrActor)
+        public IEnumerable<NeuralSpec> getNeuronsAndActors()
         {
-            return this.internalConnections.Where(c => c.destination == neuronOrActor);
+            return this.actors.Concat(this.neurons);
         }
+
+        public IEnumerable<Connection> getEdgesBySource(NeuralSpec source)
+        {
+            return this.connections.Where(c => c.source == source);
+        }
+
+        public IEnumerable<Connection> getEdgesByDestination(NeuralSpec destination)
+        {
+            return this.connections.Where(c => c.destination == destination);
+        }
+
+        public bool contains(NeuralSpec n)
+        {
+            return this.getAllNeurals().Contains(n);
+        }
+
+        public void connectTo(NeuralSpec source, NeuralSpec destination, float weight)
+        {
+            if (!contains(destination)) throw new ArgumentException();
+            this.connections.Add(new Connection(source, destination, weight));
+        }
+
+        public void connectTo(NeuralSpec source, IList<NeuralSpec> ns, float weight)
+        {
+            foreach(NeuralSpec destination in ns)
+            {
+                connectTo(source, destination, weight);
+            }
+        }
+
+        public void connectTo(NeuralSpec source, NeuralSpec destination) { connectTo(source, destination, DEFAULT_WEIGHT); }
+
+        public void connectTo(NeuralSpec source, IList<NeuralSpec> ns) { connectTo(source, ns, DEFAULT_WEIGHT); }
+
+        
 
         internal static NNSpecification createEmptyNetwork()
         {
-            return new NNSpecification(new List<NeuronSpec>(0), new List<InterfaceNode>(0), new List<InterfaceNode>(0), new List<WeightConnection>(0), new List<SimpleConnection>(0));
+            return new NNSpecification(new List<NeuralSpec>(0), new List<NeuralSpec>(0), new List<NeuralSpec>(0), new List<Connection>(0), new List<NeuralSpec>(0));
         }
 
-        public IEnumerable<SimpleConnection> getSourceEdges(InterfaceNode i)
+        public static NNSpecification createEmptyReadNetwork(int dof)
         {
-            return this.externalConnections.Where(c => c.destination == i);
+            return createEmptyReadWriteNetwork(dof, 0);
         }
 
-        public static NNSpecification createEmptyWriteNetwork(JointType jt, IList<InterfaceNode> networkIn)
+        public static NNSpecification createEmptyWriteNetwork(int dof)
         {
-            return createEmptyWriteNetwork(jt.createActors(), networkIn);
+            return createEmptyReadWriteNetwork(0, dof);
         }
 
-        public static NNSpecification createEmptyWriteNetwork(IList<ActorSpec> actors, IList<InterfaceNode> networkIn)
+        public static NNSpecification createEmptyReadWriteNetwork(int nSensors, int nActors)
         {
-            if(actors.Count() != networkIn.Count())
-            {
-                throw new ArgumentException();
-            }
-            IList<NeuronSpec> neurons = new List<NeuronSpec>(0);
-            IList<InterfaceNode> networkOut = new List<InterfaceNode>(0);
-            networkIn = new List<InterfaceNode>(networkIn);
-            IList<SensorSpec> sensors = new List<SensorSpec>(0);
-            actors = new List<ActorSpec>(actors);
-            IList<WeightConnection> internalConnections = new List<WeightConnection>();
-            IList<SimpleConnection> externalConnections = new List<SimpleConnection>();
-            for (int i = 0; i < actors.Count(); i++)
-            {
-                WeightConnection c = new WeightConnection(networkIn[i], actors[i], 1);
-                internalConnections.Add(c);
-            }
-            return new NNSpecification(neurons, networkIn, networkOut, sensors, actors, internalConnections, externalConnections);
-        }
-
-        public static NNSpecification createEmptyReadWriteNetwork(JointType jt, IList<InterfaceNode> networkOut, IList<InterfaceNode> networkIn)
-        {
-            return createEmptyReadWriteNetwork(jt.createSensors(), networkOut, jt.createActors(), networkIn);
-        }
-
-        public static NNSpecification createEmptyReadWriteNetwork(IList<SensorSpec> sensors, IList<InterfaceNode> networkOut, IList<ActorSpec> actors, IList<InterfaceNode> networkIn)
-        {
-            if (sensors.Count() != networkOut.Count()){ throw new ArgumentException(); }
-            if (actors.Count() != networkIn.Count()) { throw new ArgumentException(); }
-
-            IList<NeuronSpec> neurons = new List<NeuronSpec>(0);
-
-            sensors = new List<SensorSpec>(sensors);
-            networkOut = new List<InterfaceNode>(networkOut);
-            IList<SimpleConnection> externalConnections = new List<SimpleConnection>();
-            for (int i = 0; i < sensors.Count(); i++)
-            {
-                SimpleConnection c = SimpleConnection.createSimpleEmptyConnection(sensors[i], networkOut[i]); //this specific constructuror is only used here
-                externalConnections.Add(c);
-            }
-
-            actors = new List<ActorSpec>(actors);
-            networkIn = new List<InterfaceNode>(networkIn);
-            IList<WeightConnection> internalConnections = new List<WeightConnection>();
-            
-            for (int i = 0; i < actors.Count(); i++)
-            {
-                WeightConnection c = new WeightConnection(networkIn[i], actors[i], 1);
-                internalConnections.Add(c);
-            }
-            return new NNSpecification(neurons, networkIn, networkOut, sensors, actors, internalConnections, externalConnections);
+            IList<NeuralSpec> sensors = Enumerable.Repeat(nSensors, nSensors).Select(n => NeuralSpec.createSensor()).ToList();
+            IList<NeuralSpec> neurons = new List<NeuralSpec>(0);
+            IList<NeuralSpec> actors = Enumerable.Repeat(nActors, nActors).Select(n => NeuralSpec.createActor()).ToList();
+            IList<Connection> connections = new List<Connection>(0);
+            IList<NeuralSpec> outgoing = new List<NeuralSpec>(sensors);
+            return new NNSpecification(sensors, neurons, actors, connections, outgoing);
         }
 
         public static NNSpecification testBrain1()
         {
-            IList<NeuronSpec> neurons = new NeuronSpec[]
+            NeuralSpec nSAW = NeuralSpec.createNeuron(NeuronFunc.SAW);
+            NeuralSpec nSIN = NeuralSpec.createNeuron(NeuronFunc.SIN);
+            IList<NeuralSpec> neurons = new NeuralSpec[] { nSAW, nSIN }.ToList();
+
+            IList<Connection> connections = new Connection[]
             {
-            new NeuronSpec(NeuronSpec.NFunc.SAW),
-            new NeuronSpec(NeuronSpec.NFunc.SIN)
+                new Connection(nSAW, nSIN)
             }.ToList();
-            IList<InterfaceNode> networkIn = new List<InterfaceNode>();
-            IList<InterfaceNode> networkOut = new InterfaceNode[] { new InterfaceNode() }.ToList();
-            IList<WeightConnection> internalConnections = new WeightConnection[]
-            {
-            new WeightConnection(neurons[0], neurons[1], 1.0f)
-            }.ToList();
-            IList<SimpleConnection> externalConnections = new SimpleConnection[]
-            {
-            new SimpleConnection(neurons[1], networkOut[0])
-            }.ToList();
-            return new NNSpecification(neurons, networkIn, networkOut, internalConnections, externalConnections);
+
+            IList<NeuralSpec> outgoing = new NeuralSpec[] { nSIN }.ToList();
+
+            return new NNSpecification(neurons, connections, outgoing);
+        }
+
+        //IDictionary<NodeSpec, NodeSpec> newSensors = this.sensors.ToDictionary(n => n, n => NodeSpec.createSensor());
+        public NNSpecification DeepClone()
+        {
+            return DeepClone(this.cloneAllNeurals());
+        }
+
+        public NNSpecification DeepClone(IDictionary<NeuralSpec, NeuralSpec> newNodes)
+        {
+            IList<Connection> connections = this.connections.Select(c => new Connection(newNodes[c.source], newNodes[c.destination])).ToList();
+            IList<NeuralSpec> outgoing = this.outgoing.Select(n => newNodes[n]).ToList();
+            return new NNSpecification(
+                this.sensors.Select(n => newNodes[n]).ToList(),
+                this.neurons.Select(n => newNodes[n]).ToList(),
+                this.sensors.Select(n => newNodes[n]).ToList(),
+                connections,
+                outgoing
+            );
+        }
+
+        private static IList<NeuralSpec> deepCopy(IList<NeuralSpec> list)
+        {
+            return list.Select(ns => ns.clone()).ToList();
         }
     }
 
-    
-
-    /// <summary>
-    /// A node that is in the interface of the network
-    /// </summary>
-    public class InterfaceNode
+    public class NeuralSpec
     {
-        internal InterfaceNode() : this(NeuronType.INTERFACE) { }
-        protected InterfaceNode(NeuronType type) { this.type = type; }
-        protected enum NeuronType{ INTERFACE, SENSOR, NEURON, ACTOR }
-        private readonly NeuronType type;
-        public bool isInterface() { return this.type == NeuronType.INTERFACE; }
+        private NeuronType type;
+        private enum NeuronType { SENSOR, NEURON, ACTOR };
+
+        private NeuronFunc function;
+
+        private NeuralSpec(NeuronType type, NeuronFunc function) { this.type = type; this.function = function; }
+        private NeuralSpec(NeuralSpec clone) : this(clone.type, clone.function) { }
+
+        internal static NeuralSpec createSensor() { return new NeuralSpec(NeuronType.SENSOR, NeuronFunc.SUM); }
+        internal static NeuralSpec createNeuron(NeuronFunc function) { return new NeuralSpec(NeuronType.SENSOR, function); }
+        internal static NeuralSpec createActor() { return new NeuralSpec(NeuronType.ACTOR, NeuronFunc.SUM); }
+
         public bool isSensor() { return this.type == NeuronType.SENSOR; }
         public bool isNeuron() { return this.type == NeuronType.NEURON; }
         public bool isActor() { return this.type == NeuronType.ACTOR; }
-    }
 
-    /// <summary>
-    /// A sensor of this network
-    /// </summary>
-    public class SensorSpec : InterfaceNode
-    {
-        internal SensorSpec() : this(NeuronType.SENSOR) { }
-        protected SensorSpec(NeuronType type) : base(type) { }
-    }
-
-    /// <summary>
-    /// An actor of this network
-    /// </summary>
-    public class ActorSpec : NeuronSpec
-    {
-        internal ActorSpec() : base(NeuronType.ACTOR, NFunc.SUM) { }
-    }
-
-    /// <summary>
-    /// A single neuron in a network.
-    /// </summary>
-    public class NeuronSpec : SensorSpec
-    {
-        public NFunc function;
-        internal NeuronSpec(NFunc function) : this(NeuronType.NEURON, function) { }
-        protected NeuronSpec(NeuronType type, NFunc function) : base(type) { this.function = function; }
-
-        /// <summary>
-        /// A the different functions that a neuron could have
-        /// </summary>
-        public enum NFunc
+        public virtual NeuronFunc getFunction()
         {
-            ABS, ATAN, SIN, COS, SIGN, SIGMOID, EXP, LOG,
-            DIFFERENTIATE, INTERGRATE, MEMORY, SMOOTH,
-            SAW, WAVE,
-            MIN, MAX, SUM, PRODUCT,
-            DEVISION,  
-            GTE, IF, INTERPOLATE, IFSUM
+            if(this.type != NeuronType.NEURON)
+                Debug.Log("This should never be called on a non neuron node?");
+            return this.function;
         }
 
-        static NFunc[] SINGLE = new NFunc[] { NFunc.ABS, NFunc.ATAN, NFunc.COS, NFunc.SIGN, NFunc.SIGMOID, NFunc.EXP, NFunc.LOG, NFunc.DIFFERENTIATE, NFunc.INTERGRATE, NFunc.MEMORY, NFunc.SMOOTH };
-        bool isSingle()
+        public NeuralSpec clone()
+        {
+            return new NeuralSpec(this);
+        }
+
+        public bool isSingle()
         {
             return SINGLE.Contains(this.function);
         }
-
-        static NFunc[] TIMEDEP = new NFunc[] { NFunc.SAW, NFunc.WAVE };
-        bool isTimeDep()
+        public bool isTimeDep()
         {
             return TIMEDEP.Contains(this.function);
         }
-
-        static NFunc[] MULTIPLE = new NFunc[] { NFunc.MIN, NFunc.MAX, NFunc.SUM, NFunc.PRODUCT };
-        bool isMultile()
+        public bool isMultile()
         {
             return MULTIPLE.Contains(this.function);
         }
-
-        static NFunc[] DOUBLE = new NFunc[] { NFunc.DEVISION,  };
-        bool isDouble()
+        public bool isDouble()
         {
             return TERTIARE.Contains(this.function);
         }
-
-        static NFunc[] TERTIARE = new NFunc[] { NFunc.GTE, NFunc.IF, NFunc.INTERPOLATE, NFunc.IFSUM };
-        bool isTertiare()
+        public bool isTertiare()
         {
             return TERTIARE.Contains(this.function);
         }
+        static readonly NeuronFunc[] SINGLE = new NeuronFunc[] { NeuronFunc.ABS, NeuronFunc.ATAN, NeuronFunc.COS, NeuronFunc.SIGN, NeuronFunc.SIGMOID, NeuronFunc.EXP, NeuronFunc.LOG, NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE, NeuronFunc.MEMORY, NeuronFunc.SMOOTH };
+        static readonly NeuronFunc[] TIMEDEP = new NeuronFunc[] { NeuronFunc.SAW, NeuronFunc.WAVE };
+        static readonly NeuronFunc[] MULTIPLE = new NeuronFunc[] { NeuronFunc.MIN, NeuronFunc.MAX, NeuronFunc.SUM, NeuronFunc.PRODUCT };
+        static readonly NeuronFunc[] DOUBLE = new NeuronFunc[] { NeuronFunc.DEVISION, };
+        static readonly NeuronFunc[] TERTIARE = new NeuronFunc[] { NeuronFunc.GTE, NeuronFunc.IF, NeuronFunc.INTERPOLATE, NeuronFunc.IFSUM };
     }
 
-    public class IConnection
+    /// <summary>
+    /// A the different functions that a neuron could have
+    /// </summary>
+    public enum NeuronFunc
     {
-        internal InterfaceNode source;
-        internal InterfaceNode destination;
+        ABS, ATAN, SIN, COS, SIGN, SIGMOID, EXP, LOG,
+        DIFFERENTIATE, INTERGRATE, MEMORY, SMOOTH,
+        SAW, WAVE,
+        MIN, MAX, SUM, PRODUCT,
+        DEVISION,
+        GTE, IF, INTERPOLATE, IFSUM
+    }
 
-        protected IConnection(InterfaceNode source, InterfaceNode destination)
+    /// <summary>
+    /// Connection between two Neurons
+    /// </summary>
+    public class Connection
+    {
+        private float _weight;
+        public float weight { get { return this._weight; } set { if (value < MIN_WEIGHT || value > MAX_WEIGHT) throw new ArgumentOutOfRangeException(); this._weight = value; } }
+
+        private NeuralSpec _source;
+        public NeuralSpec source { get { return this._source; } set { if (value.isActor()) throw new ArgumentOutOfRangeException(); this._source = value; } }
+
+        private NeuralSpec _destination;
+        public NeuralSpec destination { get { return this._destination; } set { if (value.isSensor()) throw new ArgumentOutOfRangeException(); this._destination = value; } }
+
+        public Connection(NeuralSpec source, NeuralSpec destination) : this(source, destination, 1.0f) { }
+
+        public Connection(NeuralSpec source, NeuralSpec destination, float weight)
         {
             this.source = source;
             this.destination = destination;
-        }
-    }
-
-    public class IWeightConnection : IConnection
-    {
-        public float weight;
-        protected IWeightConnection(InterfaceNode source, NeuronSpec destination, float weight) : base(source, destination)
-        {
             this.weight = weight;
         }
-    }
 
-    /// <summary>
-    /// A connection that goes to an internal Neuron
-    /// </summary>
-    public class WeightConnection : IWeightConnection
-    {
-        public WeightConnection(InterfaceNode source, ActorSpec destination, float weight) : base(source, destination, weight) { }
-        public WeightConnection(NeuronSpec source, ActorSpec destination, float weight) : base(source, destination, weight) { }
-        public WeightConnection(SensorSpec source, NeuronSpec destination, float weight) : base(source, destination, weight) { }
+        private static readonly float MIN_WEIGHT = 0;
+        private static readonly float MAX_WEIGHT = 1;
     }
-
-    /// <summary>
-    /// An connection that goes towards a Interface or Actor
-    /// </summary>
-    public class SimpleConnection : IConnection
-    {
-        public SimpleConnection(NeuronSpec source, InterfaceNode destination) : base(source, destination) { }
-        
-        /// <summary>
-        /// Only for usage by an Empty network!!!
-        /// </summary>
-        internal static SimpleConnection createSimpleEmptyConnection(SensorSpec source, InterfaceNode destination) { return new SimpleConnection(source, destination); }
-        private SimpleConnection(SensorSpec source, InterfaceNode destination) : base(source, destination) { }
-    }
-    
-    
 }

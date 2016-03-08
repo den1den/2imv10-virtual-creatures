@@ -24,6 +24,21 @@ namespace VirtualCreatures
             this.joint = joint;
             this.network = network;
         }
+
+        /// <summary>
+        /// Return the positional vector of the point on the face where the next shape is attached
+        /// </summary>
+        /// <param name="parentShape"></param>
+        /// <returns></returns>
+        public Vector3 getUnityFaceAnchorPosition()
+        {
+            float x = this.joint.faceHorizontal;
+            float z = -this.joint.faceVertical;
+            Vector3 topFaceAnchorUnscaled = new Vector3(x, 1.0f, z);
+            Vector3 anchorUnscaled = this.joint.getUnityRotation() * topFaceAnchorUnscaled;
+            Vector3 absAnchor = Vector3.Scale(anchorUnscaled, this.source.shape.getBounds());
+            return absAnchor;
+        }
     }
     /// <summary>
     /// An edge from the Genotype Graph

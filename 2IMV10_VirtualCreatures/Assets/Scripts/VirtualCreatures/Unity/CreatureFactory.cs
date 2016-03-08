@@ -16,7 +16,7 @@ namespace VirtualCreatures
         // Use this for initialization
         void Start()
         {
-            Creature.CreateTest3_1();
+            Creature.Create(Morphology.test1());
             
             Morphology initialMorphology;
 

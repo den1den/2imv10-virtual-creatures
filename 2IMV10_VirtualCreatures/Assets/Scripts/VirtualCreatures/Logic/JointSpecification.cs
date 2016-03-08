@@ -10,230 +10,32 @@ namespace VirtualCreatures
     /// This defines a single joint between two shapes.
     /// It includes the relative initial position of the attached object.
     /// </summary>
-    public class JointSpecification
+    public class JointSpecification : ICloneable
     {
-        public float angle; //(-Pi, Pi)
-        public float inclination; //(0, Pi/2)
-        public JointPosition position;
-        public JointType type;
-        public float[] limits;
+        public Face face = Face.UP;
 
-        /// <param name="position">The position of this joint</param>
-        /// <param name="initInclination">The initial angle with the normal of this position.face (0, Pi/2)</param>
-        /// <param name="initAngle">The angle with respect to the normal vector between the up vector of the source node and the up vector of the attached object, before rotation. In the case of abiguity the X axis is used. (-Pi, Pi) exclusing -Pi</param>
-        /// <param name="type">The type of this joint</param>
-        /// <param name="limits">Symmetrical limits on each degree of freedom. domain depends on the joint but is in radians (0, max Pi/2)</param>
-        public JointSpecification(JointPosition position, float initInclination, float initAngle, JointType type, float[] limits)
-        {
-            if (initInclination < 0 || initInclination > Math.PI/2)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            if (initAngle <= -Math.PI || initAngle > Math.PI)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            if (limits.Length != type.getDegreesOfFreedom())
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            foreach(float limit in limits)
-            {
-                if(limit < 0) throw new ArgumentOutOfRangeException();
-            }
-            if (type == JointType.FIXED) { }
-            else if (type == JointType.HINGE)
-            {
-                if (limits[0] > Math.PI / 2) throw new ArgumentOutOfRangeException();
-            }
-            else if (type == JointType.PISTON) { }
-            else if (type == JointType.ROTATIONAL)
-            {
-                if (limits[0] > Math.PI / 2) throw new ArgumentOutOfRangeException();
-                if (limits[1] > Math.PI / 2) throw new ArgumentOutOfRangeException();
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException("type");
-            }
-            this.position = position;
-            this.inclination = initInclination;
-            this.angle = initAngle;
-            this.type = type;
-            this.limits = limits;
-        }
+        private float _faceHorizontal = 0;
+        public float faceHorizontal { get { return _faceHorizontal; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceHorizontal=value; } }
+        private float _faceVertical = 0;
+        public float faceVertical { get { return _faceVertical; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceVertical = value; } }
 
-        internal double[] getActorFactors()
-        {
-            return Enumerable.Repeat(1.0, this.type.dof).ToArray();
-        }
+        private float _rotation = 0;
+        public float rotation { get { return _rotation; } set { if (value <= -Math.PI/2 || value > Math.PI/2) throw new ArgumentOutOfRangeException(); _rotation = value; } }
 
-        internal double[] getActorOffsets()
-        {
-            return Enumerable.Repeat(0.0, this.type.dof).ToArray();
-        }
+        private float _bending = 0;
+        public float bending { get { return _bending; } set { if (value <= -Math.PI / 2 || value >= Math.PI / 2) throw new ArgumentOutOfRangeException(); _bending = value; } }
 
-        internal double[] getSensorFactors()
-        {
-            return Enumerable.Repeat(1.0, this.type.dof).ToArray();
-        }
+        private float _hover;
+        public float hover { get { return _hover; } set { if (value <= 0) throw new ArgumentOutOfRangeException(); _hover = value; } }
 
-        internal double[] getSensorOffsets()
-        {
-            return Enumerable.Repeat(0.0, this.type.dof).ToArray();
-        }
+        public JointType jointType = JointType.FIXED;
 
         /// <summary>
-        /// Create joint and set the axis and orentiation. Anchor should not be set as this is dependent on scaling.
+        /// Create a default fixed joint
         /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        public Joint createJoint(GameObject parent)
-        {
-            //define the joint positioning and rotational direction
-            if (type.Equals(JointType.FIXED))
-            {
-                FixedJoint j = parent.AddComponent<FixedJoint>();
-                return j;
-            }
-            else if (type.Equals(JointType.HINGE))
-            {
-                //positive angle is in the direction of the normal
-                HingeJoint j = parent.AddComponent<HingeJoint>();
-                Vector3 axis = new Vector3((float)(-Math.Cos(this.angle)), 0, (float)(Math.Sin(this.angle)));
-                j.axis = axis;
-                return j;
-            }
-            else if (type.Equals(JointType.PISTON))
-            {
-                SpringJoint j = parent.AddComponent<SpringJoint>();
-            }
-            else if (type.Equals(JointType.ROTATIONAL))
-            {
-                Joint j = null;
-            }
-            throw new NotImplementedException();
-        }
+        /// <param name="hover">distance from parent</param>
+        public JointSpecification(float hover) { this.hover = hover; }
 
-        /// <summary>
-        /// Return the positional vector of the point on the face where the next shape is attached
-        /// </summary>
-        /// <param name="parentShape"></param>
-        /// <returns></returns>
-        public Vector3 getUnityFaceAnchorPosition(ShapeSpecification parentShape)
-        {
-            float x = this.position.faceX;
-            float z = -this.position.faceY;
-            Vector3 topFaceAnchorUnscaled = new Vector3(x, 1.0f, z);
-            Vector3 anchorUnscaled = this.getUnityRotation() * topFaceAnchorUnscaled;
-            Vector3 absAnchor = Vector3.Scale(anchorUnscaled, parentShape.getBounds());
-            return absAnchor;
-        }
-
-        /// <summary>
-        /// Get the direction that points towards the second shape
-        /// </summary>
-        /// <returns>Unitvector</returns>
-        public Vector3 getUnityDirection()
-        {
-            //first get the directional vector of the topFace and then translate the rotation
-            Vector3 normalTopFace = Vector3.up;
-            Vector3 rProjectedTopFace = (float)Math.Cos(this.angle) * normalTopFace + (float)Math.Sin(this.angle) * Vector3.right;
-            Vector3 rTopFace = Vector3.RotateTowards(normalTopFace, rProjectedTopFace, this.inclination, 0);
-            //then translate the rotation
-            return this.getUnityRotation() * rTopFace;
-        }
-
-        public Quaternion getUnityRotation()
-        {
-            switch (position.face)
-            {
-                case 1: // Same Direction
-                default:
-                    return Quaternion.identity;
-                case 2: // Right
-                    return Quaternion.Euler(90, 90, 0);
-                case 3: // Away
-                    return Quaternion.Euler(90, 0, 0);
-                case 4: // Left
-                    return Quaternion.Euler(90, 270, 0);
-                case 5: // Towards
-                    return Quaternion.Euler(90, 180, 0);
-                case 6: // Backwards
-                    return Quaternion.Euler(180, 0, 0);
-            }
-        }
-
-        public static JointSpecification createSimple(int face, float absHover)
-        {
-            JointPosition position = new JointPosition(0, 0, face, absHover, 0);
-            return new JointSpecification(position, 0, 0, JointType.FIXED, new float[0] { });
-        }
-    }
-
-    public class JointType
-    {
-        /// <summary>
-        /// A fixed joint, it cannot move.
-        /// </summary>
-        static public readonly JointType FIXED = new JointType(0);
-        /// <summary>
-        /// A hinge joint, like in a door. The turning direction is defined via the JointSpecification.initAngle
-        /// </summary>
-        static public readonly JointType HINGE = new JointType(1);
-        /// <summary>
-        /// A piston joint, can only contract and extend in the initial direction.
-        /// </summary>
-        static public readonly JointType PISTON = new JointType(1);
-        /// <summary>
-        /// A free joint with 2 degrees of freedom. This joint cannot rotate the attached shape over the directional axis but can freely move in 2 degrees of freedom.
-        /// The first degree of freedom is in the JointSpecification.initInclination direction, towards the normal of the JointPosition.face.
-        /// The second degree of freedom is in the JointSpecification.initAngle direction, perpendicular to the radial vector.
-        /// This is not a saddle joint as the saddle joint does not move idependantly as the inclination angle will change when the other degree of freedom is increased. Here both degrees of freedom are independantly.
-        /// It is more like a ball and socket joint without rotation, thus a special king of Condyloid in spherical coordinates.
-        /// </summary>
-        static public readonly JointType ROTATIONAL = new JointType(2);
-        internal int dof;
-        private JointType(int degreesOfFreedom) { this.dof = degreesOfFreedom; }
-
-        internal int getDegreesOfFreedom()
-        {
-            return this.dof;
-        }
-
-        public IList<SensorSpec> createSensors()
-        {
-            List<SensorSpec> r = new List<SensorSpec>(this.dof);
-            for(int i = 0; i < this.dof; i++)
-            {
-                r.Add(new SensorSpec());
-            }
-            return r;
-        }
-
-        public IList<ActorSpec> createActors()
-        {
-            List<ActorSpec> r = new List<ActorSpec>(this.dof);
-            for (int i = 0; i < this.dof; i++)
-            {
-                r.Add(new ActorSpec());
-            }
-            return r;
-        }
-    }
-
-    /// <summary>
-    /// Specifies the position of a joint and the attached body relative to the original body (base shape).
-    /// </summary>
-    public class JointPosition
-    {
-        public int face;
-        public float faceX;
-        public float faceY;
-        public float hover;
-        public float rotation;
-        public static float minimalAbsHover = -1;
-        public static float maximalAbshover = 20;
         /// <summary>
         /// Specifies the position of a joint and attached body relative to the base shape.
         /// This only looks at the source shape as a bounded cubus, abstracting from the actual shape itself.
@@ -248,30 +50,144 @@ namespace VirtualCreatures
         /// <param name="face">1: Same direction, 2: Right, 3: Downwards, 4: Left, 5: Upwards</param>
         /// <param name="absHover">Additional offset in the direction of the initial joint (For simplicity this can also be in the direction of the face) (minimalAbsHover, maximalAbshover)</param>
         /// <param name="shapeRotation">Additional independent rotation of the attached shape (-Pi, Pi) exclusing -Pi</param>
-        public JointPosition(float offsetHorizontal, float offsetVertical, int face, float absHover, float shapeRotation)
+        public JointSpecification(Face face, float faceH, float faceV, float rot, float bending, float hover, JointType type)
         {
-            if (face < 1 || face > 6)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            if (offsetHorizontal < -1 || offsetHorizontal > 1 || offsetVertical < -1 || offsetVertical > 1)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            if (absHover < minimalAbsHover || absHover > maximalAbshover)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            if (shapeRotation <= -Math.PI || shapeRotation > Math.PI)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-
-            this.faceX = offsetHorizontal;
-            this.faceY = offsetVertical;
             this.face = face;
-            this.hover = absHover;
-            this.rotation = shapeRotation;
+            this.faceHorizontal = faceH;
+            this.faceVertical = faceV;
+            this.rotation = rotation;
+            this.bending = bending;
+            this.hover = hover;
+            this.jointType = type;
+        }
+
+        /// <summary>
+        /// Create joint and set the axis and orentiation. Anchor should not be set as this is dependent on scaling.
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        public Joint createJoint(GameObject parent)
+        {
+            switch (this.jointType)
+            {
+                case JointType.FIXED:
+                    FixedJoint fixedjoint = parent.AddComponent<FixedJoint>();
+                    return fixedjoint;
+                case JointType.HINDGE:
+                    //positive angle is in the direction of the normal
+                    HingeJoint hindgeJoint = parent.AddComponent<HingeJoint>();
+                    hindgeJoint.axis = getUnityFirstRotationAxis();
+                    return hindgeJoint;
+                case JointType.PISTON:
+                    SpringJoint springJoint = parent.AddComponent<SpringJoint>();
+                    return springJoint;
+                case JointType.ROTATIONAL:
+                    break;
+            }
+            throw new NotImplementedException();
+        }
+
+        public Vector3 getUnityFirstRotationAxis()
+        {
+            return new Vector3((float)(-Math.Sin(this._rotation)), 0, (float)(Math.Cos(this._rotation)));
+        }
+
+        /// <summary>
+        /// Get the direction that points towards the second shape
+        /// </summary>
+        /// <returns>Unitvector</returns>
+        public Vector3 getUnityDirection()
+        {
+            //first get the directional vector of the topFace and then translate the rotation
+            Vector3 normalTopFace = Vector3.up;
+            Vector3 rProjectedTopFace = this.getUnityFirstRotationAxis();
+            Vector3 rTopFace = Vector3.RotateTowards(normalTopFace, rProjectedTopFace, this._bending, 0);
+            //then translate the rotation
+            return this.getUnityRotation() * rTopFace;
+        }
+
+        public Quaternion getUnityRotation()
+        {
+            switch (this.face)
+            {
+                case Face.UP: // Same Direction
+                    return Quaternion.identity;
+                case Face.RIGHT: // Right
+                    return Quaternion.Euler(90, 90, 0);
+                case Face.FORWARDS: // Away
+                    return Quaternion.Euler(90, 0, 0);
+                case Face.LEFT: // Left
+                    return Quaternion.Euler(90, 270, 0);
+                case Face.BACKWARDS: // Towards
+                    return Quaternion.Euler(90, 180, 0);
+                case Face.DOWN: // Backwards
+                    return Quaternion.Euler(180, 0, 0);
+            }
+            throw new NotImplementedException();
+        }
+
+        public static JointSpecification createSimple(Face face, float absHover)
+        {
+            JointSpecification js = new JointSpecification(absHover);
+            js.face = face;
+            return js;
+        }
+
+        public object Clone()
+        {
+            JointSpecification clone = new JointSpecification(this.face, this._faceHorizontal, this._faceVertical, this._rotation, this._bending, this._hover, this.jointType);
+            return clone;
+        }
+        
+        internal int getDegreesOfFreedom()
+        {
+            return getDegreesOfFreedom(this.jointType);
+        }
+
+        public static int getDegreesOfFreedom(JointType type)
+        {
+            switch (type)
+            {
+                case JointType.FIXED:
+                    return 0;
+                case JointType.HINDGE:
+                case JointType.PISTON:
+                    return 1;
+                case JointType.ROTATIONAL:
+                    return 2;
+                default: throw new NotImplementedException();
+            }
         }
     }
+
+    public enum Face { UP, RIGHT, FORWARDS, LEFT, BACKWARDS, DOWN };
+
+    public enum JointType
+    {
+        /// <summary>
+        /// A fixed joint, it cannot move.
+        /// DOF = 0
+        /// </summary>
+        FIXED,
+        /// <summary>
+        /// A hinge joint, like in a door. The axis is defined by the rotation
+        /// DOF = 1
+        /// </summary>
+        HINDGE,
+        /// <summary>
+        /// A piston joint, can only contract and extend in the initial direction.
+        /// DOF = 1
+        /// </summary>
+        PISTON,
+        /// <summary>
+        /// A free joint with 2 degrees of freedom. This joint cannot rotate the attached shape over the directional axis but can freely move in 2 degrees of freedom.
+        /// The first degree of freedom is in the JointSpecification.initInclination direction, towards the normal of the JointPosition.face.
+        /// The second degree of freedom is in the JointSpecification.initAngle direction, perpendicular to the radial vector.
+        /// This is not a saddle joint as the saddle joint does not move idependantly as the inclination angle will change when the other degree of freedom is increased. Here both degrees of freedom are independantly.
+        /// It is more like a ball and socket joint without rotation, thus a special king of Condyloid in spherical coordinates.
+        /// DOF = 2
+        /// </summary>
+        ROTATIONAL
+    };
+
 }

@@ -125,8 +125,8 @@ namespace VirtualCreatures {
             Node n3 = new Node(b3);
 
             float absHover = 1f;
-            JointSpecification toTheRight = JointSpecification.createSimple(2, absHover);
-            JointSpecification forwards = JointSpecification.createSimple(1, absHover);
+            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
+            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
             NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
@@ -159,9 +159,9 @@ namespace VirtualCreatures {
             Node n3 = new Node(b3);
 
             float absHover = 1f;
-            JointSpecification toTheRight = JointSpecification.createSimple(2, absHover);
-            JointSpecification forwards = JointSpecification.createSimple(1, absHover);
-            forwards.type = JointType.HINGE;
+            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
+            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
+            forwards.jointType = JointType.HINDGE;
             NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
@@ -174,7 +174,7 @@ namespace VirtualCreatures {
 
             return Create(m);
         }
-
+        
         /// <summary>
         /// Adds all the cildren recursivly to the parent node
         /// </summary>
@@ -202,9 +202,9 @@ namespace VirtualCreatures {
                 allJoints[morphology.edges.IndexOf(e)] = joint;
 
                 // Calculate where the distance between center of child and parent
-                Vector3 facePosition = e.joint.getUnityFaceAnchorPosition(parentNode.shape);
+                Vector3 facePosition = e.getUnityFaceAnchorPosition();
                 Vector3 direction = e.joint.getUnityDirection();
-                float absDist_Face_ChildCenter = e.joint.position.hover + childNode.shape.getBound(0); // attached in Y direction
+                float absDist_Face_ChildCenter = e.joint.hover + childNode.shape.getYBound(); // attached in Y direction
                 Vector3 absPosition = facePosition + absDist_Face_ChildCenter * direction;
 
                 Quaternion rotation = e.joint.getUnityRotation();
@@ -221,7 +221,7 @@ namespace VirtualCreatures {
                 // Set the joint
                 joint.connectedBody = parentGO.GetComponent<Rigidbody>();
                 // Calculate where the joint should be, relative to the childs coordinates system
-                float distanceToFace = (e.joint.position.hover + childNode.shape.getYBound()) / childNode.shape.getYSize();
+                float distanceToFace = (e.joint.hover + childNode.shape.getYBound()) / childNode.shape.getYSize();
                 joint.anchor = new Vector3(0, -distanceToFace, 0);
             }
         }
