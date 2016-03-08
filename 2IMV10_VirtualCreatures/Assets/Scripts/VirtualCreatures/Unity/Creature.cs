@@ -108,7 +108,6 @@ namespace VirtualCreatures {
         
         /// <summary>
         /// See draw.io drawing.
-        /// For now forget the joints and rotational aspects
         /// </summary>
         /// <returns></returns>
         public static Creature CreateTest3()
@@ -128,6 +127,41 @@ namespace VirtualCreatures {
             float absHover = 1f;
             JointSpecification toTheRight = JointSpecification.createSimple(2, absHover);
             JointSpecification forwards = JointSpecification.createSimple(1, absHover);
+            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
+
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, n1, toTheRight, emptyNN),
+                new EdgeMorph(n1, n2, forwards, emptyNN),
+                new EdgeMorph(n2, n3, forwards, emptyNN)
+            }.ToList();
+
+            Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
+
+            return Create(m);
+        }
+
+        /// <summary>
+        /// Same as Test3 but with more complex Joints
+        /// </summary>
+        /// <returns></returns>
+        public static Creature CreateTest3_1()
+        {
+            ShapeSpecification b0 = new Cube(2);
+            Node root = new Node(b0);
+
+            ShapeSpecification b1 = new Cube(0.5f);
+            Node n1 = new Node(b1);
+
+            ShapeSpecification b2 = new Cube(3);
+            Node n2 = new Node(b2);
+
+            ShapeSpecification b3 = new Cube(1);
+            Node n3 = new Node(b3);
+
+            float absHover = 1f;
+            JointSpecification toTheRight = JointSpecification.createSimple(2, absHover);
+            JointSpecification forwards = JointSpecification.createSimple(1, absHover);
+            forwards.type = JointType.HINGE;
             NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
@@ -163,8 +197,8 @@ namespace VirtualCreatures {
 
                 childGO.transform.parent = parentGO.transform; // silently applies correction factor for hiearchical scaling
                 
-                //Create the joint at the parent and set the direction of the joint
-                Joint joint = e.joint.createJoint(parentGO);
+                // Create the joint at the parent and set the direction of the joint
+                Joint joint = e.joint.createJoint(childGO);
                 allJoints[morphology.edges.IndexOf(e)] = joint;
 
                 // Calculate where the distance between center of child and parent
@@ -175,20 +209,20 @@ namespace VirtualCreatures {
 
                 Quaternion rotation = e.joint.getUnityRotation();
 
-                // Calculate where the joint should be, relative to the child
-                //joint.anchor = direction * 0.5f;
-
                 // Place the primitive on a specific position
                 childGO.transform.localPosition = Vector3.Scale(absPosition, positionFactor);
                 childGO.transform.localRotation = rotation;
 
                 Debug.Log("Created a child " + childGO.ToString() + " with localPosition: " + childGO.transform.localPosition.ToString() + " and localRotation: " + childGO.transform.localRotation.eulerAngles.ToString());
 
-                //position all the children
+                // Position all the children
                 Creature.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
 
-                //set the joint
-                joint.connectedBody = childGO.GetComponent<Rigidbody>();
+                // Set the joint
+                joint.connectedBody = parentGO.GetComponent<Rigidbody>();
+                // Calculate where the joint should be, relative to the childs coordinates system
+                float distanceToFace = (e.joint.position.hover + childNode.shape.getYBound()) / childNode.shape.getYSize();
+                joint.anchor = new Vector3(0, -distanceToFace, 0);
             }
         }
 

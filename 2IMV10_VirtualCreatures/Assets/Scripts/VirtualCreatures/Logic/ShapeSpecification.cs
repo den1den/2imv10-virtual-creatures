@@ -76,6 +76,9 @@ namespace VirtualCreatures
         }
         public Vector3 getBounds() { return new Vector3(this.getXBound(), this.getYBound(), this.getZBound()); }
         public Vector3 getSize() { return 2 * this.getBounds(); }
+        public float getXSize() { return 2 * this.getXBound(); }
+        public float getYSize() { return 2 * this.getYBound(); }
+        public float getZSize() { return 2 * this.getZBound(); }
     }
 
     public class Rectangle : ShapeSpecification
