@@ -5,7 +5,7 @@ namespace VirtualCreatures {
     [AddComponentMenu("Camera Controller")]
     public class CameraController : MonoBehaviour {
 
-        public enum CameraMode { Free, Tope, Focus };
+        public enum CameraMode { Free, Top, Focus };
 
         // Default camera mode
         public CameraMode mode = CameraMode.Free;
@@ -42,22 +42,7 @@ namespace VirtualCreatures {
         public void CameraKeyboardControl()
         {
             CameraModeFree();
-
-            /*
-            if(Input.GetKeyDown(KeyCode.W) != false)
-                transform.Translate(transform.forward * speed * Time.deltaTime);
-            */
-            /*if (Input.GetAxis("Vertical") != 0)
-            {
-                transform.Translate(transform.forward * speed * Input.GetAxis("Vertical") * Time.deltaTime);
-            }
-
-
-            if (Input.GetAxis("Horizontal") != 0)
-            {
-                transform.Translate(transform.right * speed * Input.GetAxis("Horizontal") * Time.deltaTime);
-            }*/
-
+            CameraModeTopView();
         }
 
         public void CameraModeFree()
@@ -73,6 +58,13 @@ namespace VirtualCreatures {
             }
         }
 
+        public void CameraModeTopView()
+        {
+            if(mode == CameraMode.Top)
+            {
+
+            }
+        }
 
         public void CameraLookAt()
         {
