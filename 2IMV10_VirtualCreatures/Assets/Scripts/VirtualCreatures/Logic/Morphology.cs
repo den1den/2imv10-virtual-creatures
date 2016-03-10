@@ -11,11 +11,13 @@ namespace VirtualCreatures
     /// </summary>
     public class Morphology
     {
+        public static String IDCount = "A";
         public NNSpecification brain;
         public IList<EdgeMorph> edges;
         public IList<Node> nodes;
         public Node root;
         public Genotype genotype;
+        public String ID;
 
         public Morphology(Node root, NNSpecification brain, IList<EdgeMorph> edges, Genotype genotype)
         {
@@ -34,6 +36,11 @@ namespace VirtualCreatures
             this.brain = brain;
             this.edges = edges;
             this.nodes = nodes;
+
+            // Create an ID
+            ID = Morphology.IDCount;
+            Morphology.IDCount += 1;
+
         }
 
         /// <summary>

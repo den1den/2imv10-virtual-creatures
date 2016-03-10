@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System;
 using System.Collections.Generic;
@@ -32,9 +33,10 @@ namespace VirtualCreatures
         public void Initialize(Morphology morphology)
         {
             this.morphology = morphology;
+            this.GetComponentInChildren<Text>().text = "Generation " + morphology.ID;
         }
 
-        public static TreeNodeUI createTreeNodeUI(Morphology morphology, TreeUI parent)
+        public static TreeNodeUI createTreeNodeUI(Morphology morphology, GameObject parent)
         {
             GameObject treeNodeUI = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/GUI/TreeNodeUI.prefab"));
 
@@ -42,7 +44,6 @@ namespace VirtualCreatures
 
             treeNodeUI.transform.SetParent(parent.transform);
             treeNodeUI.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-
             treeNodeUIScript.Initialize(morphology);
 
             return treeNodeUIScript;

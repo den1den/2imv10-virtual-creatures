@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.UI.Extensions;
 using System.Collections;
 using System;
 using System.Collections.Generic;
@@ -10,11 +12,15 @@ namespace VirtualCreatures
 {
     public class TreeUI : MonoBehaviour
     {
+        public GameObject nodesGO;
+        public GameObject linesGO;
 
         public TreeNodeUI root;
-        public float nodeXSpacing = 1.0f;
-        public float nodeYSpacing = 1.0f;
-        public float nodeRadius = 64.0f;
+        public float nodeXSpacing = 15.0f;
+        public float nodeYSpacing = 15.0f;
+        public float nodeRadius = 50.0f;
+
+        private IList<UILineRenderer> lines = new List<UILineRenderer>();
 
         // Use this for initialization
         void Start()
@@ -32,6 +38,9 @@ namespace VirtualCreatures
             Morphology n8 = Morphology.test1();
             Morphology n9 = Morphology.test1();
 
+            Morphology n10 = Morphology.test1();
+            Morphology n11 = Morphology.test1();
+            Morphology n12 = Morphology.test1();
             addChildNodeAtMorphology(null, n1);
 
             addChildNodeAtMorphology(n1, n2);
@@ -44,6 +53,10 @@ namespace VirtualCreatures
             addChildNodeAtMorphology(n3, n7);
             addChildNodeAtMorphology(n3, n8);
             addChildNodeAtMorphology(n3, n9);
+
+            addChildNodeAtMorphology(n4, n10);
+            addChildNodeAtMorphology(n4, n11);
+            addChildNodeAtMorphology(n4, n12);
 
             updateNodePositions();
         }
@@ -68,13 +81,19 @@ namespace VirtualCreatures
                         // Add the child to the node
                         if (treeNode != null)
                         {
-                            treeNode.addChildNode(TreeNodeUI.createTreeNodeUI(child, this));
+                            if (nodesGO != null)
+                            {
+                                treeNode.addChildNode(TreeNodeUI.createTreeNodeUI(child, nodesGO));
+                            }
                         }
                     }
                 }
                 else
                 {
-                    root = TreeNodeUI.createTreeNodeUI(child, this);
+                    if (nodesGO != null)
+                    {
+                        root = TreeNodeUI.createTreeNodeUI(child, nodesGO);
+                    }
                 }
             }
         }
@@ -108,13 +127,18 @@ namespace VirtualCreatures
             {
                 List<List<TreeNodeUI>> treeNodesByLayersList = new List<List<TreeNodeUI>>();
 
-                getLayersListPositions(root, 0, treeNodesByLayersList);
+                getLayersListPositions(treeNodesByLayersList);
 
+                // Initialize variables
                 Vector2 position = Vector2.zero;
                 float initialXPosition = 0.0f;
                 float initialYPosition = 0.0f;
                 int i = 0;
-                Debug.Log(treeNodesByLayersList.Count);
+
+                // Consider UI Object scale for positions
+                float scaleX = this.transform.parent.transform.lossyScale.x;
+                float scaleY = this.transform.parent.transform.lossyScale.y;
+
                 foreach (List<TreeNodeUI> nodeList in treeNodesByLayersList)
                 {
                     // Update the first node X position for the next branch to the right
@@ -127,9 +151,9 @@ namespace VirtualCreatures
                     // Update position for each node in the layer
                     foreach (TreeNodeUI treeNode in nodeList)
                     {
+
                         // Update node position with the desired radius and spacing
-                        treeNode.setPosition(initialXPosition + i * (2 * nodeRadius + nodeXSpacing), initialYPosition);
-                        Debug.Log("YPosition: " + initialYPosition);
+                        treeNode.setPosition(scaleX * (initialXPosition + i * (2 * nodeRadius + nodeXSpacing)), scaleY * initialYPosition);
                         i++;
                     }
     
@@ -137,11 +161,59 @@ namespace VirtualCreatures
                     initialYPosition += nodeRadius * 2 + nodeYSpacing;
                 }
 
+                // 
+                updateLines();
 
-                this.GetComponent<RectTransform>().position = new Vector3(Screen.width / 2, 0, 0);
+                // Position in the middle
+                this.GetComponent<RectTransform>().position = new Vector3(Screen.width / 2, scaleY * (nodeRadius * 2 + nodeYSpacing), 0);
             }
         }
 
+        private void updateLines()
+        {
+            // Destroy the lines to update them
+            // Very inefficient but if we want to remove nodes?
+            if (lines.Count != 0)
+            {
+                foreach (UILineRenderer line in lines)
+                {
+                    Destroy(line);
+                    lines.Clear();
+                }
+            }
+
+            updateLines(root);
+        }
+
+        private void updateLines(TreeNodeUI node)
+        {
+            if(node != null && linesGO !=null) 
+            {
+                foreach (TreeNodeUI n in node.getChildNodes())
+                {
+                    // Instantiate a line object
+                    GameObject lineGO = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/GUI/LineUI.prefab"));
+
+                    lineGO.transform.SetParent(linesGO.transform);
+                    // Get the line component and edit position
+                    UILineRenderer line = lineGO.GetComponent<UILineRenderer>();
+                    line.Points[0] = new Vector2(node.position.x, node.position.y) ;
+                    line.Points[1] = new Vector2(n.position.x, n.position.y);
+
+
+                    // Add the line to the list
+                    lines.Add(line);
+
+                    // Keep going deeper and deeper recursively
+                    updateLines(n);
+                }
+            }
+        }
+
+        private void getLayersListPositions(List<List<TreeNodeUI>> list)
+        {
+            getLayersListPositions(root, 0, list);
+        }
 
         private void getLayersListPositions(TreeNodeUI node, int layer, List<List<TreeNodeUI>> list)
         {
