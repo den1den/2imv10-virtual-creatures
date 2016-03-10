@@ -35,7 +35,7 @@ namespace VirtualCreatures
                 throw new ArgumentException("Outgoing nodes should only contain nodes that are of this network");
             }
             IEnumerable<NeuralSpec> allConnected = connections.SelectMany(con => new[] { con.source, con.destination });
-            if(allConnected.Except(sensors).Except(neurons).Except(actors).Count() > 0)
+            if (allConnected.Except(sensors).Except(neurons).Except(actors).Count() > 0)
             {
                 throw new ArgumentException("Connections should only contain nodes that are of this network");
             }
@@ -57,8 +57,8 @@ namespace VirtualCreatures
         public IEnumerable<NeuralSpec> getAllNeurals()
         {
             return this.sensors
-                .Concat( this.neurons )
-                .Concat( this.actors );
+                .Concat(this.neurons)
+                .Concat(this.actors);
         }
 
         public IDictionary<NeuralSpec, NeuralSpec> cloneAllNeurals()
@@ -94,7 +94,7 @@ namespace VirtualCreatures
 
         public void connectTo(NeuralSpec source, IList<NeuralSpec> ns, float weight)
         {
-            foreach(NeuralSpec destination in ns)
+            foreach (NeuralSpec destination in ns)
             {
                 connectTo(source, destination, weight);
             }
@@ -104,7 +104,7 @@ namespace VirtualCreatures
 
         public void connectTo(NeuralSpec source, IList<NeuralSpec> ns) { connectTo(source, ns, DEFAULT_WEIGHT); }
 
-        
+
 
         internal static NNSpecification createEmptyNetwork()
         {
@@ -137,10 +137,8 @@ namespace VirtualCreatures
             NeuralSpec nSIN = NeuralSpec.createNeuron(NeuronFunc.SIN);
             IList<NeuralSpec> neurons = new NeuralSpec[] { nSAW, nSIN }.ToList();
 
-            IList<Connection> connections = new Connection[]
-            {
-                new Connection(nSAW, nSIN)
-            }.ToList();
+            Connection c = new Connection(nSAW, nSIN);
+            IList<Connection> connections = new Connection[] { c }.ToList();
 
             IList<NeuralSpec> outgoing = new NeuralSpec[] { nSIN }.ToList();
 
@@ -183,7 +181,7 @@ namespace VirtualCreatures
         private NeuralSpec(NeuralSpec clone) : this(clone.type, clone.function) { }
 
         internal static NeuralSpec createSensor() { return new NeuralSpec(NeuronType.SENSOR, NeuronFunc.SUM); }
-        internal static NeuralSpec createNeuron(NeuronFunc function) { return new NeuralSpec(NeuronType.SENSOR, function); }
+        internal static NeuralSpec createNeuron(NeuronFunc function) { return new NeuralSpec(NeuronType.NEURON, function); }
         internal static NeuralSpec createActor() { return new NeuralSpec(NeuronType.ACTOR, NeuronFunc.SUM); }
 
         public bool isSensor() { return this.type == NeuronType.SENSOR; }
@@ -192,7 +190,7 @@ namespace VirtualCreatures
 
         public virtual NeuronFunc getFunction()
         {
-            if(this.type != NeuronType.NEURON)
+            if (this.type != NeuronType.NEURON)
                 Debug.Log("This should never be called on a non neuron node?");
             return this.function;
         }
@@ -251,10 +249,28 @@ namespace VirtualCreatures
         public float weight { get { return this._weight; } set { if (value < MIN_WEIGHT || value > MAX_WEIGHT) throw new ArgumentOutOfRangeException(); this._weight = value; } }
 
         private NeuralSpec _source;
-        public NeuralSpec source { get { return this._source; } set { if (value.isActor()) throw new ArgumentOutOfRangeException(); this._source = value; } }
+        public NeuralSpec source
+        {
+            get { return this._source; }
+            set
+            {
+                if (value.isActor())
+                    throw new ArgumentOutOfRangeException();
+                this._source = value;
+            }
+        }
 
         private NeuralSpec _destination;
-        public NeuralSpec destination { get { return this._destination; } set { if (value.isSensor()) throw new ArgumentOutOfRangeException(); this._destination = value; } }
+        public NeuralSpec destination
+        {
+            get { return this._destination; }
+            set
+            {
+                if (value.isSensor())
+                    throw new ArgumentOutOfRangeException();
+                this._destination = value;
+            }
+        }
 
         public Connection(NeuralSpec source, NeuralSpec destination) : this(source, destination, 1.0f) { }
 

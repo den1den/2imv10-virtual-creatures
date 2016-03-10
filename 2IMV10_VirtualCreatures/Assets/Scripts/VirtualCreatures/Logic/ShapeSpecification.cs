@@ -40,17 +40,17 @@ namespace VirtualCreatures
             return g;
         }
         /// <summary>
-        /// Distance from center to the bounding plane in the X direction
+        /// Distance from center to the bounding plane in the X direction (left right in f.o.r.)
         /// </summary>
         /// <returns>float > 0</returns>
         public abstract float getXBound();
         /// <summary>
-        /// Distance from center to the bounding plane in the Y direction
+        /// Distance from center to the bounding plane in the Y direction (up down in f.o.r.)
         /// </summary>
         /// <returns>float > 0</returns>
         public abstract float getYBound();
         /// <summary>
-        /// Distance from center to the bounding plane in the Z direction
+        /// Distance from center to the bounding plane in the Z direction (forwards backwards in f.o.r.)
         /// </summary>
         /// <returns>float > 0</returns>
         public abstract float getZBound();
@@ -279,7 +279,7 @@ namespace VirtualCreatures
         /// A plane like rectangle standing upwards.
         /// </summary>
         /// <param name="length">The size of the plane</param>
-        /// <param name="widthRatio">A factor to make the plane less square, same as in LongRectangle</param>
+        /// <param name="widthRatio">A factor less or equal to 1 to make the plane less square, same as in LongRectangle</param>
         public PlaneRectangle(float length, float widthRatio) : base(length * widthRatio, DEPTH, length)
         {
             if (widthRatio > 1)
