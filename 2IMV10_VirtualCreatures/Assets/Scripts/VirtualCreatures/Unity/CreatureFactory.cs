@@ -16,15 +16,8 @@ namespace VirtualCreatures
         // Use this for initialization
         void Start()
         {
-            Creature.CreateTest3();
-            
-            Morphology initialMorphology;
-
-            for (int i = 0; i < Population; i++)
-            {
-                //creatures[i] = Creature.Create(initialMorphology);
-            }
-
+            Creature.Create(Morphology.testSuperSwastika());
+            Debug.Break();
         }
 
         bool pauzed = false;
@@ -34,14 +27,6 @@ namespace VirtualCreatures
         {
             // Wait 10 seconds to update population
             WaitToUpdate(10);
-
-
-            // Pause for debugging
-            if (!pauzed)
-            {
-                pauzed = true;
-                Debug.Break();
-            }
         }
 
         /// <summary>

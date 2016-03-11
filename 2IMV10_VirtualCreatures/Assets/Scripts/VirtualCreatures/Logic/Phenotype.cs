@@ -66,23 +66,30 @@ namespace VirtualCreatures
             NaiveENN N = new NaiveENN(joints);
 
             //create all neurons of the brain
-            IDictionary<InterfaceNode, Neural> created = Enumerable
+            IDictionary<NeuralSpec, Neural> created = Enumerable
                 .Repeat(morphology.brain, 1)
                 .SelectMany(nn => nn.neurons) //brain has only normal neurons
-                .ToDictionary(n => (InterfaceNode)n, n => N.createNeuron(n));
+                .ToDictionary(n => n, n => N.createNeuron(n));
 
             //create all the sensors and actors for the edges
             for (int i = 0; i < morphology.edges.Count; i++)
             {
                 //pick the corresponsing joint and network
                 JointSpecification joint = morphology.edges[i].joint;
+                int nDOF = joint.getDegreesOfFreedom();
                 NNSpecification nn = morphology.edges[i].network;
+                int nSen = nn.sensors.Count();
+                int nAct = nn.actors.Count();
 
-                N.sOffset[i] = joint.getSensorOffsets();
-                N.sFactor[i] = joint.getSensorFactors();
+                //check that that nothing is overspecified
+                if (nDOF < nSen) throw new ArgumentException();
+                if (nDOF < nAct) throw new ArgumentException();
 
-                N.aOffset[i] = joint.getActorOffsets();
-                N.aFactor[i] = joint.getActorFactors();
+                N.sOffset[i] = Enumerable.Repeat(0.0, nSen).ToArray();
+                N.sFactor[i] = Enumerable.Repeat(1.0, nSen).ToArray();
+
+                N.aOffset[i] = Enumerable.Repeat(0.0, nAct).ToArray();
+                N.aFactor[i] = Enumerable.Repeat(1.0, nAct).ToArray();
 
                 //create the actual sensors
                 N.sensorNeurons[i] = nn.sensors.Select(sen => N.createSensor(sen)).ToArray();
@@ -102,17 +109,8 @@ namespace VirtualCreatures
                     created[nn.actors[j]] = createdActor;
                 }
 
-                //check that that nothing is overspecified
-                int dof = joint.type.getDegreesOfFreedom();
-                if (dof < N.sOffset[i].Length ||
-                    dof < N.sFactor[i].Length ||
-                    dof < N.aOffset[i].Length ||
-                    dof < N.aFactor[i].Length ||
-                    dof < N.sensorNeurons[i].Length ||
-                    dof < N.actorNeurons[i].Length) throw new ArgumentException(); //more paramaters were specified then there are degrees of freedom
-
                 //also create all normal neurons in this network
-                foreach (NeuronSpec n in nn.neurons)
+                foreach (NeuralSpec n in nn.neurons)
                 {
                     created[n] = N.createNeuron(n);
                 }
@@ -123,77 +121,30 @@ namespace VirtualCreatures
             IEnumerable<NNSpecification> allNetworks = Enumerable.Repeat(morphology.brain, 1).Union(morphology.edges.Select(e => e.network));
 
             //now set all the appropiate weights and connect the neurons
+            //so for each network
             foreach (NNSpecification network in allNetworks)
             {
-                //foreach network
-                foreach (NeuronSpec n in network.getNeuronsAndActors())
+                //and each node in the network
+                foreach (NeuralSpec dest in network.getNeuronsAndActors())
                 {
-                    //for each Neuron or Actor
-                    //these are the only ones that need input
-                    INeuron subject = (INeuron)created[n]; //subject that was created
-                    IList<WeightConnection> connectedEdges = network.getSourceEdges(n).ToList();
-                    double[] weights = new double[connectedEdges.Count];
-                    Neural[] inputs = new Neural[connectedEdges.Count];
+                    //find the implemented INeuron
+                    INeuron destImpl = (INeuron)created[dest];
+                    //find all attached edges
+                    IList<Connection> connectedEdges = network.getEdgesByDestination(dest).ToList();
+                    double[] destWeights = new double[connectedEdges.Count];
+                    Neural[] destInputs = new Neural[connectedEdges.Count];
 
                     int i = 0;
-                    foreach (WeightConnection w in connectedEdges)
+                    foreach (Connection con in connectedEdges)
                     {
-                        weights[i] = w.weight;
-                        Neural source;
-                        if (!w.source.isInterface())
-                        {
-                            //normal edge
-                            if (w.source.isSensor())
-                            {
-                                SensorSpec sensor = (SensorSpec)w.source;
-                                source = created[sensor];
-                            }
-                            else
-                            {
-                                source = created[(SensorSpec)w.source];
-                            }
-                            inputs[i] = source;
-                        }
-                        else
-                        {
-                            //edge that is from a different network
-                            InterfaceNode hiddenSource = (InterfaceNode)w.source;
-                            IList<NNSpecification> sourceNetworks = allNetworks.Where(net => net.networkOut.Contains(hiddenSource)).ToList();
-
-                            if (sourceNetworks.Count == 0) throw new ArgumentException(); //source should be connected to at least one network?
-                            if (sourceNetworks.Count > 1)
-                            {
-                                int tailLength = weights.Length - 1 - i;
-                                //increase the weights by repeatingly adding the same weight
-                                weights = weights.Take(i).Concat(Enumerable.Repeat(weights[i], sourceNetworks.Count)).Concat(Enumerable.Repeat(Double.NaN, tailLength)).ToArray();
-                                //increase the input by adding some null values that are filled in below
-                                Neural nullNeural = null;
-                                inputs = inputs.Take(i).Concat(Enumerable.Repeat(nullNeural, sourceNetworks.Count)).Concat(Enumerable.Repeat(nullNeural, tailLength)).ToArray();
-                            }
-                            for(int j = 0; j < sourceNetworks.Count; j++)
-                            {
-                                NNSpecification sourceNetwork = sourceNetworks[j];
-
-                                SimpleConnection sourceConnection = sourceNetwork.getSourceEdges(hiddenSource).Single(); //should be connected to one neuron/sensor!
-                                if (sourceConnection.source.isNeuron())
-                                {
-                                    //edge from a different neuron
-                                    source = created[(NeuronSpec)sourceConnection.source];
-                                }
-                                else if (sourceConnection.source.isSensor())
-                                {
-                                    //edge from a different sensor
-                                    source = created[(SensorSpec)sourceConnection.source];
-                                }
-                                else throw new ArgumentException();
-
-                                inputs[i + j] = source;
-                            }
-                        }
+                        NeuralSpec source = con.source;
+                        Neural sourceImpl = created[source];
+                        destWeights[i] = con.weight;
+                        destInputs[i] = sourceImpl;
                         i++;
                     }
-                    subject.weights = weights;
-                    subject.inputs = inputs;
+                    destImpl.weights = destWeights;
+                    destImpl.inputs = destInputs;
                 }
             }
             N.internalNeurons = created.Where(kvp => kvp.Key.isNeuron()).Select(kvp => kvp.Value).ToArray();
@@ -201,68 +152,67 @@ namespace VirtualCreatures
             return N;
         }
 
-        private Neural createNeuron(NeuronSpec n)
+        private Neural createNeuron(NeuralSpec n)
         {
             if (!n.isNeuron()) throw new ArgumentException();
-            switch (n.function)
+            switch (n.getFunction())
             {
-                case NeuronSpec.NFunc.ABS:
+                case NeuronFunc.ABS:
                     return new ABS();
-                case NeuronSpec.NFunc.ATAN:
+                case NeuronFunc.ATAN:
                     return new ATAN();
-                case NeuronSpec.NFunc.SIN:
+                case NeuronFunc.SIN:
                     return new SIN();
-                case NeuronSpec.NFunc.COS:
+                case NeuronFunc.COS:
                     return new COS();
-                case NeuronSpec.NFunc.SIGN:
+                case NeuronFunc.SIGN:
                     return new SIGN();
-                case NeuronSpec.NFunc.SIGMOID:
+                case NeuronFunc.SIGMOID:
                     return new SIGMOID();
-                case NeuronSpec.NFunc.EXP:
+                case NeuronFunc.EXP:
                     return new EXP();
-                case NeuronSpec.NFunc.LOG:
+                case NeuronFunc.LOG:
                     return new LOG();
-                case NeuronSpec.NFunc.DIFFERENTIATE:
+                case NeuronFunc.DIFFERENTIATE:
                     return new DIFFERENTIATE(0);
-                case NeuronSpec.NFunc.INTERGRATE:
+                case NeuronFunc.INTERGRATE:
                     return new INTERGRATE();
-                case NeuronSpec.NFunc.MEMORY:
+                case NeuronFunc.MEMORY:
                     return new MEMORY();
-                case NeuronSpec.NFunc.SMOOTH:
+                case NeuronFunc.SMOOTH:
                     return new SMOOTH();
-                case NeuronSpec.NFunc.SAW:
+                case NeuronFunc.SAW:
                     return new SAW(this);
-                case NeuronSpec.NFunc.WAVE:
+                case NeuronFunc.WAVE:
                     return new WAVE(this);
-                case NeuronSpec.NFunc.MIN:
+                case NeuronFunc.MIN:
                     return new MIN();
-                case NeuronSpec.NFunc.MAX:
+                case NeuronFunc.MAX:
                     return new MAX();
-                case NeuronSpec.NFunc.SUM:
+                case NeuronFunc.SUM:
                     return new SUM();
-                case NeuronSpec.NFunc.PRODUCT:
+                case NeuronFunc.PRODUCT:
                     return new PRODUCT();
-                case NeuronSpec.NFunc.DEVISION:
+                case NeuronFunc.DEVISION:
                     //double
                     return new DEVISION();
-                case NeuronSpec.NFunc.GTE:
+                case NeuronFunc.GTE:
                     //triple
                     return new GTE();
-                case NeuronSpec.NFunc.IF:
+                case NeuronFunc.IF:
                     return new IF();
-                case NeuronSpec.NFunc.INTERPOLATE:
+                case NeuronFunc.INTERPOLATE:
                     return new INTERPOLATE();
-                case NeuronSpec.NFunc.IFSUM:
+                case NeuronFunc.IFSUM:
                     return new IFSUM();
                 default:
                     throw new NotImplementedException("Function not known?");
             }
         }
 
+        private Neural createActor(NeuralSpec n) { if (n.isActor()) return new SUM(); else throw new ArgumentException(); }
 
-        private Neural createActor(ActorSpec sen) { if (sen.isActor()) return new SUM(); else throw new ArgumentException(); }
-
-        private Neural createSensor(SensorSpec sen) { if (sen.isSensor()) return new Neural(); else throw new ArgumentException(); }
+        private Neural createSensor(NeuralSpec n) { if (n.isSensor()) return new Neural(); else throw new ArgumentException(); }
 
 
         internal override void tick(int N)
