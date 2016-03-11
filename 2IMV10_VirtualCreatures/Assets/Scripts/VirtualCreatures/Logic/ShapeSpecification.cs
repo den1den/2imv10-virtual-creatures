@@ -76,26 +76,26 @@ namespace VirtualCreatures
 
     public class Rectangle : ShapeSpecification
     {
-        internal float factorWidths;
-        internal float factorHeigths;
-        internal float factorDepth;
+        internal float factorRight;
+        internal float factorForwards;
+        internal float factorUp;
 
         /// <summary>
         /// Create a rectable with a certain size.
         /// (everything is measured from edge to edge)
         /// </summary>
-        /// <param name="width">>0</param>
-        /// <param name="depth">>0</param>
-        /// <param name="height">>0</param>
-        public Rectangle(float width, float depth, float height)
+        /// <param name="width">>0 (in left right direction)</param>
+        /// <param name="thickness">>0 (in up/down direction)</param>
+        /// <param name="height">>0 (in forwards direction)</param>
+        public Rectangle(float width, float thickness, float height)
         {
-            if (width < 0 || depth < 0 || height < 0)
+            if (width < 0 || thickness < 0 || height < 0)
             {
                 throw new ArgumentOutOfRangeException();
             }
-            this.factorWidths = width / 2;
-            this.factorHeigths = height / 2;
-            this.factorDepth = depth / 2;
+            this.factorRight = width / 2;
+            this.factorUp = thickness / 2;
+            this.factorForwards = height / 2;
         }
 
         public static Rectangle createWidthDepthHeight(float width, float depth, float height)
@@ -136,9 +136,9 @@ namespace VirtualCreatures
             return new Rectangle(width, DEPTH, height);
         }
 
-        public override float getXBound() { return this.factorWidths; }
-        public override float getYBound() { return this.factorDepth; }
-        public override float getZBound() { return this.factorHeigths; }
+        public override float getXBound() { return this.factorRight; }
+        public override float getYBound() { return this.factorUp; }
+        public override float getZBound() { return this.factorForwards; }
 
         internal override GameObject _primitive()
         {

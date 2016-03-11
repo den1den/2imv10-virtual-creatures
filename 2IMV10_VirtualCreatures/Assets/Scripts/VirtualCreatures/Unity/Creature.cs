@@ -101,7 +101,7 @@ namespace VirtualCreatures {
 
         /// <summary>
         /// 
-        /// *note to set position: Creature.transform.position
+        /// *note to set the position of the creature you have to set Creature.transform.position
         /// </summary>
         /// <param name="morphology"></param>
         /// <returns>Creature</returns>
