@@ -82,7 +82,7 @@ namespace VirtualCreatures
             JointSpecification joint10 = new JointSpecification(Face.RIGHT, 0, 0, (float)Math.PI / 2, 0, 0.5f, JointType.HINDGE);
             JointSpecification joint20 = new JointSpecification(Face.FORWARDS, 0, 0, (float)Math.PI / 2, 0, 0.5f, JointType.HINDGE);
             JointSpecification joint30 = new JointSpecification(Face.LEFT, 0, 0, (float)Math.PI / 2, 0, 0.5f, JointType.HINDGE);
-            JointSpecification joint40 = new JointSpecification(Face.BACKWARDS, 0, 0, (float)Math.PI / 2, 0, 0.5f, JointType.HINDGE);
+            JointSpecification joint40 = new JointSpecification(Face.DOWN, 0, 0, (float)Math.PI / 2, 0, 0.5f, JointType.HINDGE);
             //futher arm
             JointSpecification jointx1 = new JointSpecification(Face.UP, 0, 0, 0, 0, 0.5f, JointType.HINDGE);
 
@@ -114,6 +114,60 @@ namespace VirtualCreatures
             return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
         }
 
+        static public Morphology testSuperSwastika()
+        {
+            Genotype genotype = null;
+            ShapeSpecification body = new Sphere(4);
+            Node root = new Node(body);
+
+            float hover = 0.5f;
+
+            //right
+            JointSpecification f = new JointSpecification(Face.FORWARDS, 0, 0, 0, 0, hover, JointType.FIXED);
+            JointSpecification rig = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, hover, JointType.FIXED);
+            JointSpecification left = new JointSpecification(Face.LEFT, 0, 0, 0, 0, hover, JointType.FIXED);
+
+            JointSpecification up = new JointSpecification(Face.UP, 0, 0, 0, 0, hover, JointType.FIXED);
+            JointSpecification down = new JointSpecification(Face.DOWN, 0, 0, 0, 0, hover, JointType.FIXED);
+
+            JointSpecification rev = new JointSpecification(Face.REVERSE, 0, 0, 0, 0, hover, JointType.FIXED);
+
+            //arm element
+            ShapeSpecification fin = Rectangle.createWidthDepthHeight(1, 0.2f, 4);
+
+            //the nodes of the arms
+            Node f1 = new Node(fin);
+            Node f2 = new Node(fin);
+            Node rig1 = new Node(fin);
+            Node rig2 = new Node(fin);
+            Node left1 = new Node(fin);
+            Node left2 = new Node(fin);
+            Node up1 = new Node(fin);
+            Node up2 = new Node(fin);
+            Node down1 = new Node(fin);
+            Node doen2 = new Node(fin);
+            Node rev1 = new Node(fin);
+            Node rev2 = new Node(fin);
+
+            //arms
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, f1, f, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(f1, f2, new JointSpecification(Face.DOWN, 0, 0, 0, 0, hover, JointType.FIXED), NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, rig1, rig, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(rig1, rig2, new JointSpecification(Face.UP, 0, 0, 0, 0, hover, JointType.FIXED), NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, left1, left, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(left1, left2, new JointSpecification(Face.DOWN, 0, 0, 0, 0, hover, JointType.FIXED), NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, up1, up, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(up1, up2, new JointSpecification(Face.LEFT, 0, 0, 0, 0, hover, JointType.FIXED), NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, down1, down, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(down1, doen2, new JointSpecification(Face.RIGHT, 0, 0, 0, 0, hover, JointType.FIXED), NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, rev1, rev, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(rev1, rev2, new JointSpecification(Face.UP, 0, 0, 0, 0, hover, JointType.FIXED), NNSpecification.createEmptyNetwork()),
+            }.ToList();
+
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
+        }
+
         static public Morphology testSnake()
         {
             Genotype genotype = null;
@@ -125,7 +179,7 @@ namespace VirtualCreatures
             JointSpecification different = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 2.5f, JointType.FIXED);
 
             //body element
-            ShapeSpecification body = new PlaneRectangle(6, 0.5f);
+            ShapeSpecification body = Rectangle.createPlane(6, 0.5f);
 
             //the nodes of the arms
             Node a0 = new Node(body);

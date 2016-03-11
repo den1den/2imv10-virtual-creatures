@@ -45,11 +45,13 @@ namespace VirtualCreatures
         /// The horizontal and vertical offset are relative offsets with respect to the bounding box. With the origin at the center of this box and a lineari reltive domain of (-1, 1)
         /// At the start these positions will be located at the edges of the bounding boxes (I think this is more easily then letting them be relative to the surface of the base shape)
         /// </summary>
-        /// <param name="offsetHorizontal">The horizontal position of the joint in the right, otherwise forward direction with respect to the base shape(-1, 1)</param>
-        /// <param name="offsetVertical">The vertical position of the joint in the up direction, otherwise forward direction with respect to the base shape (-1, 1)</param>
-        /// <param name="face">1: Same direction, 2: Right, 3: Downwards, 4: Left, 5: Upwards</param>
-        /// <param name="absHover">Additional offset in the direction of the initial joint (For simplicity this can also be in the direction of the face) (minimalAbsHover, maximalAbshover)</param>
-        /// <param name="shapeRotation">Additional independent rotation of the attached shape (-Pi, Pi) exclusing -Pi</param>
+        /// <param name="face">See enum Face</param>
+        /// <param name="faceH">The horizontal position of the joint in the right, otherwise forward direction with respect to the base shape(-1, 1)</param>
+        /// <param name="faceV">The vertical position of the joint in the up direction, otherwise forward direction with respect to the base shape (-1, 1)</param>
+        /// <param name="rot">(-Pi/2, Pi/2)</param>
+        /// bending
+        /// <param name="hover">Additional offset in the direction of the initial joint (For simplicity this can also be in the direction of the face) (minimalAbsHover, maximalAbshover)</param>
+        /// 
         public JointSpecification(Face face, float faceH, float faceV, float rot, float bending, float hover, JointType type)
         {
             this.face = face;
@@ -76,7 +78,7 @@ namespace VirtualCreatures
                 case JointType.HINDGE:
                     //positive angle is in the direction of the normal
                     HingeJoint hindgeJoint = parent.AddComponent<HingeJoint>();
-                    hindgeJoint.axis = getUnityFirstRotationAxis();
+                    hindgeJoint.axis = this.getUnityAxisUnitVector();
                     return hindgeJoint;
                 case JointType.PISTON:
                     SpringJoint springJoint = parent.AddComponent<SpringJoint>();
@@ -87,9 +89,64 @@ namespace VirtualCreatures
             throw new NotImplementedException();
         }
 
-        public Vector3 getUnityFirstRotationAxis()
+        public Vector3 getNormalUnitVector()
         {
-            return new Vector3((float)(-Math.Sin(this._rotation)), 0, (float)(Math.Cos(this._rotation)));
+            switch (this.face)
+            {
+                case Face.RIGHT:
+                    return Vector3.right;
+                case Face.FORWARDS:
+                    return Vector3.forward;
+                case Face.LEFT:
+                    return Vector3.left;
+                case Face.UP:
+                    return Vector3.up;
+                case Face.DOWN:
+                    return Vector3.down;
+                case Face.REVERSE:
+                    return Vector3.back;
+            }
+            throw new NotImplementedException();
+        }
+
+        public Vector3 getRightUnitVector()
+        {
+            switch (this.face)
+            {
+                case Face.RIGHT:
+                    return Vector3.back;
+                case Face.LEFT:
+                    return Vector3.forward;
+                case Face.FORWARDS:
+                case Face.UP:
+                case Face.DOWN:
+                    return Vector3.right;
+                case Face.REVERSE:
+                    return Vector3.back;
+            }
+            throw new NotImplementedException();
+        }
+
+        public Vector3 getUpUnitVector()
+        {
+            switch (this.face)
+            {
+                case Face.RIGHT:
+                case Face.LEFT:
+                case Face.FORWARDS:
+                case Face.REVERSE:
+                    return Vector3.up;
+                case Face.UP:
+                    return Vector3.left;
+                case Face.DOWN:
+                    return Vector3.right;
+            }
+            throw new NotImplementedException();
+        }
+
+        public Vector3 getUnityAxisUnitVector()
+        {
+            return (float)Math.Cos(this.rotation) * this.getRightUnitVector() + (float)Math.Sin(this.rotation) * this.getUpUnitVector();
         }
 
         /// <summary>
@@ -98,30 +155,28 @@ namespace VirtualCreatures
         /// <returns>Unitvector</returns>
         public Vector3 getUnityDirection()
         {
-            //first get the directional vector of the topFace and then translate the rotation
-            Vector3 normalTopFace = Vector3.up;
-            Vector3 rProjectedTopFace = this.getUnityFirstRotationAxis();
-            Vector3 rTopFace = Vector3.RotateTowards(normalTopFace, rProjectedTopFace, this._bending, 0);
-            //then translate the rotation
-            return this.getUnityRotation() * rTopFace;
+            Vector3 normal = this.getNormalUnitVector();
+            Vector3 axis = this.getUnityAxisUnitVector();
+            Vector3 direcionalVector = Vector3.RotateTowards(normal, axis, this._bending, 0);
+            return direcionalVector;
         }
 
         public Quaternion getUnityRotation()
         {
             switch (this.face)
             {
-                case Face.UP: // Same Direction
+                case Face.RIGHT:
+                    return Quaternion.Euler(0, 90, 0);
+                case Face.FORWARDS:
                     return Quaternion.identity;
-                case Face.RIGHT: // Right
-                    return Quaternion.Euler(90, 90, 0);
-                case Face.FORWARDS: // Away
+                case Face.LEFT:
+                    return Quaternion.Euler(0, -90, 0);
+                case Face.UP:
+                    return Quaternion.Euler(-90, 0, 0);
+                case Face.DOWN:
                     return Quaternion.Euler(90, 0, 0);
-                case Face.LEFT: // Left
-                    return Quaternion.Euler(90, 270, 0);
-                case Face.BACKWARDS: // Towards
-                    return Quaternion.Euler(90, 180, 0);
-                case Face.DOWN: // Backwards
-                    return Quaternion.Euler(180, 0, 0);
+                case Face.REVERSE:
+                    return Quaternion.Euler(0, 180, 0);
             }
             throw new NotImplementedException();
         }
@@ -160,7 +215,21 @@ namespace VirtualCreatures
         }
     }
 
-    public enum Face { UP, RIGHT, FORWARDS, LEFT, BACKWARDS, DOWN };
+    public enum Face
+    {
+        /// <summary>
+        /// Continue in the same direction (towards Z axis)
+        /// </summary>
+        FORWARDS,
+        RIGHT,
+        LEFT,
+        /// <summary>
+        /// Reverse in the opposite direction, probably causes a collition (back in Z axis)
+        /// </summary>
+        REVERSE,
+        UP,
+        DOWN
+    };
 
     public enum JointType
     {

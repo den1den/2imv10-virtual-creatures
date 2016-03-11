@@ -66,62 +66,21 @@ namespace VirtualCreatures {
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="morphology"></param>
-        /// <returns></returns>
-        public static Creature Create(Morphology morphology)
-        {
-            // Instantiate empty creature prefab to scene
-            GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
-            creatureContainer.transform.position = new Vector3(0, 150, 0);
-
-            // Create new joints list 
-            Joint[] joints = new Joint[morphology.edges.Count];
-
-            // Recursivaly create and connect all components
-            // Start with the root, with no special transformation
-            GameObject creatureRootNode = morphology.root.shape.createPrimitive();
-            creatureRootNode.transform.parent = creatureContainer.transform;
-            
-            // ****************** REDUNDANT : It should be default already ***********************
-            creatureRootNode.transform.localPosition = Vector3.zero;
-            creatureRootNode.transform.localRotation = Quaternion.identity;
-
-            Debug.Log("Created a root " + creatureRootNode.ToString() + " with ABSposition: " + creatureRootNode.transform.position.ToString());
-
-            // then recursivly traverse all connected edges
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
-
-            // Get the container creature script to store the joints 
-            Creature creatureScript = (Creature)creatureContainer.GetComponent<Creature>();
-            creatureScript.joints = joints.ToList<Joint>();
-
-
-            Phenotype phenotype = new Phenotype(morphology, creatureScript.getJoints().ToArray<Joint>());
-
-            // Creature Phenotype from morphology
-            creatureScript.setPhenotype(phenotype);
-
-            return creatureScript;
-        }
-        
-        /// <summary>
         /// See draw.io drawing.
         /// </summary>
         /// <returns></returns>
         public static Creature CreateTest3()
         {
-            ShapeSpecification b0 = new Cube(2);
+            ShapeSpecification b0 = Rectangle.createCube(2);
             Node root = new Node(b0);
 
-            ShapeSpecification b1 = new Cube(0.5f);
+            ShapeSpecification b1 = Rectangle.createCube(0.5f);
             Node n1 = new Node(b1);
 
-            ShapeSpecification b2 = new Cube(3);
+            ShapeSpecification b2 = Rectangle.createCube(3);
             Node n2 = new Node(b2);
 
-            ShapeSpecification b3 = new Cube(1);
+            ShapeSpecification b3 = Rectangle.createCube(1);
             Node n3 = new Node(b3);
 
             float absHover = 1f;
@@ -141,21 +100,61 @@ namespace VirtualCreatures {
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="morphology"></param>
+        /// <returns></returns>
+        public static Creature Create(Morphology morphology)
+        {
+            // Instantiate empty creature prefab to scene
+            GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
+            creatureContainer.transform.position = new Vector3(0, 150, 0);
+
+            // Create new joints list 
+            Joint[] joints = new Joint[morphology.edges.Count];
+
+            // Recursivaly create and connect all components
+            // Start with the root, with no special transformation
+            GameObject creatureRootNode = morphology.root.shape.createUnscaledPrimitive();
+            creatureRootNode.transform.parent = creatureContainer.transform;
+            
+            // ****************** REDUNDANT : It should be default already ***********************
+            creatureRootNode.transform.localPosition = Vector3.zero;
+            creatureRootNode.transform.localRotation = Quaternion.identity;
+
+            Debug.Log("Created a root " + creatureRootNode.ToString() + " with ABSposition: " + creatureRootNode.transform.position.ToString());
+
+            // then recursivly traverse all connected edges
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
+
+            // Get the container creature script to store the joints 
+            Creature creatureScript = (Creature)creatureContainer.GetComponent<Creature>();
+            creatureScript.joints = joints.ToList<Joint>();
+
+            Phenotype phenotype = new Phenotype(morphology, creatureScript.getJoints().ToArray<Joint>());
+
+            // Creature Phenotype from morphology
+            creatureScript.setPhenotype(phenotype);
+
+            return creatureScript;
+        }
+
+        /// <summary>
         /// Same as Test3 but with more complex Joints
         /// </summary>
         /// <returns></returns>
         public static Creature CreateTest3_1()
         {
-            ShapeSpecification b0 = new Cube(2);
+            ShapeSpecification b0 = Rectangle.createCube(2);
             Node root = new Node(b0);
 
-            ShapeSpecification b1 = new Cube(0.5f);
+            ShapeSpecification b1 = Rectangle.createCube(0.5f);
             Node n1 = new Node(b1);
 
-            ShapeSpecification b2 = new Cube(3);
+            ShapeSpecification b2 = Rectangle.createCube(3);
             Node n2 = new Node(b2);
 
-            ShapeSpecification b3 = new Cube(1);
+            ShapeSpecification b3 = Rectangle.createCube(1);
             Node n3 = new Node(b3);
 
             float absHover = 1f;
@@ -174,7 +173,7 @@ namespace VirtualCreatures {
 
             return Create(m);
         }
-        
+
         /// <summary>
         /// Adds all the cildren recursivly to the parent node
         /// </summary>
@@ -184,8 +183,6 @@ namespace VirtualCreatures {
         /// <param name="allJoints">A list of all the joints found thusfar (in the order of traversal)</param>
         private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
         {
-            Vector3 positionFactor = new Vector3(1.0f / parentGO.transform.lossyScale.x, 1.0f / parentGO.transform.lossyScale.y, 1.0f / parentGO.transform.lossyScale.z);
-
             // Get the connected edges of the current node
             IList<EdgeMorph> edges = parentNode.getEdges(morphology.edges);
             // Iterate over each edge that we have for the current node
@@ -193,7 +190,7 @@ namespace VirtualCreatures {
             {
                 // Create a primitive for the next node below the current node
                 Node childNode = e.destination;
-                GameObject childGO = childNode.shape.createPrimitive();
+                GameObject childGO = childNode.shape.createUnscaledPrimitive();
 
                 childGO.transform.parent = parentGO.transform; // silently applies correction factor for hiearchical scaling
                 
@@ -202,15 +199,15 @@ namespace VirtualCreatures {
                 allJoints[morphology.edges.IndexOf(e)] = joint;
 
                 // Calculate where the distance between center of child and parent
-                Vector3 facePosition = e.getUnityFaceAnchorPosition();
-                Vector3 direction = e.joint.getUnityDirection();
-                float absDist_Face_ChildCenter = e.joint.hover + childNode.shape.getYBound(); // attached in Y direction
-                Vector3 absPosition = facePosition + absDist_Face_ChildCenter * direction;
+                Vector3 facePosition = e.getUnityPositionAnchor(); //on parent shape
+                Vector3 direction = e.joint.getUnityDirection(); //towards child
+                float distFaceToChildCenter = e.joint.hover + childNode.shape.getBound(Face.REVERSE); //on child shape
+                Vector3 absPosition = facePosition + distFaceToChildCenter * direction;
 
                 Quaternion rotation = e.joint.getUnityRotation();
 
                 // Place the primitive on a specific position
-                childGO.transform.localPosition = Vector3.Scale(absPosition, positionFactor);
+                childGO.transform.localPosition = absPosition;
                 childGO.transform.localRotation = rotation;
 
                 Debug.Log("Created a child " + childGO.ToString() + " with localPosition: " + childGO.transform.localPosition.ToString() + " and localRotation: " + childGO.transform.localRotation.eulerAngles.ToString());
@@ -218,11 +215,11 @@ namespace VirtualCreatures {
                 // Position all the children
                 Creature.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
 
+                // Calculate where the joint should be, relative to the childs coordinates system
+                joint.anchor = new Vector3(0, 0, -distFaceToChildCenter);
+
                 // Set the joint
                 joint.connectedBody = parentGO.GetComponent<Rigidbody>();
-                // Calculate where the joint should be, relative to the childs coordinates system
-                float distanceToFace = (e.joint.hover + childNode.shape.getYBound()) / childNode.shape.getYSize();
-                joint.anchor = new Vector3(0, -distanceToFace, 0);
             }
         }
 

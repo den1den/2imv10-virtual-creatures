@@ -30,13 +30,10 @@ namespace VirtualCreatures
         /// </summary>
         /// <param name="parentShape"></param>
         /// <returns></returns>
-        public Vector3 getUnityFaceAnchorPosition()
+        public Vector3 getUnityPositionAnchor()
         {
-            float x = this.joint.faceHorizontal;
-            float z = -this.joint.faceVertical;
-            Vector3 topFaceAnchorUnscaled = new Vector3(x, 1.0f, z);
-            Vector3 anchorUnscaled = this.joint.getUnityRotation() * topFaceAnchorUnscaled;
-            Vector3 absAnchor = Vector3.Scale(anchorUnscaled, this.source.shape.getBounds());
+            Vector3 posAnchorUnscaled = this.joint.faceHorizontal * this.joint.getRightUnitVector() + this.joint.faceVertical * this.joint.getUpUnitVector();
+            Vector3 absAnchor = Vector3.Scale(posAnchorUnscaled, this.source.shape.getBounds());
             return absAnchor;
         }
     }
