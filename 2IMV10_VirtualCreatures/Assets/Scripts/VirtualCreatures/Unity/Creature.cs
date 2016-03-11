@@ -101,28 +101,23 @@ namespace VirtualCreatures {
 
         /// <summary>
         /// 
+        /// *note to set position: Creature.transform.position
         /// </summary>
         /// <param name="morphology"></param>
-        /// <returns></returns>
+        /// <returns>Creature</returns>
         public static Creature Create(Morphology morphology)
         {
             // Instantiate empty creature prefab to scene
             GameObject creatureContainer = Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"));
-            creatureContainer.transform.position = new Vector3(0, 150, 0);
 
             // Create new joints list 
             Joint[] joints = new Joint[morphology.edges.Count];
 
             // Recursivaly create and connect all components
-            // Start with the root, with no special transformation
+            // Start with the root, at zero
             GameObject creatureRootNode = morphology.root.shape.createUnscaledPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
-            
-            // ****************** REDUNDANT : It should be default already ***********************
-            creatureRootNode.transform.localPosition = Vector3.zero;
-            creatureRootNode.transform.localRotation = Quaternion.identity;
-
-            Debug.Log("Created a root " + creatureRootNode.ToString() + " with ABSposition: " + creatureRootNode.transform.position.ToString());
+            creatureRootNode.transform.localPosition = new Vector3(0, 10, 0);
 
             // then recursivly traverse all connected edges
             recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
@@ -209,8 +204,6 @@ namespace VirtualCreatures {
                 // Place the primitive on a specific position
                 childGO.transform.localPosition = absPosition;
                 childGO.transform.localRotation = rotation;
-
-                Debug.Log("Created a child " + childGO.ToString() + " with localPosition: " + childGO.transform.localPosition.ToString() + " and localRotation: " + childGO.transform.localRotation.eulerAngles.ToString());
 
                 // Position all the children
                 Creature.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
