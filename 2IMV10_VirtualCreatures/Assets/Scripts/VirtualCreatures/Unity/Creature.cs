@@ -117,7 +117,7 @@ namespace VirtualCreatures {
             // Start with the root, at zero
             GameObject creatureRootNode = morphology.root.shape.createUnscaledPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
-            creatureRootNode.transform.localPosition = new Vector3(0, 10, 0);
+            creatureRootNode.transform.localPosition = new Vector3(0, 0, 0);
 
             // then recursivly traverse all connected edges
             recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
