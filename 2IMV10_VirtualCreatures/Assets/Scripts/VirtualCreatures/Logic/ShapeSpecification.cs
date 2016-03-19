@@ -114,7 +114,7 @@ namespace VirtualCreatures
             {
                 throw new ArgumentOutOfRangeException();
             }
-            float width = height;
+            float width = height * widthRatio;
             return new Rectangle(width, width, height);
         }
         /// <summary>

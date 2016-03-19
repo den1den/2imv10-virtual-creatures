@@ -14,19 +14,19 @@ namespace VirtualCreatures
     {
         public Face face = Face.UP;
 
-        private float _faceHorizontal = 0;
-        public float faceHorizontal { get { return _faceHorizontal; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceHorizontal=value; } }
-        private float _faceVertical = 0;
-        public float faceVertical { get { return _faceVertical; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceVertical = value; } }
+        private double _faceHorizontal = 0;
+        public double faceHorizontal { get { return _faceHorizontal; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceHorizontal=value; } }
+        private double _faceVertical = 0;
+        public double faceVertical { get { return _faceVertical; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceVertical = value; } }
 
-        private float _rotation = 0;
-        public float rotation { get { return _rotation; } set { if (value <= -Math.PI/2 || value > Math.PI/2) throw new ArgumentOutOfRangeException(); _rotation = value; } }
+        private double _rotation = 0;
+        public double rotation { get { return _rotation; } set { if (value <= -Math.PI/2 || value > Math.PI/2) throw new ArgumentOutOfRangeException(); _rotation = value; } }
 
-        private float _bending = 0;
-        public float bending { get { return _bending; } set { if (value <= -Math.PI / 2 || value >= Math.PI / 2) throw new ArgumentOutOfRangeException(); _bending = value; } }
+        private double _bending = 0;
+        public double bending { get { return _bending; } set { if (value <= -Math.PI / 2 || value >= Math.PI / 2) throw new ArgumentOutOfRangeException(); _bending = value; } }
 
-        private float _hover;
-        public float hover { get { return _hover; } set { if (value <= 0) throw new ArgumentOutOfRangeException(); _hover = value; } }
+        private double _hover;
+        public double hover { get { return _hover; } set { if (value <= 0) throw new ArgumentOutOfRangeException(); _hover = value; } }
 
         public JointType jointType = JointType.FIXED;
 
@@ -34,7 +34,7 @@ namespace VirtualCreatures
         /// Create a default fixed joint
         /// </summary>
         /// <param name="hover">distance from parent</param>
-        public JointSpecification(float hover) { this.hover = hover; }
+        public JointSpecification(double hover) { this.hover = hover; }
 
         /// <summary>
         /// Specifies the position of a joint and attached body relative to the base shape.
@@ -52,7 +52,7 @@ namespace VirtualCreatures
         /// bending
         /// <param name="hover">Additional offset in the direction of the initial joint (For simplicity this can also be in the direction of the face) (minimalAbsHover, maximalAbshover)</param>
         /// 
-        public JointSpecification(Face face, float faceH, float faceV, float rot, float bending, float hover, JointType type)
+        public JointSpecification(Face face, double faceH, double faceV, double rot, double bending, double hover, JointType type)
         {
             this.face = face;
             this.faceHorizontal = faceH;
@@ -157,28 +157,44 @@ namespace VirtualCreatures
         {
             Vector3 normal = this.getNormalUnitVector();
             Vector3 axis = this.getUnityAxisUnitVector();
-            Vector3 direcionalVector = Vector3.RotateTowards(normal, axis, this._bending, 0);
+            Vector3 direcionalVector = Vector3.RotateTowards(normal, axis, (float)_bending, 0);
             return direcionalVector;
         }
 
         public Quaternion getUnityRotation()
         {
+            Quaternion baseRotation;
             switch (this.face)
             {
                 case Face.RIGHT:
-                    return Quaternion.Euler(0, 90, 0);
+                    baseRotation = Quaternion.Euler(0, 90, 0);
+                    break;
                 case Face.FORWARDS:
-                    return Quaternion.identity;
+                    baseRotation = Quaternion.identity;
+                    break;
                 case Face.LEFT:
-                    return Quaternion.Euler(0, -90, 0);
+                    baseRotation = Quaternion.Euler(0, -90, 0);
+                    break;
                 case Face.UP:
-                    return Quaternion.Euler(-90, 0, 0);
+                    baseRotation = Quaternion.Euler(-90, 0, 0);
+                    break;
                 case Face.DOWN:
-                    return Quaternion.Euler(90, 0, 0);
+                    baseRotation = Quaternion.Euler(90, 0, 0);
+                    break;
                 case Face.REVERSE:
-                    return Quaternion.Euler(0, 180, 0);
+                    baseRotation = Quaternion.Euler(0, 180, 0);
+                    break;
+                default: throw new NotImplementedException();
             }
-            throw new NotImplementedException();
+
+            float rotationDegrees = (float)(this.rotation / Math.PI * 180);
+            Quaternion axialRotation = Quaternion.Euler(0, 0, rotationDegrees);
+
+            float bendingDegrees = (float)(this.bending / Math.PI * 180);
+            Quaternion bending = Quaternion.Euler(0, bendingDegrees, 0);
+
+            Quaternion total = baseRotation * axialRotation * bending;
+            return total;
         }
 
         public static JointSpecification createSimple(Face face, float absHover)

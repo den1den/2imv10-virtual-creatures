@@ -9,7 +9,7 @@ namespace VirtualCreatures
     // We shoud leave this class without any Unity thing related just as abstract as possible.
     public class Phenotype
     {
-        NaiveENN nerves;
+        ExplicitNN nerves;
 
         public Phenotype(Morphology morphology, Joint[] joints)
         {
@@ -32,30 +32,24 @@ namespace VirtualCreatures
 
     internal class NaiveENN : ExplicitNN
     {
-        internal float tickDt = float.NaN;
         /// <summary>
         /// The first ones are the joints then the rest
         /// </summary>
-        private Neural[][] sensorNeurons;
-        private double[][] sOffset, sFactor;
+        Neural[][] sensorNeurons;
+        Neural[][] actorNeurons;
+        JointType[] jointTypes;
 
-        private Neural[][] actorNeurons;
-        private double[][] aOffset, aFactor;
-
-        private Neural[] internalNeurons = null;
+        Neural[] internalNeurons = null;
 
         /// <summary>
         /// Create a NaiveENN network that controlles an couple of joints.
         /// </summary>
         /// <param name="joints"></param>
-        public NaiveENN(Joint[] joints) : base(joints)
+        NaiveENN(Joint[] joints) : base(joints)
         {
             this.sensorNeurons = new Neural[joints.Length][];
-            this.sOffset = new double[joints.Length][];
-            this.sFactor = new double[joints.Length][];
             this.actorNeurons = new Neural[joints.Length][];
-            this.aOffset = new double[joints.Length][];
-            this.aFactor = new double[joints.Length][];
+            this.jointTypes = new JointType[joints.Length];
         }
 
         public static NaiveENN create(Morphology morphology, Joint[] joints)
@@ -80,33 +74,38 @@ namespace VirtualCreatures
                 NNSpecification nn = morphology.edges[i].network;
                 int nSen = nn.sensors.Count();
                 int nAct = nn.actors.Count();
-
-                //check that that nothing is overspecified
+                //check that that nothing is underspecified
                 if (nDOF < nSen) throw new ArgumentException();
                 if (nDOF < nAct) throw new ArgumentException();
 
-                N.sOffset[i] = Enumerable.Repeat(0.0, nSen).ToArray();
-                N.sFactor[i] = Enumerable.Repeat(1.0, nSen).ToArray();
-
-                N.aOffset[i] = Enumerable.Repeat(0.0, nAct).ToArray();
-                N.aFactor[i] = Enumerable.Repeat(1.0, nAct).ToArray();
+                //set the action that should be performed on write to a neuron
+                N.jointTypes[i] = joint.jointType;
 
                 //create the actual sensors
-                N.sensorNeurons[i] = nn.sensors.Select(sen => N.createSensor(sen)).ToArray();
-                //and add them
-                for (int j = 0; j < N.sensorNeurons[i].Length; j++)
+                //always create the same amount of sensor implementations as dergees of freedom of a joint
+                N.sensorNeurons[i] = new Neural[nDOF];
+                for(int j = 0; j < nDOF; j++)
                 {
-                    Neural createdSensor = N.sensorNeurons[i][j];
-                    created[nn.sensors[j]] = createdSensor;
+                    Neural sensor = N.createSensor();
+                    N.sensorNeurons[i][j] = sensor;
+                    if(j < nSen)
+                    {
+                        //this is attached to an specification
+                        created[nn.sensors[j]] = sensor;
+                    }
                 }
 
                 //and create the actual actors
-                N.actorNeurons[i] = nn.actors.Select(act => N.createActor(act)).ToArray();
-                //and add them also
-                for (int j = 0; j < N.actorNeurons[i].Length; j++)
+                N.actorNeurons[i] = new Neural[nDOF];
+                for (int j = 0; j < nDOF; j++)
                 {
-                    Neural createdActor = N.actorNeurons[i][j];
-                    created[nn.actors[j]] = createdActor;
+                    Neural actor = N.createActor();
+                    N.actorNeurons[i][j] = actor;
+                    if (j < nAct)
+                    {
+                        //this is attached to an specification
+                        created[nn.actors[j]] = actor;
+                    }
                 }
 
                 //also create all normal neurons in this network
@@ -115,6 +114,8 @@ namespace VirtualCreatures
                     created[n] = N.createNeuron(n);
                 }
             }
+
+            //inv: all neurons are created
             //inv: per node create the implemenetation is stored in a map from Spec->Impl
 
             //throw all networks together
@@ -149,10 +150,13 @@ namespace VirtualCreatures
             }
             N.internalNeurons = created.Where(kvp => kvp.Key.isNeuron()).Select(kvp => kvp.Value).ToArray();
 
+            // DEBUG
+            // extra check if the numer of sensors and actors are exactly the DOF's?
+
             return N;
         }
 
-        private Neural createNeuron(NeuralSpec n)
+        Neural createNeuron(NeuralSpec n)
         {
             if (!n.isNeuron()) throw new ArgumentException();
             switch (n.getFunction())
@@ -210,88 +214,72 @@ namespace VirtualCreatures
             }
         }
 
-        private Neural createActor(NeuralSpec n) { if (n.isActor()) return new SUM(); else throw new ArgumentException(); }
+        Neural createActor() { return new SUM(); }
 
-        private Neural createSensor(NeuralSpec n) { if (n.isSensor()) return new Neural(); else throw new ArgumentException(); }
+        Neural createSensor() { return new Neural(); }
 
 
-        internal override void tick(int N)
+        internal override void tickimpl(int N)
         {
-            int i = 0;
             //read sensors
-            for (int j = 0; j < this.sensorNeurons.Length; j++)
+            for (int i = 0; i < this.sensorNeurons.Length; i++)
             {
-                Joint joint = this.joints[j];
-                Neural[] sNeurons = this.sensorNeurons[j];
-                if (sNeurons.Length == 3)
+                Joint source = this.joints[i];
+                JointType type = this.jointTypes[i];
+                Neural[] destination = this.sensorNeurons[i];
+                
+                switch (type)
                 {
-                    //3 degrees of freedom
-                    //sNeurons[0].value = joint.X * sFactor[j][0] + sOffset[j][0];
-                    //sNeurons[1].value = joint.Y * sFactor[j][1] + sOffset[j][1];
-                    //sNeurons[2].value = joint.Z * sFactor[j][2] + sOffset[j][2];
-                }
-                else if (sNeurons.Length == 2)
-                {
-                    //2 degrees of freedom
-                    //sNeurons[0].value = joint.X * sFactor[j][0] + sOffset[j][0];
-                    //sNeurons[1].value = joint.Y * sFactor[j][1] + sOffset[j][1];
-                }
-                else if (sNeurons.Length == 1)
-                {
-                    //1 degrees of freedom
-                    //hindge
-
-                    //sNeurons[0].value = joint.X * sFactor[j][0] + sOffset[j][0];
-                }
-                else
-                {
-                    //0 degrees of freedom
+                    case JointType.FIXED:
+                        break;
+                    case JointType.HINDGE:
+                        HingeJoint src = (HingeJoint)source;
+                        float valX = src.angle;
+                        valX /= 180;
+                        Debug.Log("Phenotype:tick:read " + valX);
+                        destination[0].value = valX;
+                        break;
+                    case JointType.PISTON:
+                    case JointType.ROTATIONAL:
+                    default:
+                        throw new NotSupportedException(type + " not supported in " + GetType());
                 }
             }
-
-            i = 0;
+            
             //do N internal ticks
-            do
+            for(int i = 0; i < N; i++)
             {
                 foreach (INeuron n in this.internalNeurons)
                 {
                     n.tick();
                 }
-            } while (++i < N);
+            }
 
-            i = 0;
             //write to actors
-            for (int j = 0; j < this.sensorNeurons.Length; j++)
+            for (int i = 0; i < this.sensorNeurons.Length; i++)
             {
-                Joint joint = this.joints[j];
-                Neural[] aNeurons = this.actorNeurons[j];
-                if (aNeurons.Length == 3)
+                Joint destination = this.joints[i];
+                JointType type = this.jointTypes[i];
+                Neural[] source = this.sensorNeurons[i];
+
+                switch (type)
                 {
-                    //3 degrees of freedom
-                    //joint.X = aOffset[j][0] + aFactor[j][0] * aNeurons[0].value;
-                    //joint.Y = aOffset[j][1] + aFactor[j][1] * aNeurons[1].value;
-                    //joint.Z = aOffset[j][2] + aFactor[j][2] * aNeurons[2].value;
-                }
-                else if (aNeurons.Length == 2)
-                {
-                    //2 degrees of freedom
-                    //joint.X = aOffset[j][0] + aFactor[j][0] * aNeurons[0].value;
-                    //joint.Y = aOffset[j][1] + aFactor[j][1] * aNeurons[1].value;
-                }
-                else if (aNeurons.Length == 1)
-                {
-                    //1 degrees of freedom
-                    HingeJoint h = (HingeJoint)joint;
-                    JointMotor m = h.motor;
-                    float force = (float)(aOffset[j][0] + aFactor[j][0] * aNeurons[0].value);
-                    Console.WriteLine(String.Format("Appling force {0} to joint {1}", force, h));
-                    m.force = force;
-                }
-                else
-                {
-                    //0 degrees of freedom
+                    case JointType.FIXED:
+                        break;
+                    case JointType.HINDGE:
+                        HingeJoint dest = (HingeJoint)destination;
+                        JointMotor motor = dest.motor;
+                        float valX = (float)source[0].value;
+                        Debug.Log("Phenotype:tick:write " + valX);
+                        motor.force = valX;
+                        break;
+                    case JointType.PISTON:
+                    case JointType.ROTATIONAL:
+                    default:
+                        break;
                 }
             }
+            
         }
 
         internal class Neural
@@ -309,25 +297,22 @@ namespace VirtualCreatures
 
         internal abstract class SingleFunction : INeuron
         {
-            public abstract double y(double x);
+            public abstract double y(double input);
 
             internal override void tick()
             {
-                this.value = 0;
+                value = 0;
                 for (int i = 0; i < this.weights.Length; i++)
                 {
-                    this.value += this.weights[i] * this.inputs[i].value;
+                    value += weights[i] * inputs[i].value;
                 }
-                this.value = y(value);
+                value = y(value);
             }
         }
         internal abstract class TimeFunction : SingleFunction
         {
             NaiveENN parent;
-            internal TimeFunction(NaiveENN parent)
-            {
-                this.parent = parent;
-            }
+            internal TimeFunction(NaiveENN parent) { this.parent = parent; }
             public override double y(double x)
             {
                 return y(x, parent.tickDt);
@@ -336,29 +321,29 @@ namespace VirtualCreatures
         }
         internal abstract class DoubleFunction : INeuron
         {
-            public abstract double y(double x, double y);
+            public abstract double y(double input1, double input2);
 
             internal override void tick()
             {
-                this.value = y(this.weights[0] * this.inputs[0].value, this.weights[1] * this.inputs[1].value);
+                value = y(weights[0] * inputs[0].value, weights[1] * inputs[1].value);
             }
         }
         internal abstract class TripleFunction : INeuron
         {
-            public abstract double y(double x, double y, double z);
+            public abstract double y(double input1, double input2, double input3);
 
             internal override void tick()
             {
-                this.value = y(this.weights[0] * this.inputs[0].value, this.weights[1] * this.inputs[1].value, this.weights[2] * this.inputs[2].value);
+                value = y(weights[0] * inputs[0].value, weights[1] * inputs[1].value, weights[2] * inputs[2].value);
             }
         }
         internal abstract class MultipleFunction : INeuron
         {
-            public abstract double y(Neural[] x);
+            public abstract double y(Neural[] inputs);
 
             internal override void tick()
             {
-                this.value = y(this.inputs);
+                value = y(inputs);
             }
         }
 
@@ -371,8 +356,8 @@ namespace VirtualCreatures
         }
         internal class ATAN : SingleFunction
         {
-            static double C = 1.0f / Math.Atan(7);
             static double CX = 7;
+            static double C = 1.0f / Math.Atan(CX);
             public override double y(double x)
             {
                 return Math.Atan(CX * x) * C;
@@ -380,7 +365,7 @@ namespace VirtualCreatures
         }
         internal class COS : SingleFunction
         {
-            static double CX = 2 * Math.PI;
+            static double CX = Math.PI;
             public override double y(double x)
             {
                 return Math.Cos(CX * x);
@@ -388,12 +373,15 @@ namespace VirtualCreatures
         }
         internal class SIN : SingleFunction
         {
-            static double CX = 2 * Math.PI;
+            static double CX = Math.PI;
             public override double y(double x)
             {
                 return Math.Sin(CX * x);
             }
         }
+        /// <summary>
+        /// Expontential function: [-1,1] -> [0.018, 1]
+        /// </summary>
         internal class EXP : SingleFunction
         {
             static double C = 1.0 / Math.Exp(2);
@@ -405,10 +393,14 @@ namespace VirtualCreatures
         }
         internal class LOG : SingleFunction
         {
-            static double Base = 2;
+            static double Base = Math.E;
             static double C = 0.2;
             public override double y(double x)
             {
+                if(x == 0)
+                {
+                    return -1;
+                }
                 return Math.Max(-1, C * Math.Log(x, Base));
             }
         }
@@ -432,8 +424,8 @@ namespace VirtualCreatures
         }
         internal class MEMORY : SingleFunction
         {
-            static int size = 30;
-            double[] vals = new double[size];
+            static int SIZE = 30;
+            double[] vals = new double[SIZE];
             int ptr = 0;
             public override double y(double x)
             {
@@ -445,14 +437,15 @@ namespace VirtualCreatures
         internal class SMOOTH : SingleFunction
         {
             static readonly double[] WEIGHTS = new double[] { 1.0, 0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125 };
-            double[] vals = new double[WEIGHTS.Length];
+            double[] history = new double[WEIGHTS.Length];
             int ptr = 0;
             public override double y(double x)
             {
-                vals[ptr] = x;
-                ptr = ptr + 1 % vals.Length;
+                //set the new value in the history
+                history[ptr] = x;
+                ptr = ptr + 1 % history.Length;
                 double r = x * WEIGHTS[0];
-                for (int w = 1; w < WEIGHTS.Length; w++) { r += WEIGHTS[w] * vals[(ptr + w) % vals.Length]; }
+                for (int w = 1; w < WEIGHTS.Length; w++) { r += WEIGHTS[w] * history[(ptr + w) % history.Length]; }
                 return r;
             }
         }
@@ -480,17 +473,16 @@ namespace VirtualCreatures
         internal class SIGMOID : SingleFunction
         {
             static double CX = -5;
-            double bias = 0;
             public override double y(double x)
             {
-                return 1.0 / (1 + Math.Exp(CX * (x - this.bias)));
+                return 1.0 / (1 + Math.Exp(CX * (x)));
             }
         }
         internal class SIGN : SingleFunction
         {
             public override double y(double x)
             {
-                if (x > 0)
+                if (x >= 0)
                 {
                     return 1;
                 }
@@ -573,7 +565,7 @@ namespace VirtualCreatures
         {
             public override double y(double x, double y, double z)
             {
-                if (x > 0)
+                if (x >= 0)
                 {
                     return y;
                 }
@@ -592,7 +584,7 @@ namespace VirtualCreatures
         {
             public override double y(double x, double y, double z)
             {
-                if (x + y > 0)
+                if (x + y > z)
                 {
                     return 1;
                 }
@@ -609,6 +601,15 @@ namespace VirtualCreatures
             this.joints = joints;
         }
 
-        internal abstract void tick(int n);
+        internal float tickDt = float.NaN;
+        internal void tick(int n)
+        {
+            tickimpl(n);
+            totalTicks += n;
+        }
+
+        internal abstract void tickimpl(int n);
+
+        int totalTicks = 0;
     }
 }

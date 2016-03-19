@@ -32,8 +32,8 @@ namespace VirtualCreatures
         /// <returns></returns>
         public Vector3 getUnityPositionAnchor()
         {
-            Vector3 posAnchorUnscaled = this.joint.faceHorizontal * this.joint.getRightUnitVector() + this.joint.faceVertical * this.joint.getUpUnitVector();
-            Vector3 absAnchor = Vector3.Scale(posAnchorUnscaled, this.source.shape.getBounds());
+            Vector3 posAnchorUnscaled = (float)joint.faceHorizontal * joint.getRightUnitVector() + (float)joint.faceVertical * joint.getUpUnitVector();
+            Vector3 absAnchor = Vector3.Scale(posAnchorUnscaled, source.shape.getBounds());
             return absAnchor;
         }
     }
@@ -64,10 +64,15 @@ namespace VirtualCreatures
     /// </summary>
     public class Symmetry
     {
-        public Vector3 axis;
-        public int number;
+        public static int MAX_SYMMETRY = 4;
 
-        public Symmetry(Vector3 axis, int number)
+        Face _axis = 0;
+        public Face axis { get { return _axis; } set { if (value == Face.FORWARDS || value == Face.RIGHT || value == Face.UP) _axis = value; else throw new ArgumentOutOfRangeException(); } }
+
+        int _number;
+        public int number { get { return _number; } set { if (value >= 1 || value <= MAX_SYMMETRY) _number = value; else throw new ArgumentOutOfRangeException(); } }
+
+        public Symmetry(Face axis, int number)
         {
             this.axis = axis;
             this.number = number;
@@ -77,13 +82,10 @@ namespace VirtualCreatures
     /// <summary>
     /// Paramters of the Evolutionairy Algorithm on how multiple neural networks are connected when the NNSpecification of a genotype is multiple times in a Morhology.
     /// </summary>
-    public class MultStrategy
+    public enum MultStrategy
     {
-        /// <summary>
-        /// Multiplication not yet used
-        /// Should contain the neural network mapping strategy
-        /// </summary>
-        public MultStrategy() { }
+        COPY_ACTORS_SENSORS,
+        COPY_NETWORK
     }
 }
 

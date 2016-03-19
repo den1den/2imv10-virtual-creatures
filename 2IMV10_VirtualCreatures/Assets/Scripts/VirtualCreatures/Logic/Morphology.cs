@@ -58,12 +58,12 @@ namespace VirtualCreatures
             //right
             ShapeSpecification fin = Rectangle.createWidthDepthHeight(4, 0.2f, 9);
             Node rfin = new Node(fin);
-            JointSpecification rightJoint = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 0.5f, JointType.HINDGE);
+            JointSpecification rightJoint = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 5.5f, JointType.HINDGE);
             NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(rightJoint.getDegreesOfFreedom());
 
             //left
             Node lfin = new Node(fin);
-            JointSpecification leftJoint = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 0.5f, JointType.HINDGE);
+            JointSpecification leftJoint = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 5.5f, JointType.HINDGE);
             NNSpecification leftWriteOnlyNNS = NNSpecification.createEmptyWriteNetwork(leftJoint.getDegreesOfFreedom());
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
@@ -73,12 +73,48 @@ namespace VirtualCreatures
 
             //connect the brain to the other NNSpecifications
             NeuralSpec outgoing = brain.outgoing[0];
-            rightWriteOnlyNNS.connectTo(outgoing, rightWriteOnlyNNS.sensors);
-            leftWriteOnlyNNS.connectTo(outgoing, leftWriteOnlyNNS.sensors);
+            rightWriteOnlyNNS.connectTo(outgoing, rightWriteOnlyNNS.actors);
+            leftWriteOnlyNNS.connectTo(outgoing, leftWriteOnlyNNS.actors);
 
             return new Morphology(root, brain, edges, genotype);
         }
-        
+
+        /// <summary>
+        /// A first morhology to test the evolution algorithm with.
+        /// </summary>
+        /// <returns>Morphology of a ball with two fins</returns>
+        static public Morphology testHindge()
+        {
+            NNSpecification brain = NNSpecification.testBrain1();
+
+            Genotype genotype = null;
+            ShapeSpecification body = Rectangle.createCube(10);
+            Node root = new Node(body);
+
+            //right
+            ShapeSpecification fin = Rectangle.createWidthDepthHeight(10, 0.2f, 50);
+            Node rfin = new Node(fin);
+            JointSpecification rightJoint = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 1, JointType.FIXED);
+            NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyNetwork();
+
+            //left
+            Node lfin = new Node(fin);
+            JointSpecification leftJoint = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 1, JointType.FIXED);
+            NNSpecification leftWriteOnlyNNS = NNSpecification.createEmptyNetwork();
+
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, rfin, rightJoint, rightWriteOnlyNNS),
+                new EdgeMorph(root, lfin, leftJoint, leftWriteOnlyNNS)
+            }.ToList();
+
+            //connect the brain to the other NNSpecifications
+            //NeuralSpec outgoing = brain.outgoing[0];
+            //rightWriteOnlyNNS.connectTo(outgoing, rightWriteOnlyNNS.actors);
+            //leftWriteOnlyNNS.connectTo(outgoing, leftWriteOnlyNNS.actors);
+
+            return new Morphology(root, brain, edges, genotype);
+        }
+
         static public Morphology testSwastika()
         {
             Genotype genotype = null;
@@ -213,6 +249,201 @@ namespace VirtualCreatures
             }.ToList();
 
             return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
+        }
+
+        static public Morphology testRotation()
+        {
+            Genotype genotype = null;
+            ShapeSpecification rootBody = Rectangle.createCube(4);
+            Node root = new Node(rootBody);
+
+            float angle = (float)(Math.PI / 4);
+            float h = (float)Math.Sqrt(2);
+            float k = h / 2;
+
+            //body element
+            ShapeSpecification smaller_body = Rectangle.createPlane(k*2, 0.1f);
+            ShapeSpecification body = Rectangle.createPlane(h*2, 0.1f);
+            ShapeSpecification bigger_body = Rectangle.createPlane((h + k)*2, 0.15f);
+
+            smaller_body = Rectangle.createCube(k*2);
+            body = Rectangle.createCube(h*2);
+            bigger_body = Rectangle.createPilar((h+k)*2, 0.01f);
+
+            //right
+            JointSpecification rl = new JointSpecification(Face.RIGHT, 0, 0, 0, -angle, k, JointType.FIXED);
+            JointSpecification r = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 2 - h, JointType.FIXED);
+            JointSpecification rr = new JointSpecification(Face.RIGHT, 0, 0, 0, angle, h+k, JointType.FIXED);
+            Node r0 = new Node(bigger_body);
+            Node r1 = new Node(body);
+            Node r2 = new Node(smaller_body);
+
+            //recursion on the one facing forwards: r0
+            JointSpecification fl = new JointSpecification(Face.FORWARDS, 0, 0, 0, -angle, 2.5f, JointType.FIXED);
+            JointSpecification f = new JointSpecification(Face.FORWARDS, 0, 0, 0, 0, 2.5f, JointType.FIXED);
+            JointSpecification fr = new JointSpecification(Face.FORWARDS, 0, 0, 0, angle, 2.5f, JointType.FIXED);
+            Node r00 = new Node(bigger_body);
+            Node r01 = new Node(body);
+            Node r02 = new Node(smaller_body);
+
+            //left
+            JointSpecification ll = new JointSpecification(Face.LEFT, 0, 0, 0, -angle, k, JointType.FIXED);
+            JointSpecification l = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 2 - h, JointType.FIXED);
+            JointSpecification lr = new JointSpecification(Face.LEFT, 0, 0, 0, angle, h + k, JointType.FIXED);
+            Node l0 = new Node(bigger_body);
+            Node l1 = new Node(body);
+            Node l2 = new Node(smaller_body);
+
+            //recursion on the one facing forwards: r0
+            Node l00 = new Node(bigger_body);
+            Node l01 = new Node(body);
+            Node l02 = new Node(smaller_body);
+
+            //arms
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, r0, rl, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, r1, r, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, r2, rr, NNSpecification.createEmptyNetwork()),
+
+                new EdgeMorph(r0, r00, fl, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(r0, r01, f, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(r0, r02, fr, NNSpecification.createEmptyNetwork()),
+
+                new EdgeMorph(root, l0, ll, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, l1, l, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, l2, lr, NNSpecification.createEmptyNetwork()),
+
+                new EdgeMorph(l2, l00, fl, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(l2, l01, f, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(l2, l02, fr, NNSpecification.createEmptyNetwork())
+            }.ToList();
+
+            //FIXME: +45 -45 != 0 in phenotype
+
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
+        }
+
+        static public Morphology testArc()
+        {
+            Genotype genotype = null;
+
+            int N = 10;
+            double angle = (Math.PI / 2) / N;
+            float x = 2;
+            
+            ShapeSpecification body = Rectangle.createPilar(x/2, 0.1f);
+            JointSpecification joint = new JointSpecification(Face.FORWARDS, 0, 0, 0, angle, x/2, JointType.FIXED);
+            IList<EdgeMorph> edges = new List<EdgeMorph>();
+
+            Node a = new Node(body);
+            Node root = a;
+            for (int i = 0; i < N; i++)
+            {
+                Node b = new Node(body);
+                edges.Add(new EdgeMorph(a, b, joint, NNSpecification.createEmptyNetwork()));
+                a = b;
+            }
+
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
+        }
+
+        static public Morphology testCircle()
+        {
+            Genotype genotype = null;
+            ShapeSpecification rootBody = new Sphere(6);
+            Node root = new Node(rootBody);
+
+            float angleRadium10th = (float)(2 * Math.PI / 8) - 0.1f;
+
+            //forwards, all positioned up
+            JointSpecification forwards = new JointSpecification( Face.FORWARDS, 0, 0, 0, angleRadium10th, 2.5f, JointType.FIXED);
+
+            //body element
+            ShapeSpecification body = Rectangle.createPlane(6, 0.5f);
+
+            //the nodes of the arms
+            Node a0 = new Node(body);
+            Node a1 = new Node(body);
+            Node a2 = new Node(body);
+            Node a3 = new Node(body);
+            Node a4 = new Node(body);
+            Node a5 = new Node(body);
+            Node a6 = new Node(body);
+            Node a7 = new Node(body);
+            Node a8 = new Node(body);
+
+            //arms
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, a0, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a0, a1, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a1, a2, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a2, a3, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a3, a4, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a4, a5, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a5, a6, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a6, a7, forwards, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(a7, a8, forwards, NNSpecification.createEmptyNetwork()),
+            }.ToList();
+
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
+        }
+
+        static public Morphology testCreature3()
+        {
+            ShapeSpecification b0 = Rectangle.createCube(2);
+            Node root = new Node(b0);
+
+            ShapeSpecification b1 = Rectangle.createCube(0.5f);
+            Node n1 = new Node(b1);
+
+            ShapeSpecification b2 = Rectangle.createCube(3);
+            Node n2 = new Node(b2);
+
+            ShapeSpecification b3 = Rectangle.createCube(1);
+            Node n3 = new Node(b3);
+
+            float absHover = 1f;
+            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
+            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
+            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
+
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, n1, toTheRight, emptyNN),
+                new EdgeMorph(n1, n2, forwards, emptyNN),
+                new EdgeMorph(n2, n3, forwards, emptyNN)
+            }.ToList();
+
+            Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
+            return m;
+        }
+
+        static public Morphology testCreature3_1()
+        {
+            ShapeSpecification b0 = Rectangle.createCube(2);
+            Node root = new Node(b0);
+
+            ShapeSpecification b1 = Rectangle.createCube(0.5f);
+            Node n1 = new Node(b1);
+
+            ShapeSpecification b2 = Rectangle.createCube(3);
+            Node n2 = new Node(b2);
+
+            ShapeSpecification b3 = Rectangle.createCube(1);
+            Node n3 = new Node(b3);
+
+            float absHover = 1f;
+            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
+            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
+            forwards.jointType = JointType.HINDGE;
+            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
+
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, n1, toTheRight, emptyNN),
+                new EdgeMorph(n1, n2, forwards, emptyNN),
+                new EdgeMorph(n2, n3, forwards, emptyNN)
+            }.ToList();
+            
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
         }
 
 

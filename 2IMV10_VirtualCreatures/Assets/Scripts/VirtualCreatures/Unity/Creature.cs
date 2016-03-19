@@ -66,41 +66,7 @@ namespace VirtualCreatures {
         }
 
         /// <summary>
-        /// See draw.io drawing.
-        /// </summary>
-        /// <returns></returns>
-        public static Creature CreateTest3()
-        {
-            ShapeSpecification b0 = Rectangle.createCube(2);
-            Node root = new Node(b0);
-
-            ShapeSpecification b1 = Rectangle.createCube(0.5f);
-            Node n1 = new Node(b1);
-
-            ShapeSpecification b2 = Rectangle.createCube(3);
-            Node n2 = new Node(b2);
-
-            ShapeSpecification b3 = Rectangle.createCube(1);
-            Node n3 = new Node(b3);
-
-            float absHover = 1f;
-            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
-            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
-            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
-
-            IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, n1, toTheRight, emptyNN),
-                new EdgeMorph(n1, n2, forwards, emptyNN),
-                new EdgeMorph(n2, n3, forwards, emptyNN)
-            }.ToList();
-
-            Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
-
-            return Create(m);
-        }
-
-        /// <summary>
-        /// 
+        /// Create a creture
         /// *note to set the position of the creature you have to set Creature.transform.position
         /// </summary>
         /// <param name="morphology"></param>
@@ -117,7 +83,8 @@ namespace VirtualCreatures {
             // Start with the root, at zero
             GameObject creatureRootNode = morphology.root.shape.createUnscaledPrimitive();
             creatureRootNode.transform.parent = creatureContainer.transform;
-            creatureRootNode.transform.localPosition = new Vector3(0, 10, 0);
+            // redundant
+            creatureRootNode.transform.localPosition = new Vector3(0, 0, 0);
 
             // then recursivly traverse all connected edges
             recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
@@ -135,38 +102,16 @@ namespace VirtualCreatures {
         }
 
         /// <summary>
-        /// Same as Test3 but with more complex Joints
+        /// Create a creture at some psition
         /// </summary>
-        /// <returns></returns>
-        public static Creature CreateTest3_1()
+        /// <param name="morphology"></param>
+        /// <param name="position"></param>
+        /// <returns>Creature</returns>
+        public static Creature Create(Morphology morphology, Vector3 position)
         {
-            ShapeSpecification b0 = Rectangle.createCube(2);
-            Node root = new Node(b0);
-
-            ShapeSpecification b1 = Rectangle.createCube(0.5f);
-            Node n1 = new Node(b1);
-
-            ShapeSpecification b2 = Rectangle.createCube(3);
-            Node n2 = new Node(b2);
-
-            ShapeSpecification b3 = Rectangle.createCube(1);
-            Node n3 = new Node(b3);
-
-            float absHover = 1f;
-            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
-            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
-            forwards.jointType = JointType.HINDGE;
-            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
-
-            IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, n1, toTheRight, emptyNN),
-                new EdgeMorph(n1, n2, forwards, emptyNN),
-                new EdgeMorph(n2, n3, forwards, emptyNN)
-            }.ToList();
-
-            Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
-
-            return Create(m);
+            Creature create = Create(morphology);
+            create.transform.position = position;
+            return create;
         }
 
         /// <summary>
@@ -176,7 +121,7 @@ namespace VirtualCreatures {
         /// <param name="parentNode">The node ofwhich the children should be added</param>
         /// <param name="parentGO">The created gameobject of the parent</param>
         /// <param name="allJoints">A list of all the joints found thusfar (in the order of traversal)</param>
-        private static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
+        static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
         {
             // Get the connected edges of the current node
             IList<EdgeMorph> edges = parentNode.getEdges(morphology.edges);
@@ -188,6 +133,7 @@ namespace VirtualCreatures {
                 GameObject childGO = childNode.shape.createUnscaledPrimitive();
 
                 childGO.transform.parent = parentGO.transform; // silently applies correction factor for hiearchical scaling
+
                 
                 // Create the joint at the parent and set the direction of the joint
                 Joint joint = e.joint.createJoint(childGO);
@@ -196,7 +142,7 @@ namespace VirtualCreatures {
                 // Calculate where the distance between center of child and parent
                 Vector3 facePosition = e.getUnityPositionAnchor(); //on parent shape
                 Vector3 direction = e.joint.getUnityDirection(); //towards child
-                float distFaceToChildCenter = e.joint.hover + childNode.shape.getBound(Face.REVERSE); //on child shape
+                float distFaceToChildCenter = (float)e.joint.hover + childNode.shape.getBound(Face.REVERSE); //on child shape
                 Vector3 absPosition = facePosition + distFaceToChildCenter * direction;
 
                 Quaternion rotation = e.joint.getUnityRotation();
