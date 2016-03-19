@@ -48,15 +48,16 @@ namespace VirtualCreatures
 
             addChildNodeAtMorphology(n2, n4);
             addChildNodeAtMorphology(n2, n5);
-            addChildNodeAtMorphology(n2, n6);
 
+            addChildNodeAtMorphology(n3, n6);
             addChildNodeAtMorphology(n3, n7);
-            addChildNodeAtMorphology(n3, n8);
-            addChildNodeAtMorphology(n3, n9);
 
-            addChildNodeAtMorphology(n4, n10);
-            addChildNodeAtMorphology(n4, n11);
-            addChildNodeAtMorphology(n4, n12);
+            addChildNodeAtMorphology(n4, n8);
+            addChildNodeAtMorphology(n5, n9);
+            addChildNodeAtMorphology(n6, n10);
+
+            addChildNodeAtMorphology(n10, n11);
+            addChildNodeAtMorphology(n10, n12);
 
             updateNodePositions();
         }
