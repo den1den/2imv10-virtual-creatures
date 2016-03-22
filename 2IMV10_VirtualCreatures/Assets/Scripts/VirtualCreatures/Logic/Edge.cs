@@ -32,7 +32,7 @@ namespace VirtualCreatures
         /// <returns></returns>
         public Vector3 getUnityPositionAnchor()
         {
-            Vector3 posAnchorUnscaled = (float)joint.faceHorizontal * joint.getRightUnitVector() + (float)joint.faceVertical * joint.getUpUnitVector();
+            Vector3 posAnchorUnscaled = (float)joint.faceHorizontal * joint.getRightUnitVector() + (float)joint.faceVertical * joint.getUpUnitVector() + joint.getNormalUnitVector();
             Vector3 absAnchor = Vector3.Scale(posAnchorUnscaled, source.shape.getBounds());
             return absAnchor;
         }

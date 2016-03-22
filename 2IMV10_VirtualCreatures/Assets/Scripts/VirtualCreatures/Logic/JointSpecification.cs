@@ -57,7 +57,7 @@ namespace VirtualCreatures
             this.face = face;
             this.faceHorizontal = faceH;
             this.faceVertical = faceV;
-            this.rotation = rotation;
+            this.rotation = rot;
             this.bending = bending;
             this.hover = hover;
             this.jointType = type;
@@ -111,9 +111,9 @@ namespace VirtualCreatures
                 case Face.REVERSE:
                     return Vector3.up;
                 case Face.UP:
-                    return Vector3.left;
+                    return -Vector3.forward;
                 case Face.DOWN:
-                    return Vector3.right;
+                    return Vector3.forward;
             }
             throw new NotImplementedException();
         }

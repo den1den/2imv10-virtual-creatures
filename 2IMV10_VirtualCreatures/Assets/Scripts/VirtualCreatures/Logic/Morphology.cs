@@ -347,16 +347,61 @@ namespace VirtualCreatures
             return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
         }
 
+        static public Morphology testGiraffe()
+        {
+            Genotype genotype = null;
+
+            ShapeSpecification bodyS = Rectangle.createPilar(2, 0.25f);
+            ShapeSpecification legS = Rectangle.createPilar(1, 0.25f);
+            ShapeSpecification neckS = Rectangle.createPilar(3, 0.1f);
+            ShapeSpecification headS = new Sphere(1.2f);
+            ShapeSpecification snoutS = Rectangle.createPilar(0.5f, 0.5f);
+
+            //the nodes of the arms
+            Node root = new Node(bodyS);
+            Node leg1 = new Node(legS);
+            Node leg2 = new Node(legS);
+            Node leg3 = new Node(legS);
+            Node leg4 = new Node(legS);
+            Node neck = new Node(neckS);
+            Node head = new Node(headS);
+            Node snout = new Node(snoutS);
+
+            float legRotation = 0;
+            float legBending = 0;
+
+            //the joints
+            JointSpecification rl1 = new JointSpecification(Face.DOWN, 0.9, 0.8, legRotation, legBending, 0.1, JointType.FIXED);
+            JointSpecification rl2 = new JointSpecification(Face.DOWN, -0.9, 0.8, -legRotation, legBending, 0.1, JointType.FIXED);
+            JointSpecification rl3 = new JointSpecification(Face.DOWN, 0.9, -0.8, legRotation, legBending, 0.1, JointType.FIXED);
+            JointSpecification rl4 = new JointSpecification(Face.DOWN, -0.9, -0.8, -legRotation, legBending, 0.1, JointType.FIXED);
+            JointSpecification rn = new JointSpecification(Face.UP, 0, 0.9, 0, 0, 0.01, JointType.FIXED);
+            JointSpecification nh = new JointSpecification(Face.FORWARDS, 0, 0, 0, 0, 0.01, JointType.FIXED);
+            JointSpecification hs = new JointSpecification(Face.UP, 0, 0, 0, 0, 0.01, JointType.FIXED);
+
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, leg1, rl1, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, leg2, rl2, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, leg3, rl3, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, leg4, rl4, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(root, neck, rn, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(neck, head, nh, NNSpecification.createEmptyNetwork()),
+                new EdgeMorph(head, snout, hs, NNSpecification.createEmptyNetwork()),
+            }.ToList();
+
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
+        }
+
         static public Morphology testCircle()
         {
             Genotype genotype = null;
             ShapeSpecification rootBody = new Sphere(6);
             Node root = new Node(rootBody);
 
-            float angleRadium10th = (float)(2 * Math.PI / 8) - 0.1f;
+            float angleRadium10th = (float)(2 * Math.PI / 9) - 0.1f;
 
             //forwards, all positioned up
-            JointSpecification forwards = new JointSpecification( Face.FORWARDS, 0, 0, 0, angleRadium10th, 2.5f, JointType.FIXED);
+            JointSpecification forwards = new JointSpecification( Face.FORWARDS, 0, 0, 0.5, angleRadium10th, 2.5f, JointType.FIXED);
 
             //body element
             ShapeSpecification body = Rectangle.createPlane(6, 0.5f);

@@ -172,7 +172,7 @@ namespace VirtualCreatures {
                 Sphere sphere = (Sphere)spec;
                 primitive = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 SphereCollider collider = primitive.GetComponent<SphereCollider>();
-                collider.radius = sphere.getRadius();
+                collider.radius = sphere.getRadius()/2;
             }
             else throw new NotImplementedException();
 
