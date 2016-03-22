@@ -6,30 +6,6 @@ using UnityEngine;
 
 namespace VirtualCreatures
 {
-    // We shoud leave this class without any Unity thing related just as abstract as possible.
-    public class Phenotype
-    {
-        ExplicitNN nerves;
-
-        public Phenotype(Morphology morphology, Joint[] joints)
-        {
-            this.nerves = NaiveENN.create(morphology, joints);
-        }
-
-        /// <summary>
-        /// This function invokes 2 updates in the neural network and then writes the output forces to the joints directly
-        /// </summary>
-        /// <param name="dt"></param>
-        public void update(float dt)
-        {
-            // Read and write values of Joints once
-            // ? When the dt changes to much we should do more ticks in the network to keep it consistent with Update and Fixedupdate functionalities.
-            this.nerves.tickDt = dt / 2;
-            this.nerves.tick(2);
-        }
-
-    }
-
     internal class NaiveENN : ExplicitNN
     {
         /// <summary>
@@ -52,7 +28,7 @@ namespace VirtualCreatures
             this.jointTypes = new JointType[joints.Length];
         }
 
-        public static NaiveENN create(Morphology morphology, Joint[] joints)
+        public static NaiveENN construct(Morphology morphology, Joint[] joints)
         {
             if (morphology.edges.Count != joints.Length) throw new ArgumentException(); //every edge should correspond to exactly one joint
 

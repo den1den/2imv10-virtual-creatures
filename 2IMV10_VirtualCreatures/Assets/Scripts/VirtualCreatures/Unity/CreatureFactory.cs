@@ -9,14 +9,14 @@ namespace VirtualCreatures
         // Population size
         public const int Population = 100;
 
-        private Creature[] creatures = new Creature[Population];
+        private CreatureScript[] creatures = new CreatureScript[Population];
 
         private float TimeCount;
 
         // Use this for initialization
         void Start()
         {
-            Creature.Create(Morphology.testSuperSwastika());
+            CreatureScript.construct(Morphology.testArc(), new Vector3(10, 50, 20));
             Debug.Break();
         }
 

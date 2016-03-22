@@ -63,32 +63,6 @@ namespace VirtualCreatures
             this.jointType = type;
         }
 
-        /// <summary>
-        /// Create joint and set the axis and orentiation. Anchor should not be set as this is dependent on scaling.
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        public Joint createJoint(GameObject parent)
-        {
-            switch (this.jointType)
-            {
-                case JointType.FIXED:
-                    FixedJoint fixedjoint = parent.AddComponent<FixedJoint>();
-                    return fixedjoint;
-                case JointType.HINDGE:
-                    //positive angle is in the direction of the normal
-                    HingeJoint hindgeJoint = parent.AddComponent<HingeJoint>();
-                    hindgeJoint.axis = this.getUnityAxisUnitVector();
-                    return hindgeJoint;
-                case JointType.PISTON:
-                    SpringJoint springJoint = parent.AddComponent<SpringJoint>();
-                    return springJoint;
-                case JointType.ROTATIONAL:
-                    break;
-            }
-            throw new NotImplementedException();
-        }
-
         public Vector3 getNormalUnitVector()
         {
             switch (this.face)

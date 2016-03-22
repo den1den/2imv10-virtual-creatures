@@ -17,20 +17,6 @@ namespace VirtualCreatures
         {
             return this.GetType().Name + " [" + this.getSize().ToString() + "]";
         }
-        internal abstract GameObject _primitive();
-        public GameObject createUnscaledPrimitive()
-        {
-            GameObject primitive = this._primitive();
-            this._setColider(primitive.GetComponent<Collider>());
-            Mesh mesh = primitive.GetComponent<MeshFilter>().mesh;
-            mesh.vertices = mesh.vertices.Select(v => new Vector3(v.x * this.getXBound(), v.y * this.getYBound(), v.z * this.getZBound())).ToArray();
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            primitive.AddComponent<Rigidbody>();
-            return primitive;
-        }
-
-        internal abstract void _setColider(Collider collider);
 
         /// <summary>
         /// Distance from center to the bounding plane in the X direction (left right in f.o.r.)
@@ -139,17 +125,6 @@ namespace VirtualCreatures
         public override float getXBound() { return this.factorRight; }
         public override float getYBound() { return this.factorUp; }
         public override float getZBound() { return this.factorForwards; }
-
-        internal override GameObject _primitive()
-        {
-            return GameObject.CreatePrimitive(PrimitiveType.Cube);
-        }
-
-        internal override void _setColider(Collider collider)
-        {
-            BoxCollider bc = (BoxCollider)collider;
-            bc.size = this.getBounds();
-        }
     }
 
     public class Sphere : ShapeSpecification
@@ -167,15 +142,6 @@ namespace VirtualCreatures
         public override float getXBound() { return this.r; }
         public override float getYBound() { return this.r; }
         public override float getZBound() { return this.r; }
-        internal override GameObject _primitive()
-        {
-            return GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        }
-
-        internal override void _setColider(Collider collider)
-        {
-            SphereCollider sp = (SphereCollider)collider;
-            sp.radius = this.r;
-        }
+        public float getRadius() { return this.r; }
     }
 }
