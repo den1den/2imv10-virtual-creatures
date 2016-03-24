@@ -165,7 +165,7 @@ namespace VirtualCreatures {
                 Rectangle rect = (Rectangle)spec;
                 primitive = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 BoxCollider collider = primitive.GetComponent<BoxCollider>();
-                collider.size = spec.getBounds();
+                collider.size = spec.getSize();
             }
             else if (spec.GetType() == typeof(Sphere))
             {
@@ -177,7 +177,7 @@ namespace VirtualCreatures {
             else throw new NotImplementedException();
 
             Mesh mesh = primitive.GetComponent<MeshFilter>().mesh;
-            mesh.vertices = mesh.vertices.Select(v => new Vector3(v.x * spec.getXBound(), v.y * spec.getYBound(), v.z * spec.getZBound())).ToArray();
+            mesh.vertices = mesh.vertices.Select(v => new Vector3(v.x * spec.getXSize(), v.y * spec.getYSize(), v.z * spec.getZSize())).ToArray();
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             primitive.AddComponent<Rigidbody>();

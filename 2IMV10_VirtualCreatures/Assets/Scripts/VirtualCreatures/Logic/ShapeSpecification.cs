@@ -9,7 +9,6 @@ namespace VirtualCreatures
     /// <summary>
     /// This defines a shape, excluding position and rotation. 
     /// The shape also has a right handed coordinate system with X, Y and Z.
-    /// Every shape has a root
     /// </summary>
     public abstract class ShapeSpecification
     {
@@ -53,8 +52,19 @@ namespace VirtualCreatures
             }
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Size of the shape from the center
+        /// </summary>
+        /// <returns></returns>
         public Vector3 getBounds() { return new Vector3(this.getXBound(), this.getYBound(), this.getZBound()); }
+
+        /// <summary>
+        /// Total size in each direction
+        /// </summary>
+        /// <returns>2 * getBounds</returns>
         public Vector3 getSize() { return 2 * this.getBounds(); }
+        
         public float getXSize() { return 2 * this.getXBound(); }
         public float getYSize() { return 2 * this.getYBound(); }
         public float getZSize() { return 2 * this.getZBound(); }

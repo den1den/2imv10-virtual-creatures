@@ -20,10 +20,12 @@ namespace VirtualCreatures
         public double faceVertical { get { return _faceVertical; } set { if (value < -1 || value > 1) throw new ArgumentOutOfRangeException(); _faceVertical = value; } }
 
         private double _rotation = 0;
-        public double rotation { get { return _rotation; } set { if (value <= -Math.PI/2 || value > Math.PI/2) throw new ArgumentOutOfRangeException(); _rotation = value; } }
+        public double rotation { get { return _rotation; } set { if (value < -Math.PI/2 || value > Math.PI/2)
+                    throw new ArgumentOutOfRangeException();
+                _rotation = value; } }
 
         private double _bending = 0;
-        public double bending { get { return _bending; } set { if (value <= -Math.PI / 2 || value >= Math.PI / 2) throw new ArgumentOutOfRangeException(); _bending = value; } }
+        public double bending { get { return _bending; } set { if (value < -Math.PI / 2 || value > Math.PI / 2) throw new ArgumentOutOfRangeException(); _bending = value; } }
 
         private double _hover;
         public double hover { get { return _hover; } set { if (value <= 0) throw new ArgumentOutOfRangeException(); _hover = value; } }

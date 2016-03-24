@@ -367,14 +367,14 @@ namespace VirtualCreatures
             Node head = new Node(headS);
             Node snout = new Node(snoutS);
 
-            float legRotation = 0;
-            float legBending = 0;
+            double legRotation = Math.PI/2;
+            double legBending = 0.25;
 
             //the joints
-            JointSpecification rl1 = new JointSpecification(Face.DOWN, 0.9, 0.8, legRotation, legBending, 0.1, JointType.FIXED);
-            JointSpecification rl2 = new JointSpecification(Face.DOWN, -0.9, 0.8, -legRotation, legBending, 0.1, JointType.FIXED);
-            JointSpecification rl3 = new JointSpecification(Face.DOWN, 0.9, -0.8, legRotation, legBending, 0.1, JointType.FIXED);
-            JointSpecification rl4 = new JointSpecification(Face.DOWN, -0.9, -0.8, -legRotation, legBending, 0.1, JointType.FIXED);
+            JointSpecification rl1 = new JointSpecification(Face.DOWN, 0.9, 0.8, legRotation, legBending, 0.2, JointType.FIXED);
+            JointSpecification rl2 = new JointSpecification(Face.DOWN, -0.9, 0.8, -legRotation, legBending, 0.2, JointType.FIXED);
+            JointSpecification rl3 = new JointSpecification(Face.DOWN, 0.9, -0.8, legRotation, legBending, 0.2, JointType.FIXED);
+            JointSpecification rl4 = new JointSpecification(Face.DOWN, -0.9, -0.8, -legRotation, legBending, 0.2, JointType.FIXED);
             JointSpecification rn = new JointSpecification(Face.UP, 0, 0.9, 0, 0, 0.01, JointType.FIXED);
             JointSpecification nh = new JointSpecification(Face.FORWARDS, 0, 0, 0, 0, 0.01, JointType.FIXED);
             JointSpecification hs = new JointSpecification(Face.UP, 0, 0, 0, 0, 0.01, JointType.FIXED);
