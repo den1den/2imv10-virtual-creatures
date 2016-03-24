@@ -21,5 +21,10 @@ namespace VirtualCreatures
         {
             return alledges.Where<EdgeMorph>(e => e.source == this).ToList<EdgeMorph>();
         }
+
+        public Node deepCopy()
+        {
+            return new Node(this.shape.deepCopy());
+        }
     }
 }

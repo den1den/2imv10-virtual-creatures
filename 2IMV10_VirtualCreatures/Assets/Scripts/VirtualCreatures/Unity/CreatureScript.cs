@@ -117,16 +117,14 @@ namespace VirtualCreatures {
 
                 // Create the joint at the parent and set the direction of the joint
                 Joint joint = createJoint(e.joint, childGO);
+                joint.connectedBody = parentGO.GetComponent<Rigidbody>();
                 allJoints[morphology.edges.IndexOf(e)] = joint;
 
                 // Position all the children
                 CreatureScript.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
-
+                
                 // Calculate where the joint should be, relative to the childs coordinates system
                 joint.anchor = new Vector3(0, 0, -distFaceToChildCenter);
-
-                // Set the joint
-                joint.connectedBody = parentGO.GetComponent<Rigidbody>();
             }
         }
 

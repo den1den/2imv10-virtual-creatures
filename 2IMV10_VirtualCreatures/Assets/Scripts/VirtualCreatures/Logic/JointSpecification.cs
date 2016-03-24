@@ -205,6 +205,11 @@ namespace VirtualCreatures
                 default: throw new NotImplementedException();
             }
         }
+
+        public JointSpecification deepCopy()
+        {
+            return new JointSpecification(this.face, this._faceHorizontal, this._faceVertical, this._rotation, this._bending, this._hover, this.jointType);
+        }
     }
 
     public enum Face

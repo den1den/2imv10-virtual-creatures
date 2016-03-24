@@ -68,6 +68,8 @@ namespace VirtualCreatures
         public float getXSize() { return 2 * this.getXBound(); }
         public float getYSize() { return 2 * this.getYBound(); }
         public float getZSize() { return 2 * this.getZBound(); }
+
+        public abstract ShapeSpecification deepCopy();
     }
 
     public class Rectangle : ShapeSpecification
@@ -78,27 +80,27 @@ namespace VirtualCreatures
 
         /// <summary>
         /// Create a rectable with a certain size.
-        /// (everything is measured from edge to edge)
+        /// (everything is measured from center to edge)
         /// </summary>
-        /// <param name="width">>0 (in left right direction)</param>
-        /// <param name="thickness">>0 (in up/down direction)</param>
-        /// <param name="height">>0 (in forwards direction)</param>
-        public Rectangle(float width, float thickness, float height)
+        /// <param name="factorRight">>0 (in left right direction)</param>
+        /// <param name="factorUp">>0 (in up/down direction)</param>
+        /// <param name="factorForwards">>0 (in forwards direction)</param>
+        Rectangle(float factorRight, float factorUp, float factorForwards)
         {
-            if (width < 0 || thickness < 0 || height < 0)
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            this.factorRight = width / 2;
-            this.factorUp = thickness / 2;
-            this.factorForwards = height / 2;
+            this.factorRight = factorRight;
+            this.factorUp = factorUp;
+            this.factorForwards = factorForwards;
         }
 
         public static Rectangle createWidthDepthHeight(float width, float depth, float height)
         {
-            return new Rectangle(width, depth, height);
+            if (width < 0 || depth < 0 || height < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            return new Rectangle(width / 2, depth / 2, height / 2);
         }
-        public static Rectangle createCube(float size) { return new Rectangle(size, size, size); }
+        public static Rectangle createCube(float size) { return createWidthDepthHeight(size, size, size); }
         /// <summary>
         /// A beam with has a scaled extension in the up direction (for arms)
         /// </summary>
@@ -111,7 +113,7 @@ namespace VirtualCreatures
                 throw new ArgumentOutOfRangeException();
             }
             float width = height * widthRatio;
-            return new Rectangle(width, width, height);
+            return createWidthDepthHeight(width, width, height);
         }
         /// <summary>
         /// The with of all the planes.
@@ -129,29 +131,45 @@ namespace VirtualCreatures
                 throw new ArgumentOutOfRangeException();
             }
             float width = height * widthRatio;
-            return new Rectangle(width, DEPTH, height);
+            return createWidthDepthHeight(width, DEPTH, height);
         }
 
         public override float getXBound() { return this.factorRight; }
         public override float getYBound() { return this.factorUp; }
         public override float getZBound() { return this.factorForwards; }
+
+        public override ShapeSpecification deepCopy()
+        {
+            return new Rectangle(this.factorRight, this.factorUp, this.factorForwards);
+        }
     }
 
     public class Sphere : ShapeSpecification
     {
         internal float r;
         /// <summary>
-        /// Create a sphere with a certain diameter
+        /// Create a sphere with a certain radius
         /// </summary>
-        /// <param name="diameter"></param>
-        public Sphere(float diameter)
+        /// <param name="radius"></param>
+        Sphere(float radius)
+        {
+            this.r = radius;
+        }
+
+        public static Sphere create(float diameter)
         {
             if (diameter < 0) throw new ArgumentOutOfRangeException();
-            this.r = diameter / 2;
+            return Sphere.create(diameter / 2);
         }
+
         public override float getXBound() { return this.r; }
         public override float getYBound() { return this.r; }
         public override float getZBound() { return this.r; }
         public float getRadius() { return this.r; }
+
+        public override ShapeSpecification deepCopy()
+        {
+            return Sphere.create(this.r);
+        }
     }
 }

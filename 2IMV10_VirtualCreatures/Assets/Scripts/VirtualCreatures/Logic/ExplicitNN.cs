@@ -31,6 +31,9 @@ namespace VirtualCreatures
         public static NaiveENN construct(Morphology morphology, Joint[] joints)
         {
             if (morphology.edges.Count != joints.Length) throw new ArgumentException(); //every edge should correspond to exactly one joint
+            //throw all networks together
+            IEnumerable<NNSpecification> allNetworks = Enumerable.Repeat(morphology.brain, 1).Union(morphology.edges.Select(e => e.network));
+            foreach(NNSpecification n in allNetworks) { n.checkInvariants(); }
 
             //create reference for the creation of neurons
             NaiveENN N = new NaiveENN(joints);
@@ -93,9 +96,6 @@ namespace VirtualCreatures
 
             //inv: all neurons are created
             //inv: per node create the implemenetation is stored in a map from Spec->Impl
-
-            //throw all networks together
-            IEnumerable<NNSpecification> allNetworks = Enumerable.Repeat(morphology.brain, 1).Union(morphology.edges.Select(e => e.network));
 
             //now set all the appropiate weights and connect the neurons
             //so for each network

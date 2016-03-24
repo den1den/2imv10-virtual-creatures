@@ -15,10 +15,7 @@ namespace VirtualCreatures
         public IList<NeuralSpec> neurons;
         public IList<NeuralSpec> actors;
 
-        public IList<Connection> connections;
-
-        public IList<NeuralSpec> outgoing;
-        private static readonly float DEFAULT_WEIGHT = 1.0f;
+        private IList<Connection> connections;
 
         /// <summary>
         /// Full neural network specification
@@ -27,88 +24,36 @@ namespace VirtualCreatures
         /// <param name="neurons"></param>
         /// <param name="actors"></param>
         /// <param name="connections"></param>
-        /// <param name="outgoing">Neurons or sensors that are interfaced to the outside</param>
-        public NNSpecification(IList<NeuralSpec> sensors, IList<NeuralSpec> neurons, IList<NeuralSpec> actors, IList<Connection> connections, IList<NeuralSpec> outgoing)
+        NNSpecification(IList<NeuralSpec> sensors, IList<NeuralSpec> neurons, IList<NeuralSpec> actors, IList<Connection> connections)
         {
-            if (outgoing.Except(neurons).Except(actors).Count() > 0)
-            {
-                throw new ArgumentException("Outgoing nodes should only contain nodes that are of this network");
-            }
-            IEnumerable<NeuralSpec> allConnected = connections.SelectMany(con => new[] { con.source, con.destination });
-            if (allConnected.Except(sensors).Except(neurons).Except(actors).Count() > 0)
-            {
-                throw new ArgumentException("Connections should only contain nodes that are of this network");
-            }
             this.sensors = sensors;
             this.neurons = neurons;
             this.actors = actors;
             this.connections = connections;
-            this.outgoing = outgoing;
         }
 
-        /// <summary>
-        /// Without actors and sensors
-        /// </summary>
-        /// <param name="neurons"></param>
-        /// <param name="connections"></param>
-        /// <param name="outgoing"></param>
-        public NNSpecification(IList<NeuralSpec> neurons, IList<Connection> connections, IList<NeuralSpec> outgoing) : this(new List<NeuralSpec>(0), neurons, new List<NeuralSpec>(0), connections, outgoing) { }
+        NNSpecification(IList<NeuralSpec> neurons, IList<Connection> connections) : this(new List<NeuralSpec>(0), neurons, new List<NeuralSpec>(0), connections) { }
 
-        public IEnumerable<NeuralSpec> getAllNeurals()
+        NNSpecification() : this(new List<NeuralSpec>(0), new List<Connection>(0)){}
+        
+        public void checkInvariants()
         {
-            return this.sensors
-                .Concat(this.neurons)
-                .Concat(this.actors);
-        }
-
-        public IDictionary<NeuralSpec, NeuralSpec> cloneAllNeurals()
-        {
-            return this.getAllNeurals().ToDictionary(n => n, n => n.clone());
-        }
-
-        public IEnumerable<NeuralSpec> getNeuronsAndActors()
-        {
-            return this.actors.Concat(this.neurons);
-        }
-
-        public IEnumerable<Connection> getEdgesBySource(NeuralSpec source)
-        {
-            return this.connections.Where(c => c.source == source);
-        }
-
-        public IEnumerable<Connection> getEdgesByDestination(NeuralSpec destination)
-        {
-            return this.connections.Where(c => c.destination == destination);
-        }
-
-        public bool contains(NeuralSpec n)
-        {
-            return this.getAllNeurals().Contains(n);
-        }
-
-        public void connectTo(NeuralSpec source, NeuralSpec destination, float weight)
-        {
-            if (!contains(destination)) throw new ArgumentException();
-            this.connections.Add(new Connection(source, destination, weight));
-        }
-
-        public void connectTo(NeuralSpec source, IList<NeuralSpec> ns, float weight)
-        {
-            foreach (NeuralSpec destination in ns)
+            foreach(Connection c in connections)
             {
-                connectTo(source, destination, weight);
+                if (c.source.isSensor() && c.destination.isActor()) throw new ApplicationException("no direct connections allowed between sensors and actors");
             }
+
+            if (sensors.Intersect(actors).Count() > 0) throw new ApplicationException("sensors and actors should be disjoint sets");
+            if (neurons.Intersect(sensors).Count() > 0) throw new ApplicationException("neurons and sensors should be disjoint sets");
+            if (neurons.Intersect(actors).Count() > 0) throw new ApplicationException("neurons and actors should be disjoint sets");
+
+            //redundant or invalid?
+            if (getIncommingConnections().Intersect(getOutgoingConnections()).Count() > 0) throw new ApplicationException("connection that did not hit anything in this network");
         }
-
-        public void connectTo(NeuralSpec source, NeuralSpec destination) { connectTo(source, destination, DEFAULT_WEIGHT); }
-
-        public void connectTo(NeuralSpec source, IList<NeuralSpec> ns) { connectTo(source, ns, DEFAULT_WEIGHT); }
-
-
 
         internal static NNSpecification createEmptyNetwork()
         {
-            return new NNSpecification(new List<NeuralSpec>(0), new List<NeuralSpec>(0), new List<NeuralSpec>(0), new List<Connection>(0), new List<NeuralSpec>(0));
+            return new NNSpecification();
         }
 
         public static NNSpecification createEmptyReadNetwork(int dof)
@@ -127,10 +72,129 @@ namespace VirtualCreatures
             IList<NeuralSpec> neurons = new List<NeuralSpec>(0);
             IList<NeuralSpec> actors = Enumerable.Repeat(nActors, nActors).Select(n => NeuralSpec.createActor()).ToList();
             IList<Connection> connections = new List<Connection>(0);
-            IList<NeuralSpec> outgoing = new List<NeuralSpec>(sensors);
-            return new NNSpecification(sensors, neurons, actors, connections, outgoing);
+            return new NNSpecification(sensors, neurons, actors, connections);
+        }
+        
+        internal NNSpecification copy(IDictionary<NeuralSpec, NeuralSpec> copiedNeurons)
+        {
+            Func<NeuralSpec, NeuralSpec> getCopied = n =>
+            {
+                NeuralSpec copied = copiedNeurons[n];
+                if (copied == null) throw new ApplicationException();
+                return copied;
+            };
+            IList<NeuralSpec> sensors = this.sensors.Select(getCopied).ToList();
+            IList<NeuralSpec> neurons = this.neurons.Select(getCopied).ToList();
+            IList<NeuralSpec> actors = this.actors.Select(getCopied).ToList();
+            IList<Connection> connections = this.connections.Select(con => new Connection(copiedNeurons[con.source], copiedNeurons[con.destination])).ToList();
+            return new NNSpecification(sensors, neurons, actors, connections);
         }
 
+        //getters
+
+        public IEnumerable<NeuralSpec> getAllNeurals()
+        {
+            return this.sensors
+                .Concat(this.neurons)
+                .Concat(this.actors);
+        }
+
+        /// <summary>
+        /// All possible endpoints of an edge
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<NeuralSpec> getNeuronsAndActors()
+        {
+            return this.actors.Concat(this.neurons);
+        }
+
+        /// <summary>
+        /// All possible starting points of an edge
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<NeuralSpec> getNeuronsAndSensors()
+        {
+            return this.sensors.Concat(this.neurons);
+        }
+
+        public IEnumerable<Connection> getInternalConnections()
+        {
+            return this.connections.Where(c => getNeuronsAndSensors().Contains(c.source) && getNeuronsAndActors().Contains(c.destination));
+        }
+
+        public IEnumerable<Connection> getOutgoingConnections()
+        {
+            return this.connections.Where(c => getNeuronsAndSensors().Contains(c.source) && !getNeuronsAndActors().Contains(c.destination));
+        }
+
+        public IEnumerable<Connection> getIncommingConnections()
+        {
+            return this.connections.Where(c => !getNeuronsAndSensors().Contains(c.source) && getNeuronsAndActors().Contains(c.destination));
+        }
+
+        /// <summary>
+        /// Get all edges connected to source
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public IEnumerable<Connection> getEdgesBySource(NeuralSpec source)
+        {
+            return this.connections.Where(c => c.source == source);
+        }
+
+        /// <summary>
+        /// Get all edges connected to destination
+        /// </summary>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        public IEnumerable<Connection> getEdgesByDestination(NeuralSpec destination)
+        {
+            return this.connections.Where(c => c.destination == destination);
+        }
+
+        /// <summary>
+        /// Check if n is in this network
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
+        public bool contains(NeuralSpec n)
+        {
+            return this.getAllNeurals().Contains(n);
+        }
+
+        // modifications
+        
+        public Connection addNewLocalConnection(NeuralSpec source, NeuralSpec destination, float weight)
+        {
+            if(!getNeuronsAndSensors().Contains(source)) throw new ArgumentException();
+            if (!getNeuronsAndActors().Contains(destination)) throw new ArgumentException();
+            Connection c = new Connection(source, destination, weight);
+            this.connections.Add(c);
+            return c;
+        }
+
+        public Connection addNewInterConnection(NeuralSpec source, NeuralSpec destination, NNSpecification destinationNetwork, float weight)
+        {
+            if (!getNeuronsAndSensors().Contains(source)) throw new ArgumentException();
+            if (!destinationNetwork.getNeuronsAndActors().Contains(destination)) throw new ArgumentException();
+            Connection c = new Connection(source, destination, weight);
+            this.connections.Add(c);
+            destinationNetwork.connections.Add(c);
+            return c;
+        }
+        
+        public void addNewInterConnectionToActors(NeuralSpec source, NNSpecification destinationNetwork)
+        {
+            foreach(NeuralSpec actor in destinationNetwork.actors)
+            {
+                addNewInterConnection(source, actor, destinationNetwork, 1);
+            }
+        }
+
+        /// <summary>
+        /// Create a neural network with a sinus wave output at the second neuron
+        /// </summary>
+        /// <returns>NNSpecification such that r.neurons[1] is a sinusal wave</returns>
         public static NNSpecification testBrain1()
         {
             NeuralSpec nSAW = NeuralSpec.createNeuron(NeuronFunc.SAW);
@@ -140,33 +204,7 @@ namespace VirtualCreatures
             Connection c = new Connection(nSAW, nSIN);
             IList<Connection> connections = new Connection[] { c }.ToList();
 
-            IList<NeuralSpec> outgoing = new NeuralSpec[] { nSIN }.ToList();
-
-            return new NNSpecification(neurons, connections, outgoing);
-        }
-
-        //IDictionary<NodeSpec, NodeSpec> newSensors = this.sensors.ToDictionary(n => n, n => NodeSpec.createSensor());
-        public NNSpecification DeepClone()
-        {
-            return DeepClone(this.cloneAllNeurals());
-        }
-
-        public NNSpecification DeepClone(IDictionary<NeuralSpec, NeuralSpec> newNodes)
-        {
-            IList<Connection> connections = this.connections.Select(c => new Connection(newNodes[c.source], newNodes[c.destination])).ToList();
-            IList<NeuralSpec> outgoing = this.outgoing.Select(n => newNodes[n]).ToList();
-            return new NNSpecification(
-                this.sensors.Select(n => newNodes[n]).ToList(),
-                this.neurons.Select(n => newNodes[n]).ToList(),
-                this.sensors.Select(n => newNodes[n]).ToList(),
-                connections,
-                outgoing
-            );
-        }
-
-        private static IList<NeuralSpec> deepCopy(IList<NeuralSpec> list)
-        {
-            return list.Select(ns => ns.clone()).ToList();
+            return new NNSpecification(neurons, connections);
         }
     }
 
@@ -220,6 +258,12 @@ namespace VirtualCreatures
         {
             return TERTIARE.Contains(this.function);
         }
+
+        internal NeuralSpec copy()
+        {
+            return new NeuralSpec(this);
+        }
+
         static readonly NeuronFunc[] SINGLE = new NeuronFunc[] { NeuronFunc.ABS, NeuronFunc.ATAN, NeuronFunc.COS, NeuronFunc.SIGN, NeuronFunc.SIGMOID, NeuronFunc.EXP, NeuronFunc.LOG, NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE, NeuronFunc.MEMORY, NeuronFunc.SMOOTH };
         static readonly NeuronFunc[] TIMEDEP = new NeuronFunc[] { NeuronFunc.SAW, NeuronFunc.WAVE };
         static readonly NeuronFunc[] MULTIPLE = new NeuronFunc[] { NeuronFunc.MIN, NeuronFunc.MAX, NeuronFunc.SUM, NeuronFunc.PRODUCT };
@@ -272,9 +316,9 @@ namespace VirtualCreatures
             }
         }
 
-        public Connection(NeuralSpec source, NeuralSpec destination) : this(source, destination, 1.0f) { }
+        internal Connection(NeuralSpec source, NeuralSpec destination) : this(source, destination, MAX_WEIGHT) { }
 
-        public Connection(NeuralSpec source, NeuralSpec destination, float weight)
+        internal Connection(NeuralSpec source, NeuralSpec destination, float weight)
         {
             this.source = source;
             this.destination = destination;

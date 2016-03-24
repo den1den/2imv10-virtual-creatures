@@ -16,10 +16,11 @@ namespace VirtualCreatures
         // Use this for initialization
         void Start()
         {
-            CreatureScript.construct(Morphology.testCircle(), new Vector3(30, 20, 0));
             CreatureScript.construct(Morphology.testGiraffe(), new Vector3(0, 20, 0));
+            CreatureScript.construct(Morphology.testCircle(), new Vector3(30, 20, 0));
             CreatureScript.construct(Morphology.testArc(), new Vector3(60, 20, 0));
             CreatureScript.construct(Morphology.testSuperSwastika(), new Vector3(90, 20, 0));
+            CreatureScript.construct(Morphology.testHindge(), new Vector3(120, 20, 0));
             Debug.Break();
         }
 
@@ -43,7 +44,6 @@ namespace VirtualCreatures
             if(TimeCount >= TimeInSeconds)
             {
                 TimeCount = 0;
-                Debug.Log("Call EvolutionaryAlgorithm");
                 //return EvolutionAlgorithm.CreateMorphology(creatures);
             }
 

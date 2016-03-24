@@ -43,6 +43,45 @@ namespace VirtualCreatures
 
         }
 
+        internal Morphology deepCopy()
+        {
+            Node root = this.root.deepCopy();
+            IDictionary<Node, Node> copiedNodes = new Dictionary<Node, Node>();
+            copiedNodes[root] = root;
+
+            IDictionary<NeuralSpec, NeuralSpec> copiedNeurons = new Dictionary<NeuralSpec, NeuralSpec>();
+            foreach (NeuralSpec n in Enumerable.Repeat(this.brain, 1)
+                .Concat(this.edges.Select(edge => edge.network))
+                .SelectMany(net => net.getAllNeurals()))
+            {
+                copiedNeurons[n] = n.copy();
+            }
+
+            NNSpecification brain = this.brain.copy(copiedNeurons);
+
+            IList<EdgeMorph> edges = this.edges.Select(e => {
+                Node source = copiedNodes[e.source];
+                if(source == null)
+                {
+                    source = e.source.deepCopy();
+                    copiedNodes[e.source] = source;
+
+                }
+                Node destination = copiedNodes[e.destination];
+                if (destination == null)
+                {
+                    destination = e.destination.deepCopy();
+                    copiedNodes[e.destination] = destination;
+
+                }
+                JointSpecification joint = e.joint.deepCopy();
+                NNSpecification network = e.network.copy(copiedNeurons);
+                return new EdgeMorph(source, destination, joint, network);
+            }).ToList();
+
+            return new Morphology(root, brain, edges, genotype);
+        }
+
         /// <summary>
         /// A first morhology to test the evolution algorithm with.
         /// </summary>
@@ -52,7 +91,7 @@ namespace VirtualCreatures
             NNSpecification brain = NNSpecification.testBrain1();
 
             Genotype genotype = null;
-            ShapeSpecification body = new Sphere(6);
+            ShapeSpecification body = Sphere.create(6);
             Node root = new Node(body);
 
             //right
@@ -72,9 +111,8 @@ namespace VirtualCreatures
             }.ToList();
 
             //connect the brain to the other NNSpecifications
-            NeuralSpec outgoing = brain.outgoing[0];
-            rightWriteOnlyNNS.connectTo(outgoing, rightWriteOnlyNNS.actors);
-            leftWriteOnlyNNS.connectTo(outgoing, leftWriteOnlyNNS.actors);
+            brain.addNewInterConnectionToActors(brain.neurons[1], rightWriteOnlyNNS);
+            brain.addNewInterConnectionToActors(brain.neurons[1], leftWriteOnlyNNS);
 
             return new Morphology(root, brain, edges, genotype);
         }
@@ -88,18 +126,18 @@ namespace VirtualCreatures
             NNSpecification brain = NNSpecification.testBrain1();
 
             Genotype genotype = null;
-            ShapeSpecification body = Rectangle.createCube(10);
+            ShapeSpecification body = Rectangle.createCube(2);
             Node root = new Node(body);
 
             //right
-            ShapeSpecification fin = Rectangle.createWidthDepthHeight(10, 0.2f, 50);
+            ShapeSpecification fin = Rectangle.createWidthDepthHeight(1, 0.2f, 5);
             Node rfin = new Node(fin);
-            JointSpecification rightJoint = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 1, JointType.FIXED);
+            JointSpecification rightJoint = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 1, JointType.HINDGE);
             NNSpecification rightWriteOnlyNNS = NNSpecification.createEmptyNetwork();
 
             //left
             Node lfin = new Node(fin);
-            JointSpecification leftJoint = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 1, JointType.FIXED);
+            JointSpecification leftJoint = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 1, JointType.HINDGE);
             NNSpecification leftWriteOnlyNNS = NNSpecification.createEmptyNetwork();
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
@@ -108,9 +146,8 @@ namespace VirtualCreatures
             }.ToList();
 
             //connect the brain to the other NNSpecifications
-            //NeuralSpec outgoing = brain.outgoing[0];
-            //rightWriteOnlyNNS.connectTo(outgoing, rightWriteOnlyNNS.actors);
-            //leftWriteOnlyNNS.connectTo(outgoing, leftWriteOnlyNNS.actors);
+            brain.addNewInterConnectionToActors(brain.neurons[1], rightWriteOnlyNNS);
+            brain.addNewInterConnectionToActors(brain.neurons[1], leftWriteOnlyNNS);
 
             return new Morphology(root, brain, edges, genotype);
         }
@@ -118,7 +155,7 @@ namespace VirtualCreatures
         static public Morphology testSwastika()
         {
             Genotype genotype = null;
-            ShapeSpecification body = new Sphere(6);
+            ShapeSpecification body = Sphere.create(6);
             Node root = new Node(body);
 
             //right
@@ -160,7 +197,7 @@ namespace VirtualCreatures
         static public Morphology testSuperSwastika()
         {
             Genotype genotype = null;
-            ShapeSpecification body = new Sphere(4);
+            ShapeSpecification body = Sphere.create(4);
             Node root = new Node(body);
 
             float hover = 0.5f;
@@ -214,7 +251,7 @@ namespace VirtualCreatures
         static public Morphology testSnake()
         {
             Genotype genotype = null;
-            ShapeSpecification rootBody = new Sphere(6);
+            ShapeSpecification rootBody = Sphere.create(6);
             Node root = new Node(rootBody);
 
             //forwards, all positioned up
@@ -354,7 +391,7 @@ namespace VirtualCreatures
             ShapeSpecification bodyS = Rectangle.createPilar(2, 0.25f);
             ShapeSpecification legS = Rectangle.createPilar(1, 0.25f);
             ShapeSpecification neckS = Rectangle.createPilar(3, 0.1f);
-            ShapeSpecification headS = new Sphere(1.2f);
+            ShapeSpecification headS = Sphere.create(1.2f);
             ShapeSpecification snoutS = Rectangle.createPilar(0.5f, 0.5f);
 
             //the nodes of the arms
@@ -371,10 +408,10 @@ namespace VirtualCreatures
             double legBending = 0.25;
 
             //the joints
-            JointSpecification rl1 = new JointSpecification(Face.DOWN, 0.9, 0.8, legRotation, legBending, 0.2, JointType.FIXED);
-            JointSpecification rl2 = new JointSpecification(Face.DOWN, -0.9, 0.8, -legRotation, legBending, 0.2, JointType.FIXED);
-            JointSpecification rl3 = new JointSpecification(Face.DOWN, 0.9, -0.8, legRotation, legBending, 0.2, JointType.FIXED);
-            JointSpecification rl4 = new JointSpecification(Face.DOWN, -0.9, -0.8, -legRotation, legBending, 0.2, JointType.FIXED);
+            JointSpecification rl1 = new JointSpecification(Face.DOWN, 0.9, 0.8, legRotation, legBending, 0.2, JointType.HINDGE);
+            JointSpecification rl2 = new JointSpecification(Face.DOWN, -0.9, 0.8, -legRotation, legBending, 0.2, JointType.HINDGE);
+            JointSpecification rl3 = new JointSpecification(Face.DOWN, 0.9, -0.8, legRotation, legBending, 0.2, JointType.HINDGE);
+            JointSpecification rl4 = new JointSpecification(Face.DOWN, -0.9, -0.8, -legRotation, legBending, 0.2, JointType.HINDGE);
             JointSpecification rn = new JointSpecification(Face.UP, 0, 0.9, 0, 0, 0.01, JointType.FIXED);
             JointSpecification nh = new JointSpecification(Face.FORWARDS, 0, 0, 0, 0, 0.01, JointType.FIXED);
             JointSpecification hs = new JointSpecification(Face.UP, 0, 0, 0, 0, 0.01, JointType.FIXED);
@@ -395,7 +432,7 @@ namespace VirtualCreatures
         static public Morphology testCircle()
         {
             Genotype genotype = null;
-            ShapeSpecification rootBody = new Sphere(6);
+            ShapeSpecification rootBody = Sphere.create(6);
             Node root = new Node(rootBody);
 
             float angleRadium10th = (float)(2 * Math.PI / 9) - 0.1f;
@@ -432,66 +469,7 @@ namespace VirtualCreatures
 
             return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
         }
-
-        static public Morphology testCreature3()
-        {
-            ShapeSpecification b0 = Rectangle.createCube(2);
-            Node root = new Node(b0);
-
-            ShapeSpecification b1 = Rectangle.createCube(0.5f);
-            Node n1 = new Node(b1);
-
-            ShapeSpecification b2 = Rectangle.createCube(3);
-            Node n2 = new Node(b2);
-
-            ShapeSpecification b3 = Rectangle.createCube(1);
-            Node n3 = new Node(b3);
-
-            float absHover = 1f;
-            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
-            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
-            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
-
-            IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, n1, toTheRight, emptyNN),
-                new EdgeMorph(n1, n2, forwards, emptyNN),
-                new EdgeMorph(n2, n3, forwards, emptyNN)
-            }.ToList();
-
-            Morphology m = new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
-            return m;
-        }
-
-        static public Morphology testCreature3_1()
-        {
-            ShapeSpecification b0 = Rectangle.createCube(2);
-            Node root = new Node(b0);
-
-            ShapeSpecification b1 = Rectangle.createCube(0.5f);
-            Node n1 = new Node(b1);
-
-            ShapeSpecification b2 = Rectangle.createCube(3);
-            Node n2 = new Node(b2);
-
-            ShapeSpecification b3 = Rectangle.createCube(1);
-            Node n3 = new Node(b3);
-
-            float absHover = 1f;
-            JointSpecification toTheRight = JointSpecification.createSimple(Face.RIGHT, absHover);
-            JointSpecification forwards = JointSpecification.createSimple(Face.UP, absHover);
-            forwards.jointType = JointType.HINDGE;
-            NNSpecification emptyNN = NNSpecification.createEmptyNetwork();
-
-            IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, n1, toTheRight, emptyNN),
-                new EdgeMorph(n1, n2, forwards, emptyNN),
-                new EdgeMorph(n2, n3, forwards, emptyNN)
-            }.ToList();
-            
-            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, null);
-        }
-
-
+        
         internal IList<EdgeMorph> getEdges()
         {
             return new List<EdgeMorph>(this.edges);
