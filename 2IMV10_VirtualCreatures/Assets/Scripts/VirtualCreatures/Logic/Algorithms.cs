@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace VirtualCreatures
 {
@@ -10,10 +11,25 @@ namespace VirtualCreatures
         WALKING, SWIMMING
     }
 
-    public class EvolutionAlgorithm
+    public abstract class EvolutionAlgorithm
     {
-        Fitness fitness = Fitness.WALKING;
-        readonly static public Random random = new Random(12041993);
+        public int PopulationSize = 100;
+        public float EvalUationTime = 10;
+        public float InitializationTime = 1;
+
+        internal abstract float getCreatureSize();
+
+        abstract public IEnumerable<Morphology> generateInitialPopulation();
+
+        /// <summary>
+        /// Generates a new population and returns the resulting evolutions
+        /// </summary>
+        /// <param name="population">The previous population</param>
+        /// <param name="initalPositions">The positions of the initial population</param>
+        /// <returns>result[x] is evolution from population[x] AND result.SelectMany(xs => xs).Distinct().Count() == PopulationSize</returns>
+        abstract public IEnumerable<IEnumerable<Morphology>> generateNewPopulation(CreatureController[] population, double[] fitness);
+
+        public Fitness fitness = Fitness.WALKING;
 
         public static T getElement<T>(IEnumerable<T> enumerable)
         {
@@ -25,9 +41,11 @@ namespace VirtualCreatures
         {
             return getElement(enumerable.Except(except));
         }
+
+        readonly static public System.Random random = new System.Random(12041993);
     }
 
-    public class EvolutionAlgorithm1
+    public class EvolutionAlgorithm1 : EvolutionAlgorithm
     {
         // Neural Network Evolution
         FloatMutation weights;
@@ -251,6 +269,49 @@ namespace VirtualCreatures
             //not yet
             return;
         }
+
+        internal override float getCreatureSize()
+        {
+            return 6f + 0.1f + 3f + 0.1f + 6f;
+        }
+
+        public override IEnumerable<Morphology> generateInitialPopulation()
+        {
+            return Enumerable.Range(1, this.PopulationSize).Select(i => mutate(BASE));
+        }
+
+        public override IEnumerable<IEnumerable<Morphology>> generateNewPopulation(CreatureController[] population, double[] fitness)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static readonly Genotype BASE_GEN = new Genotype(null, null, null);
+        public static readonly Morphology BASE = getBaseMutation();
+        private static Morphology getBaseMutation()
+        {
+            ShapeSpecification body = Rectangle.createCube(3);
+            ShapeSpecification fin = Rectangle.createPilar(6, 0.1f);
+
+            Node root, left, right;
+            root = new Node(body);
+            left = new Node(fin);
+            right = new Node(fin);
+
+            JointSpecification leftCon = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 0.1f, JointType.HINDGE);
+            JointSpecification rightCon = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 0.1f, JointType.HINDGE);
+
+            IList<EdgeMorph> edges = new EdgeMorph[]{
+                new EdgeMorph(root, left, leftCon, generateNetwork(leftCon)),
+                new EdgeMorph(root, right, rightCon, generateNetwork(rightCon)),
+            }.ToList();
+
+            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, BASE_GEN);
+        }
+
+        static NNSpecification generateNetwork(JointSpecification js)
+        {
+            return NNSpecification.createEmptyReadWriteNetwork(js.getDegreesOfFreedom(), js.getDegreesOfFreedom());
+        }
     }
 
     public class Descision
@@ -436,50 +497,4 @@ namespace VirtualCreatures
         }
     }
 
-    public class DistrDiscision<E>
-    {
-        Random seed;
-
-        List<double> probabilites = new List<double>();
-        List<Action<E>> actions = new List<Action<E>>();
-
-        internal DistrDiscision(Random seed) { this.seed = seed; }
-
-        public void addAction(double p, Action<E> action)
-        {
-            probabilites.Add(p);
-            actions.Add(action);
-        }
-
-        public void setIgnoreRest()
-        {
-            double pLeft = 1 - probabilites.Sum();
-            if (pLeft <= 0)
-            {
-                throw new ApplicationException();
-            }
-            addAction(pLeft, el => { });
-        }
-
-        public void doMutex(IList<E> col)
-        {
-            //assume propabilities are summed to 1
-            foreach (E el in col)
-            {
-                double r = seed.NextDouble();
-                for (int i = 0; i < actions.Count; i++)
-                {
-                    if (r < probabilites[i])
-                    {
-                        actions[i](el);
-                        break;
-                    }
-                    else
-                    {
-                        r -= probabilites[i];
-                    }
-                }
-            }
-        }
-    }
 }
