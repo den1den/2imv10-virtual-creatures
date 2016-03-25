@@ -195,8 +195,10 @@ namespace VirtualCreatures
 
         public Connection addNewLocalConnection(NeuralSpec source, NeuralSpec destination, float weight)
         {
-            if(!getNeuronsAndSensors().Contains(source)) throw new ArgumentException();
-            if (!getNeuronsAndActors().Contains(destination)) throw new ArgumentException();
+            if(!getNeuronsAndSensors().Contains(source))
+                throw new ArgumentException();
+            if (!getNeuronsAndActors().Contains(destination))
+                throw new ArgumentException();
             Connection c = new Connection(source, destination, weight);
             this.connections.Add(c);
             return c;
@@ -258,7 +260,7 @@ namespace VirtualCreatures
         public virtual NeuronFunc getFunction()
         {
             if (this.type != NeuronType.NEURON)
-                Debug.Log("This should never be called on a non neuron node?");
+                throw new ApplicationException("This should never be called on a non neuron node?");
             return this.function;
         }
 

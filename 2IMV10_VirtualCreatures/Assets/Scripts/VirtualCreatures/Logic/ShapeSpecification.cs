@@ -159,7 +159,7 @@ namespace VirtualCreatures
         public static Sphere create(float diameter)
         {
             if (diameter < 0) throw new ArgumentOutOfRangeException();
-            return Sphere.create(diameter / 2);
+            return new Sphere(diameter / 2);
         }
 
         public override float getXBound() { return this.r; }

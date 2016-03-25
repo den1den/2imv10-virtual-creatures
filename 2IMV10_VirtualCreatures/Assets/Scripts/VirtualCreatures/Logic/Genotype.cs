@@ -8,26 +8,16 @@ namespace VirtualCreatures
 {
     /// <summary>
     /// The Genotype of a creature
+    /// out of the scope of this project, not enough time left
     /// </summary>
     public class Genotype
     {
-        public NNSpecification brain;
-        public IList<EdgeGen> edges;
-        public IList<Node> nodes;
-        public Node root;
+        public NNSpecification brain = null;
+        public IList<EdgeGen> edges = null;
+        public IList<Node> nodes = null;
+        public Node root = null;
 
-        public Genotype(Node root, NNSpecification brain, IList<EdgeGen> edges)
-        {
-            IList<Node> nodes = edges.SelectMany(e => new Node[] { e.source, e.destination }).Distinct().ToList();
-            if (!edges.Select(e => e.network).Contains(brain))
-            {
-                throw new ArgumentException();
-            }
-            this.root = root;
-            this.brain = brain;
-            this.edges = edges;
-            this.nodes = nodes;
-        }
+        public Genotype() { }
     }
 }
 

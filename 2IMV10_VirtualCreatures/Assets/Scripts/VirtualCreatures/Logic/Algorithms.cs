@@ -33,7 +33,9 @@ namespace VirtualCreatures
 
         public static T getElement<T>(IEnumerable<T> enumerable)
         {
-            int index = EvolutionAlgorithm.random.Next(0, enumerable.Count());
+            int lastIndex = enumerable.Count() - 1;
+            if (lastIndex == -1) return default(T);
+            int index = EvolutionAlgorithm.random.Next(0, lastIndex);
             return enumerable.ElementAt(index);
         }
 
@@ -63,26 +65,31 @@ namespace VirtualCreatures
 
         public EvolutionAlgorithm1()
         {
-            weights = new FloatMutation(0.25, 0.75, 0.05f, 1); // weight of zero is an non existing edge
+            weights = new FloatMutation(
+                0.25, // change of mutation
+                0.75, // coherence with previous weight
+                0.05f,// minimal weight > 0
+                1     // maximal weight
+            );
             reconnectInternally = new MultipleDescision(
-                0.1, // reconnect source
-                0.1, // reconnect destination
-                0.05 // remove edge
+                0.1,  // reconnect source
+                0.1,  // reconnect destination
+                0.05  // remove edge
             );
             addInternalConnection = new IntegerDescision(
-                0.9, // P(x==0) = 0.9 
-                3    // a gaussian distribution for p(x>0) with p(x==3) < 0.05
+                0.9,  // P(x==0) = 0.9 
+                3     // a gaussian distribution for p(x>0) with p(x==3) < 0.05
             );
             reconnectExternal = new MultipleDescision(
-                0.05, // reconnect source (newSource in same network)
-                0.05, // reconnect source (newSource in adjacent network)
-                0.05, // reconnect destination (newDestination in same network)
-                0.05, // reconnect destination (newDestination in adjacent network)
-                0.10  // remove edge
+                0.05,  // reconnect source (newSource in same network)
+                0.05,  // reconnect source (newSource in adjacent network)
+                0.05,  // reconnect destination (newDestination in same network)
+                0.05,  // reconnect destination (newDestination in adjacent network)
+                0.10   // remove edge
             );
             addExteralConnection = new IntegerDescision(
-                0.9, // P(x==0) = 0.9 
-                1    // a gaussian distribution for p(x>0) with p(x==1) < 0.05
+                0.9,  // P(x==0) = 0.9 
+                1     // a gaussian distribution for p(x>0) with p(x==1) < 0.05
             );
 
             joint_faceHorizontal = new DoubleMutation(0, 1, -1, 1);
@@ -101,6 +108,7 @@ namespace VirtualCreatures
             // first modify each edge internally
             foreach (EdgeMorph e in result.edges)
             {
+                // Add an extra neuron to the network
                 // change existing internal connections of the network
                 mutateInternalConnections(e.network);
 
@@ -285,7 +293,7 @@ namespace VirtualCreatures
             throw new NotImplementedException();
         }
 
-        public static readonly Genotype BASE_GEN = new Genotype(null, null, null);
+        public static readonly Genotype BASE_GEN = new Genotype();
         public static readonly Morphology BASE = getBaseMutation();
         private static Morphology getBaseMutation()
         {
@@ -467,6 +475,11 @@ namespace VirtualCreatures
         {
             if (!happens()) return oldVal;
             return EvolutionAlgorithm.getElementExcept(vals, oldVal);
+        }
+
+        internal E getNewVal()
+        {
+            return EvolutionAlgorithm.getElement(vals);
         }
     }
 

@@ -92,15 +92,15 @@ namespace VirtualCreatures
             NNSpecification brain = this.brain.copy(copiedNeurons);
 
             IList<EdgeMorph> edges = this.edges.Select(e => {
-                Node source = copiedNodes[e.source];
-                if(source == null)
+                Node source;
+                if(!copiedNodes.TryGetValue(e.source, out source))
                 {
                     source = e.source.deepCopy();
                     copiedNodes[e.source] = source;
 
                 }
-                Node destination = copiedNodes[e.destination];
-                if (destination == null)
+                Node destination;
+                if (!copiedNodes.TryGetValue(e.destination, out destination))
                 {
                     destination = e.destination.deepCopy();
                     copiedNodes[e.destination] = destination;
