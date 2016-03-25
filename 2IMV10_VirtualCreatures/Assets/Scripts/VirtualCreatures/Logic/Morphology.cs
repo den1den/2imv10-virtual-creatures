@@ -43,6 +43,38 @@ namespace VirtualCreatures
 
         }
 
+        public IEnumerable<NNSpecification> getAllNetworks()
+        {
+            return this.edges.Select(edge => edge.network).Concat(Enumerable.Repeat(this.brain, 1));
+        }
+
+        public IDictionary<NNSpecification, IEnumerable<NNSpecification>> getNeighboringNetworksMap()
+        {
+            return edges.ToDictionary(
+                edgeKey => edgeKey.network,
+                edgeKey => edges.Where(e => e.destination == edgeKey.source || e.source == edgeKey.destination) // all directly connected
+                                .Select(edgesVal => edgesVal.network)
+                                .Concat(Enumerable.Repeat(brain, 1)) // and the brain network
+            );
+        }
+
+        public IDictionary<Connection, NNSpecification[]> getInterEdgeMap()
+        {
+            IDictionary<Connection, NNSpecification[]> d = new Dictionary<Connection, NNSpecification[]>();
+            var allNetworks = getAllNetworks();
+            foreach (NNSpecification network in allNetworks)
+            {
+                foreach (Connection outgoing in network.getOutgoingConnections())
+                {
+                    d[outgoing] = new NNSpecification[] {
+                        network,
+                        allNetworks.Where(destNetwork => destNetwork.getIncommingConnections().Contains(outgoing)).Single()
+                    };
+                }
+            }
+            return d;
+        }
+
         internal Morphology deepCopy()
         {
             Node root = this.root.deepCopy();
@@ -469,12 +501,5 @@ namespace VirtualCreatures
 
             return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, genotype);
         }
-        
-        internal IList<EdgeMorph> getEdges()
-        {
-            return new List<EdgeMorph>(this.edges);
-        }
     }
-
-
 }

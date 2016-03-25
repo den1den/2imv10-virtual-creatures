@@ -132,6 +132,11 @@ namespace VirtualCreatures
             return this.connections.Where(c => !getNeuronsAndSensors().Contains(c.source) && getNeuronsAndActors().Contains(c.destination));
         }
 
+        public IEnumerable<Connection> getInterfacingConnections()
+        {
+            return getIncommingConnections().Concat(getOutgoingConnections());
+        }
+
         /// <summary>
         /// Get all edges connected to source
         /// </summary>
@@ -162,8 +167,32 @@ namespace VirtualCreatures
             return this.getAllNeurals().Contains(n);
         }
 
-        // modifications
+        internal void removeInternalConnection(Connection c)
+        {
+            if (getInterfacingConnections().Contains(c))
+            {
+                throw new ApplicationException("Edge could not be removed because it is also in other networks");
+            }
+            if (!connections.Remove(c))
+            {
+                throw new ApplicationException("Edge could not be removed because it is not longer in this network");
+            }
+        }
         
+        internal void removeExternalConnectionPartially(Connection c)
+        {
+            if (!getInterfacingConnections().Contains(c))
+            {
+                throw new ApplicationException("Edge could not be removed because it is an internal edge");
+            }
+            if (!connections.Remove(c))
+            {
+                throw new ApplicationException("Edge could not be removed because it is not longer in this network");
+            }
+        }
+
+        // modifications
+
         public Connection addNewLocalConnection(NeuralSpec source, NeuralSpec destination, float weight)
         {
             if(!getNeuronsAndSensors().Contains(source)) throw new ArgumentException();

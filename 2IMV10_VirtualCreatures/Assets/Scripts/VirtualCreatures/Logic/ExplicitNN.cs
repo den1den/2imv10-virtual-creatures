@@ -33,7 +33,7 @@ namespace VirtualCreatures
             if (morphology.edges.Count != joints.Length) throw new ArgumentException(); //every edge should correspond to exactly one joint
             //throw all networks together
             IEnumerable<NNSpecification> allNetworks = Enumerable.Repeat(morphology.brain, 1).Union(morphology.edges.Select(e => e.network));
-            foreach(NNSpecification n in allNetworks) { n.checkInvariants(); }
+            foreach(NNSpecification n in allNetworks) { n.checkInvariants();}
 
             //create reference for the creation of neurons
             NaiveENN N = new NaiveENN(joints);
@@ -194,6 +194,7 @@ namespace VirtualCreatures
 
         Neural createSensor() { return new Neural(); }
 
+        LinkedList<float> ticks = new LinkedList<float>();
 
         internal override void tickimpl(int N)
         {
@@ -212,7 +213,8 @@ namespace VirtualCreatures
                         HingeJoint src = (HingeJoint)source;
                         float valX = src.angle;
                         valX /= 180;
-                        Debug.Log("Phenotype:tick:read " + valX);
+                        // Actually read a value
+                        //Debug.Log("Phenotype:tick:read " + valX);
                         destination[0].value = valX;
                         break;
                     case JointType.PISTON:
@@ -231,6 +233,8 @@ namespace VirtualCreatures
                 }
             }
 
+            bool b = true;
+
             //write to actors
             for (int i = 0; i < this.sensorNeurons.Length; i++)
             {
@@ -246,7 +250,28 @@ namespace VirtualCreatures
                         HingeJoint dest = (HingeJoint)destination;
                         JointMotor motor = dest.motor;
                         float valX = (float)source[0].value;
-                        Debug.Log("Phenotype:tick:write " + valX);
+
+                        if (b)
+                        {
+                            ticks.AddLast(valX);
+                            if(false && ticks.Count % 200 == 0)
+                            {
+                                //Write output values to file
+                                string fileName = "floats.dat";
+                                using (System.IO.StreamWriter writer = new System.IO.StreamWriter(System.IO.File.Open(fileName, System.IO.FileMode.Create)))
+                                {
+                                    foreach (float val in ticks)
+                                    {
+                                        writer.WriteLine(val);
+                                    }
+                                    writer.Close();
+                                }
+                                Debug.Log("Written to file: floats.dat");
+                                Debug.Break();
+                            }
+                            b = false;
+                        }
+
                         motor.force = valX;
                         break;
                     case JointType.PISTON:
