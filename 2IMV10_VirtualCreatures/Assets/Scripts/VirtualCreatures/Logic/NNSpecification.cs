@@ -92,6 +92,11 @@ namespace VirtualCreatures
 
         //getters
 
+        internal IEnumerable<NeuralSpec> getOnlyNeurons()
+        {
+            return this.neurons;
+        }
+
         public IEnumerable<NeuralSpec> getAllNeurals()
         {
             return this.sensors
