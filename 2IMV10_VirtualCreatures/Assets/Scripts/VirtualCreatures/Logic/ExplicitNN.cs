@@ -314,11 +314,27 @@ namespace VirtualCreatures
         {
             NaiveENN parent;
             internal TimeFunction(NaiveENN parent) { this.parent = parent; }
-            public override double y(double x)
-            {
-                return y(x, parent.tickDt);
-            }
+
+            public override double y(double input) { throw new NotImplementedException("This neuron only uses y(x, dt)"); }
+
             public abstract double y(double x, double dtf);
+
+            internal override void tick()
+            {
+                if (this.weights.Length == 0)
+                {
+                    value = 1;
+                }
+                else
+                {
+                    value = 0;
+                    for (int i = 0; i < this.weights.Length; i++)
+                    {
+                        value += weights[i] * inputs[i].value;
+                    }
+                }
+                value = y(value, parent.tickDt);
+            }
         }
         internal abstract class DoubleFunction : INeuron
         {
@@ -537,11 +553,16 @@ namespace VirtualCreatures
                 return y / x;
             }
         }
-        internal class PRODUCT : DoubleFunction
+        internal class PRODUCT : MultipleFunction
         {
-            public override double y(double x, double y)
+            public override double y(Neural[] inputs)
             {
-                return x * y;
+                double val = 1;
+                for(int i = 0; i < inputs.Length; i++)
+                {
+                    val *= inputs[i].value;
+                }
+                return val;
             }
         }
         internal class SUM : DoubleFunction

@@ -191,6 +191,12 @@ namespace VirtualCreatures
             }
         }
 
+        public int getConnectedN(NeuralSpec n)
+        {
+            if (!neurons.Contains(n)) throw new ApplicationException();
+            return getEdgesByDestination(n).Count();
+        }
+
         // modifications
 
         public Connection addNewLocalConnection(NeuralSpec source, NeuralSpec destination, float weight)
@@ -276,7 +282,77 @@ namespace VirtualCreatures
 
         public NeuralSpec clone()
         {
-            return new NeuralSpec(this);
+            return new NeuralSpec(this.type, this.function);
+        }
+
+        public int getMinimalConnections()
+        {
+            switch (this.function)
+            {
+                case NeuronFunc.ABS:
+                case NeuronFunc.ATAN:
+                case NeuronFunc.COS:
+                case NeuronFunc.SIGN:
+                case NeuronFunc.SIGMOID:
+                case NeuronFunc.EXP:
+                case NeuronFunc.LOG:
+                case NeuronFunc.DIFFERENTIATE:
+                case NeuronFunc.INTERGRATE:
+                case NeuronFunc.MEMORY:
+                case NeuronFunc.SMOOTH:
+                case NeuronFunc.SUM:
+                    return 1;
+                case NeuronFunc.SAW:
+                case NeuronFunc.WAVE:
+                    return 0;
+                case NeuronFunc.MIN:
+                case NeuronFunc.MAX:
+                    return 2;
+                case NeuronFunc.PRODUCT:
+                case NeuronFunc.DEVISION:
+                    return 2;
+                case NeuronFunc.GTE:
+                case NeuronFunc.IF:
+                case NeuronFunc.INTERPOLATE:
+                case NeuronFunc.IFSUM:
+                    return 3;
+                default:
+                    throw new ApplicationException("getMinimalConnections is not setup for " + this.function);
+            }
+        }
+
+        public int getMaximalConnections()
+        {
+            switch (this.function)
+            {
+                case NeuronFunc.ABS:
+                case NeuronFunc.ATAN:
+                case NeuronFunc.COS:
+                case NeuronFunc.SIGN:
+                case NeuronFunc.SIGMOID:
+                case NeuronFunc.EXP:
+                case NeuronFunc.LOG:
+                case NeuronFunc.DIFFERENTIATE:
+                case NeuronFunc.INTERGRATE:
+                case NeuronFunc.MEMORY:
+                case NeuronFunc.SMOOTH:
+                case NeuronFunc.SUM:
+                case NeuronFunc.SAW:
+                case NeuronFunc.WAVE:
+                case NeuronFunc.MIN:
+                case NeuronFunc.MAX:
+                case NeuronFunc.PRODUCT:
+                    return int.MaxValue;
+                case NeuronFunc.DEVISION:
+                    return 2;
+                case NeuronFunc.GTE:
+                case NeuronFunc.IF:
+                case NeuronFunc.INTERPOLATE:
+                case NeuronFunc.IFSUM:
+                    return 3;
+                default:
+                    throw new ApplicationException("getMaximalConnections is not setup for " + this.function);
+            }
         }
 
         public bool isSingle()
