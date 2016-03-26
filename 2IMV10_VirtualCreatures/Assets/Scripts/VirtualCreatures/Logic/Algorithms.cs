@@ -51,6 +51,7 @@ namespace VirtualCreatures
     {
         // Neural Network Evolution
         FloatMutation weights;
+        NominalMutation<NeuronFunc> newNeuron;
         MultipleDescision reconnectInternally;
         IntegerDescision addInternalConnection;
         MultipleDescision reconnectExternal;
@@ -70,6 +71,9 @@ namespace VirtualCreatures
                 0.75, // coherence with previous weight
                 0.05f,// minimal weight > 0
                 1     // maximal weight
+            );
+            newNeuron = new NominalMutation<NeuronFunc>(
+                0.95  //change of adding a net neuron to the local networks
             );
             reconnectInternally = new MultipleDescision(
                 0.1,  // reconnect source
@@ -109,6 +113,11 @@ namespace VirtualCreatures
             foreach (EdgeMorph e in result.edges)
             {
                 // Add an extra neuron to the network
+                if (newNeuron.happens())
+                {
+                    e.network.addNewNeuron(newNeuron.getNewVal());
+                }
+
                 // change existing internal connections of the network
                 mutateInternalConnections(e.network);
 
@@ -164,6 +173,7 @@ namespace VirtualCreatures
                 }
             }
 
+            // Add new connections
             int numberOfNewExternalConnections = addExteralConnection.newVal();
             for (int i = 0; i < numberOfNewExternalConnections; i++)
             {
@@ -180,6 +190,35 @@ namespace VirtualCreatures
             }
 
             DotParser.write("stats/pre.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
+
+            // Finalize by checking all cardinality constraints on the Neurons
+            // first modify each edge internally
+            foreach (EdgeMorph e in result.edges)
+            {
+                NNSpecification network = e.network;
+                foreach(NeuralSpec neuron in network.neurons)
+                {
+                    int connected = network.getConnectedN(neuron);
+                    if(connected < neuron.getMinimalConnections())
+                    {
+                        do // Add extra edge
+                        {
+                            NeuralSpec newSource = findNewSource(network, neuron);
+                            network.addNewLocalConnection(newSource, neuron, weights.newVal());
+                            connected++;
+                        } while (connected < neuron.getMinimalConnections());
+                    }
+                    else if (connected > neuron.getMaximalConnections())
+                    {
+                        do // Remove and edge
+                        {
+                            Connection subject = EvolutionAlgorithm.getElement(network.getEdgesByDestination(neuron));
+                            network.removeInternalConnection(subject);
+                            connected--;
+                        } while (connected > neuron.getMaximalConnections());
+                    }
+                }
+            }
 
             DotParser.write("stats/post.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 

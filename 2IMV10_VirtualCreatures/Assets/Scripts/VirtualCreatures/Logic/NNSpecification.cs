@@ -108,6 +108,13 @@ namespace VirtualCreatures
             return this.actors.Concat(this.neurons);
         }
 
+        internal NeuralSpec addNewNeuron(NeuronFunc neuronFunc)
+        {
+            NeuralSpec n = NeuralSpec.createNeuron(neuronFunc);
+            this.neurons.Add(n);
+            return n;
+        }
+
         /// <summary>
         /// All possible starting points of an edge
         /// </summary>
@@ -445,6 +452,7 @@ namespace VirtualCreatures
     {
         public static void write(String filename, IEnumerable<string> contents)
         {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(filename));
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
             {
                 foreach(String line in contents) { file.WriteLine(line); }
