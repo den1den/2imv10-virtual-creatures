@@ -15,7 +15,7 @@ namespace VirtualCreatures
         public IList<NeuralSpec> neurons;
         public IList<NeuralSpec> actors;
 
-        private IList<Connection> connections;
+        IList<Connection> connections;
 
         /// <summary>
         /// Full neural network specification
@@ -241,15 +241,25 @@ namespace VirtualCreatures
 
     public class NeuralSpec
     {
+        public readonly String id;
+        private static int ID = 0;
+
         private NeuronType type;
         private enum NeuronType { SENSOR, NEURON, ACTOR };
 
         private NeuronFunc function;
+        
+        private NeuralSpec(NeuronType type, NeuronFunc function) {
+            this.type = type;
+            this.function = function;
+            this.id = NeuralSpec.ID.ToString() + type.ToString() + function.ToString();
+            NeuralSpec.ID++;
+        }
 
-        private NeuralSpec(NeuronType type, NeuronFunc function) { this.type = type; this.function = function; }
-        private NeuralSpec(NeuralSpec clone) : this(clone.type, clone.function) { }
-
-        internal static NeuralSpec createSensor() { return new NeuralSpec(NeuronType.SENSOR, NeuronFunc.SUM); }
+        internal static NeuralSpec createSensor()
+        {
+            return new NeuralSpec(NeuronType.SENSOR, NeuronFunc.SUM);
+        }
         internal static NeuralSpec createNeuron(NeuronFunc function) { return new NeuralSpec(NeuronType.NEURON, function); }
         internal static NeuralSpec createActor() { return new NeuralSpec(NeuronType.ACTOR, NeuronFunc.SUM); }
 
@@ -288,11 +298,6 @@ namespace VirtualCreatures
         public bool isTertiare()
         {
             return TERTIARE.Contains(this.function);
-        }
-
-        internal NeuralSpec copy()
-        {
-            return new NeuralSpec(this);
         }
 
         static readonly NeuronFunc[] SINGLE = new NeuronFunc[] { NeuronFunc.ABS, NeuronFunc.ATAN, NeuronFunc.COS, NeuronFunc.SIGN, NeuronFunc.SIGMOID, NeuronFunc.EXP, NeuronFunc.LOG, NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE, NeuronFunc.MEMORY, NeuronFunc.SMOOTH };
@@ -358,5 +363,83 @@ namespace VirtualCreatures
 
         private static readonly float MIN_WEIGHT = 0;
         private static readonly float MAX_WEIGHT = 1;
+    }
+
+    class DotParser
+    {
+        public static void write(String filename, IEnumerable<string> contents)
+        {
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
+            {
+                foreach(String line in contents) { file.WriteLine(line); }
+            }
+        }
+
+        public static List<string> parse(IEnumerable<NNSpecification> networks, NNSpecification brain)
+        {
+            IEnumerable<NNSpecification> nets = Enumerable.Repeat(brain, 1).Concat(networks);
+
+            // Name all the neurals
+            int N = 0;
+            IDictionary<NNSpecification, string> netnames = networks.ToDictionary(
+                net => net,
+                net => (N++).ToString()
+                );
+            netnames[brain] = "Brain";
+
+            IDictionary<NeuralSpec, string> neuronIDs = nets
+                .SelectMany(net => net.getAllNeurals().Select(neural => new object[] {net, neural}))
+                .ToDictionary(
+                objs => (NeuralSpec)objs[1],
+                objs => "x" + netnames[(NNSpecification)objs[0]] + "x" + ((NeuralSpec)objs[1]).id
+                );
+
+            N = 0;
+            // List all the connections
+            List<string> result = new List<string>();
+            result.Add("digraph {");
+            foreach (NNSpecification network in nets)
+            {
+                string name = "cluster_" + N.ToString();
+                string label = netnames[network];
+                result.Add("    subgraph " + name + " {");
+                result.Add("        label=\""+ label + "\";");
+                int sensor = 0;
+                int actor = 0;
+                foreach (NeuralSpec n in network.getAllNeurals())
+                {
+                    name = neuronIDs[n];
+                    if (n.isActor())
+                    {
+                        label = "Actor" + (++actor);
+                    }else if (n.isSensor())
+                    {
+                        label = "Sensor" + (++sensor);
+                    } else
+                    {
+                        label = n.getFunction().ToString();
+                    }
+                    result.Add("        " + name + " [label=\"" + label + "\"];");
+                }
+                result.Add("    }");
+                N++;
+            }
+            foreach (NNSpecification network in networks)
+            {
+                foreach(Connection connection in network.getInternalConnections().Concat(network.getOutgoingConnections())) //all internal and outgoing connections)
+                {
+                    string sourceName = neuronIDs[connection.source];
+                    string destName = neuronIDs[connection.destination];
+                    result.Add("    " + sourceName + " -> " + destName);
+                }
+            }
+            result.Add("}");
+            return result;
+        }
+
+        public static void write(IEnumerable<NNSpecification> networks, NNSpecification brain)
+        {
+            write("network.gv", parse(networks, brain));
+        }
     }
 }

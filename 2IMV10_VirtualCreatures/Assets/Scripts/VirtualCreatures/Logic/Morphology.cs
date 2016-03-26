@@ -86,7 +86,7 @@ namespace VirtualCreatures
                 .Concat(this.edges.Select(edge => edge.network))
                 .SelectMany(net => net.getAllNeurals()))
             {
-                copiedNeurons[n] = n.copy();
+                copiedNeurons[n] = n.clone();
             }
 
             NNSpecification brain = this.brain.copy(copiedNeurons);

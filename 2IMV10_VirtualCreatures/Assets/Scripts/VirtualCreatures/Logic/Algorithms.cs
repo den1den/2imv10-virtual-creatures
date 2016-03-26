@@ -179,6 +179,10 @@ namespace VirtualCreatures
                 newSourceNetwork.addNewInterConnection(newSource, newDest, newDestNetwork, weights.newVal());
             }
 
+            DotParser.write("stats/pre.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
+
+            DotParser.write("stats/post.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
+
             return result;
         }
 
