@@ -92,12 +92,12 @@ namespace VirtualCreatures
 
         //getters
 
-        internal IEnumerable<NeuralSpec> getOnlyNeurons()
+        internal IEnumerable<NeuralSpec> getNeuronsOnly()
         {
             return this.neurons;
         }
 
-        public IEnumerable<NeuralSpec> getAllNeurals()
+        public IEnumerable<NeuralSpec> getNeuronsAll()
         {
             return this.sensors
                 .Concat(this.neurons)
@@ -112,12 +112,19 @@ namespace VirtualCreatures
         {
             return this.actors.Concat(this.neurons);
         }
+        public IEnumerable<NeuralSpec> getNeuronDestinationCandidates() { return getNeuronsAndActors(); }
 
         internal NeuralSpec addNewNeuron(NeuronFunc neuronFunc)
         {
             NeuralSpec n = NeuralSpec.createNeuron(neuronFunc);
             this.neurons.Add(n);
             return n;
+        }
+        
+        /// <returns>Total number of sensors+neurons+actors in this network</returns>
+        internal int getNumberOfNeurons()
+        {
+            return this.actors.Count + this.neurons.Count + this.sensors.Count;
         }
 
         /// <summary>
@@ -128,6 +135,7 @@ namespace VirtualCreatures
         {
             return this.sensors.Concat(this.neurons);
         }
+        public IEnumerable<NeuralSpec> getNeuronSourceCandidates() { return getNeuronsAndSensors(); }
 
         public IEnumerable<Connection> getInternalConnections()
         {
@@ -176,7 +184,7 @@ namespace VirtualCreatures
         /// <returns></returns>
         public bool contains(NeuralSpec n)
         {
-            return this.getAllNeurals().Contains(n);
+            return this.getNeuronsAll().Contains(n);
         }
 
         internal void removeInternalConnection(Connection c)
@@ -297,9 +305,12 @@ namespace VirtualCreatures
             return new NeuralSpec(this.type, this.function);
         }
 
-        public int getMinimalConnections()
+        public int getMinimalConnections() { return getMinimalConnections(this.function); }
+        public int getMaximalConnections() { return getMaximalConnections(this.function); }
+
+        public static int getMinimalConnections(NeuronFunc function)
         {
-            switch (this.function)
+            switch (function)
             {
                 case NeuronFunc.ABS:
                 case NeuronFunc.ATAN:
@@ -333,9 +344,9 @@ namespace VirtualCreatures
             }
         }
 
-        public int getMaximalConnections()
+        public static int getMaximalConnections(NeuronFunc function)
         {
-            switch (this.function)
+            switch (function)
             {
                 case NeuronFunc.ABS:
                 case NeuronFunc.ATAN:
@@ -366,33 +377,6 @@ namespace VirtualCreatures
                     throw new ApplicationException("getMaximalConnections is not setup for " + this.function);
             }
         }
-
-        public bool isSingle()
-        {
-            return SINGLE.Contains(this.function);
-        }
-        public bool isTimeDep()
-        {
-            return TIMEDEP.Contains(this.function);
-        }
-        public bool isMultile()
-        {
-            return MULTIPLE.Contains(this.function);
-        }
-        public bool isDouble()
-        {
-            return TERTIARE.Contains(this.function);
-        }
-        public bool isTertiare()
-        {
-            return TERTIARE.Contains(this.function);
-        }
-
-        static readonly NeuronFunc[] SINGLE = new NeuronFunc[] { NeuronFunc.ABS, NeuronFunc.ATAN, NeuronFunc.COS, NeuronFunc.SIGN, NeuronFunc.SIGMOID, NeuronFunc.EXP, NeuronFunc.LOG, NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE, NeuronFunc.MEMORY, NeuronFunc.SMOOTH };
-        static readonly NeuronFunc[] TIMEDEP = new NeuronFunc[] { NeuronFunc.SAW, NeuronFunc.WAVE };
-        static readonly NeuronFunc[] MULTIPLE = new NeuronFunc[] { NeuronFunc.MIN, NeuronFunc.MAX, NeuronFunc.SUM, NeuronFunc.PRODUCT };
-        static readonly NeuronFunc[] DOUBLE = new NeuronFunc[] { NeuronFunc.DEVISION, };
-        static readonly NeuronFunc[] TERTIARE = new NeuronFunc[] { NeuronFunc.GTE, NeuronFunc.IF, NeuronFunc.INTERPOLATE, NeuronFunc.IFSUM };
     }
 
     /// <summary>
@@ -477,7 +461,7 @@ namespace VirtualCreatures
             netnames[brain] = "Brain";
 
             IDictionary<NeuralSpec, string> neuronIDs = nets
-                .SelectMany(net => net.getAllNeurals().Select(neural => new object[] {net, neural}))
+                .SelectMany(net => net.getNeuronsAll().Select(neural => new object[] {net, neural}))
                 .ToDictionary(
                 objs => (NeuralSpec)objs[1],
                 objs => "x" + netnames[(NNSpecification)objs[0]] + "x" + ((NeuralSpec)objs[1]).id
@@ -495,7 +479,7 @@ namespace VirtualCreatures
                 result.Add("        label=\""+ label + "\";");
                 int sensor = 0;
                 int actor = 0;
-                foreach (NeuralSpec n in network.getAllNeurals())
+                foreach (NeuralSpec n in network.getNeuronsAll())
                 {
                     name = neuronIDs[n];
                     if (n.isActor())

@@ -51,7 +51,7 @@ namespace VirtualCreatures
     {
         // Neural Network Evolution
         FloatMutation weights;
-        NominalMutation<NeuronFunc> newNeuron;
+        NeuronChooser newNeuron;
         MultipleDescision reconnectInternally;
         IntegerDescision addInternalConnection;
         MultipleDescision reconnectExternal;
@@ -72,8 +72,20 @@ namespace VirtualCreatures
                 0.05f,// minimal weight > 0
                 1     // maximal weight
             );
-            newNeuron = new NominalMutation<NeuronFunc>(
-                0.95  //change of adding a net neuron to the local networks
+            newNeuron = new NeuronChooser( // TODO: These are all a gut feeling and should be tuned
+                2,    // pick the second set of neurons (see NeuronChooser.GROUPINGS)
+                0.95, // chance of adding a neuron on a iteration
+                6,    // chance of adding SUM (1+ dimensional, default)
+                2,    // chance of adding ABS, SIGN, SIGMOID (1+ dimensional, simple)
+                0.5,  // chance of adding MEMROY, SMOOTH (1+ dimensional, simple, history)
+                0.5,  // chance of adding ATAN, COS, EXP, LOG (1+ dimensional, complex)
+                0.5,  // chance of adding SAW, WAVE (1+ dimensional, complex, time dependent)
+                0.2,  // chance of adding DIFFERENTIATE, INTERGRATE (1+ dimentsional, complex, history)
+                0.5,  // chance of adding MIN, MAX (2+ dimensional, simple)
+                0.2,  // chance of adding DEVISION (2. dimenstional, complex)
+                0.5,  // chance of adding PRODUCT (2+ dimensional, complex)
+                0.5,  // chance of adding GTE, IF, IFSUM (3. dimensional, simple)
+                0.5   // chance of adding INTERPOLATE (3. dimensional, complex)
             );
             reconnectInternally = new MultipleDescision(
                 0.1,  // reconnect source
@@ -115,7 +127,7 @@ namespace VirtualCreatures
                 // Add an extra neuron to the network
                 if (newNeuron.happens())
                 {
-                    e.network.addNewNeuron(newNeuron.getNewVal());
+                    e.network.addNewNeuron(newNeuron.getNext(e.network)); // iff the network is empty, the most simple neuron is returned
                 }
 
                 // change existing internal connections of the network
@@ -180,7 +192,7 @@ namespace VirtualCreatures
                 // get source from some network
                 // TODO: could be made porportional to the neural nodes? instead of first choosing an random newSourceNetwork
                 NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(parent.getAllNetworks());
-                NeuralSpec newSource = EvolutionAlgorithm.getElement(newSourceNetwork.getNeuronsAndSensors());
+                NeuralSpec newSource = EvolutionAlgorithm.getElement(newSourceNetwork.getNeuronSourceCandidates());
 
                 // get destination from neighbouring network
                 NNSpecification newDestNetwork = EvolutionAlgorithm.getElement(neighbours[newSourceNetwork]);
@@ -191,6 +203,7 @@ namespace VirtualCreatures
 
             DotParser.write("stats/pre.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 
+            // TODO: nextTODO: if this feasable?
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
             foreach (EdgeMorph e in result.edges)
@@ -246,11 +259,11 @@ namespace VirtualCreatures
             for (int i = 0; i < numberOfNewInternalConnections; i++)
             {
                 // pick source at random
-                NeuralSpec newSource = EvolutionAlgorithm.getElement(network.getNeuronsAndSensors());
+                NeuralSpec newSource = EvolutionAlgorithm.getElement(network.getNeuronSourceCandidates());
 
                 // find a possible destination
                 NeuralSpec newDest = EvolutionAlgorithm.getElement(
-                    network.getNeuronsAndActors() //some sensor or neuron
+                    network.getNeuronDestinationCandidates() //some sensor or neuron
                     .Except(network.getEdgesBySource(newSource).Select(edge => edge.destination)) //not already connected to source
                     .Except(Enumerable.Repeat(newSource, 1)) //nor the source itself
                 );
@@ -290,11 +303,11 @@ namespace VirtualCreatures
             IEnumerable<NeuralSpec> candidates;
             if(isSensor)
             {
-                candidates = inNetwork.getOnlyNeurons();
+                candidates = inNetwork.getNeuronsOnly();
             }
             else
             {
-                candidates = inNetwork.getNeuronsAndActors();
+                candidates = inNetwork.getNeuronDestinationCandidates();
             }
             if (sourceNetwork == null)
             {
@@ -304,7 +317,7 @@ namespace VirtualCreatures
             }
             else
             {
-                candidates = inNetwork.getNeuronsAndActors()
+                candidates = inNetwork.getNeuronDestinationCandidates()
                 .Except(sourceNetwork.getEdgesBySource(originalSource).Select(edge => edge.destination)); //must not already be connected (also excludes same edge)
             }
             return EvolutionAlgorithm.getElement(candidates);
@@ -315,11 +328,11 @@ namespace VirtualCreatures
             IEnumerable<NeuralSpec> candidates;
             if (isActor)
             {
-                candidates = inNetwork.getOnlyNeurons();
+                candidates = inNetwork.getNeuronsOnly();
             }
             else
             {
-                candidates = inNetwork.getNeuronsAndSensors();
+                candidates = inNetwork.getNeuronSourceCandidates();
             }
             if (destinationNetwork == null)
             {
@@ -382,6 +395,115 @@ namespace VirtualCreatures
         static NNSpecification generateNetwork(JointSpecification js)
         {
             return NNSpecification.createEmptyReadWriteNetwork(js.getDegreesOfFreedom(), js.getDegreesOfFreedom());
+        }
+    }
+
+    internal class NeuronChooser : Descision
+    {
+        /// <summary>
+        /// GROUPINGS[group id][indexedparameter] = functions of that index
+        /// </summary>
+        static readonly NeuronFunc[][][] GROUPINGS = new NeuronFunc[][][]
+        {
+            // 0, Single set
+            new NeuronFunc[][] {
+                (NeuronFunc[]) Enum.GetValues(typeof(NeuronFunc))
+            },
+            // 1, First intuition
+            new NeuronFunc[][]
+            {
+                // singe
+                new NeuronFunc[] { NeuronFunc.ABS, NeuronFunc.ATAN, NeuronFunc.COS, NeuronFunc.SIGN, NeuronFunc.SIGMOID, NeuronFunc.EXP, NeuronFunc.LOG, NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE, NeuronFunc.MEMORY, NeuronFunc.SMOOTH },
+                // time dependent
+                new NeuronFunc[] { NeuronFunc.SAW, NeuronFunc.WAVE },
+                // multiple
+                new NeuronFunc[] { NeuronFunc.MIN, NeuronFunc.MAX, NeuronFunc.SUM, NeuronFunc.PRODUCT },
+                // double
+                new NeuronFunc[] { NeuronFunc.DEVISION },
+                // tertaire
+                new NeuronFunc[] { NeuronFunc.GTE, NeuronFunc.IF, NeuronFunc.INTERPOLATE, NeuronFunc.IFSUM }
+            },
+            // 2, Behavioural
+            new NeuronFunc[][]
+            {
+                // 1+ dimensional, simplelest
+                new NeuronFunc[] { NeuronFunc.SUM },
+                // 1+ dimensional, simple
+                new NeuronFunc[] { NeuronFunc.ABS, NeuronFunc.SIGN, NeuronFunc.SIGMOID },
+                // 1+ dimensional, simple, history
+                new NeuronFunc[] { NeuronFunc.MEMORY, NeuronFunc.SMOOTH },
+                // 1+ dimensional, complex
+                new NeuronFunc[] { NeuronFunc.ATAN, NeuronFunc.COS, NeuronFunc.EXP, NeuronFunc.LOG },
+                // 1+ dimensional, complex, time dependent
+                new NeuronFunc[] { NeuronFunc.SAW, NeuronFunc.WAVE },
+                // 1+ dimentsional, complex, history
+                new NeuronFunc[] { NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE },
+                // 2+ dimensional, simple
+                new NeuronFunc[] { NeuronFunc.MIN, NeuronFunc.MAX },
+                // 2. dimenstional, complex
+                new NeuronFunc[] { NeuronFunc.DEVISION },
+                // 2+ dimensional, complex
+                new NeuronFunc[] { NeuronFunc.PRODUCT },
+                // 3. dimensional, simple
+                new NeuronFunc[] { NeuronFunc.GTE, NeuronFunc.IF, NeuronFunc.IFSUM },
+                // 3. dimensional, complex
+                new NeuronFunc[] { NeuronFunc.INTERPOLATE }
+            },
+        };
+        /// <summary>
+        /// REVERSE_GOURPING[group i][function] = index
+        /// </summary>
+        static IList<IDictionary<NeuronFunc, int>> REVERSE_GOURPING = GROUPINGS.Select(GROUP => {
+            IDictionary<NeuronFunc, int> ReverseGroup = new Dictionary<NeuronFunc, int>();
+            for (int i = 0; i < GROUP.Length; i++)
+            {
+                GROUP[i].Select(f => ReverseGroup[f] = i);
+            }
+            return ReverseGroup;
+        }).ToList();
+
+        NeuronFunc[][] set;
+        MultipleDescision group_element_descision;
+
+        public NeuronChooser(int indexSet, double p, params double[] porportions) : base(p)
+        {
+            set = GROUPINGS[indexSet];
+            if (porportions.Length != set.Length) throw new ArgumentException();
+            group_element_descision = new MultipleDescision(true, porportions);
+        }
+
+        public NeuronChooser(NeuronFunc[][] set, double p, params double[] porportions) : base(p)
+        {
+            this.set = set;
+            if (porportions.Length != set.Length) throw new ArgumentException();
+            group_element_descision = new MultipleDescision(true, porportions);
+        }
+
+        /// <summary>
+        /// Get a plausible function for the next neuron to some network
+        /// </summary>
+        /// <param name="network"></param>
+        /// <returns></returns>
+        public NeuronFunc getNext(NNSpecification network)
+        {
+            //TODO network topology is ignored, we iterate until a right one is found
+            //TODO Might even be a good choice, but the current network topology is not used when generating new neuron
+            int networkSize = network.getNumberOfNeurons();
+            if(networkSize == 0)
+            {
+                //just return a Neuron from the first set
+                return EvolutionAlgorithm.getElement(set[0]);
+            }
+            int minimalConnectionsNeeded;
+            NeuronFunc result;
+            do
+            {
+                int chosenGroup = group_element_descision.happens();
+                NeuronFunc[] group = set[chosenGroup];
+                result = EvolutionAlgorithm.getElement(group);
+                minimalConnectionsNeeded = NeuralSpec.getMinimalConnections(result);
+            } while (minimalConnectionsNeeded > networkSize);
+            return result;
         }
     }
 
@@ -544,6 +666,11 @@ namespace VirtualCreatures
         {
             return EvolutionAlgorithm.getElement(vals);
         }
+
+        internal E getNewValExcept(IEnumerable<E> except)
+        {
+            return EvolutionAlgorithm.getElement(vals.Except(except));
+        }
     }
 
     public class MultipleDescision
@@ -552,6 +679,18 @@ namespace VirtualCreatures
         internal MultipleDescision(params double[] ps)
         {
             this.ps = ps;
+        }
+
+        internal MultipleDescision(bool normalized, params double[] ps) : this(ps)
+        {
+            if (normalized)
+            {
+                double total = this.ps.Max();
+                for(int i = 0; i < ps.Length; i++)
+                {
+                    ps[i] /= total;
+                }
+            }
         }
 
         public int happens()

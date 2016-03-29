@@ -84,7 +84,7 @@ namespace VirtualCreatures
             IDictionary<NeuralSpec, NeuralSpec> copiedNeurons = new Dictionary<NeuralSpec, NeuralSpec>();
             foreach (NeuralSpec n in Enumerable.Repeat(this.brain, 1)
                 .Concat(this.edges.Select(edge => edge.network))
-                .SelectMany(net => net.getAllNeurals()))
+                .SelectMany(net => net.getNeuronsAll()))
             {
                 copiedNeurons[n] = n.clone();
             }
