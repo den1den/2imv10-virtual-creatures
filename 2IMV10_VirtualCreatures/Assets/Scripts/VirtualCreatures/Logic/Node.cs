@@ -19,6 +19,11 @@ namespace VirtualCreatures
         }
         public Node(ShapeSpecification shape, string title) : this(shape) { this.title = title; }
 
+        public override string ToString()
+        {
+            if (this.title == null) return base.ToString();
+            return "Node: " + title;
+        }
 
         public Node deepCopy()
         {

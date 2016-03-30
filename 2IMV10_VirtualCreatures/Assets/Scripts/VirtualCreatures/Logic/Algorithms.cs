@@ -378,9 +378,9 @@ namespace VirtualCreatures
             ShapeSpecification fin = Rectangle.createPilar(6, 0.1f);
 
             Node root, left, right;
-            root = new Node(body);
-            left = new Node(fin);
-            right = new Node(fin);
+            root = new Node(body, "Base_Root");
+            left = new Node(fin, "Base_Left");
+            right = new Node(fin, "Base_Right");
 
             JointSpecification leftCon = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 0.1f, JointType.HINDGE);
             JointSpecification rightCon = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 0.1f, JointType.HINDGE);
