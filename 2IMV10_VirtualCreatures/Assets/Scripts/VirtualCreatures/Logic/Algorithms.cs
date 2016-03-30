@@ -13,10 +13,9 @@ namespace VirtualCreatures
 
     public abstract class EvolutionAlgorithm
     {
-        protected int PopulationSize = Util.DEBUG ? 10 : 500;
-        public float EvalUationTime = Util.DEBUG ? 1f : 10f;
-        public float InitializationTime = Util.DEBUG ? 0.1f : 1f;
-
+        protected int PopulationSize = Util.INITIAL_POPULATION_SIZE;
+        public float InitializationTime = Util.INITIAL_EVALUATION_TIME;
+        public float EvaluationTime = Util.FITNESS_EVALUATION_TIME;
         public PopulationMember[] population = null;
 
         /// <summary>
@@ -136,11 +135,11 @@ namespace VirtualCreatures
             joint_type = new NominalMutation<JointType>(0);
         }
 
-        Morphology mutate(Morphology parent)
+        Morphology mutate(Morphology parent, int n)
         {
             Morphology result = parent.deepCopy();
 
-            if(Util.DEBUG)
+            if(Util.WRITE_NETWORK_GRAPHS && n == 1)
                 DotParser.write("stats/1.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 
             // first modify each edge internally
@@ -227,7 +226,7 @@ namespace VirtualCreatures
                 if (newDest != null) newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
             }
 
-            if (Util.DEBUG)
+            if (Util.WRITE_NETWORK_GRAPHS && n == 1)
                 DotParser.write("stats/2.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
             
             // Finalize by checking all cardinality constraints on the Neurons
@@ -264,7 +263,7 @@ namespace VirtualCreatures
                 }
             }
 
-            if (Util.DEBUG)
+            if (Util.WRITE_NETWORK_GRAPHS && n == 1)
                 DotParser.write("stats/3.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 
             return result;
@@ -308,11 +307,11 @@ namespace VirtualCreatures
                 {
                     case 0: // change source
                         NeuralSpec newSource = findNewSource(network, originalDestination, network);
-                        if (c.source != null) c.source = newSource;
+                        if (newSource != null) c.source = newSource;
                         break;
                     case 1: // change destination
                         NeuralSpec newDest = findNewDestination(network, originalSource, network);
-                        if (c.destination != null) c.source = newDest;
+                        if (newDest != null) c.destination = newDest;
                         break;
                     case 2: // remove edge
                         network.removeInternalConnection(c);
@@ -383,7 +382,7 @@ namespace VirtualCreatures
         public override void generateNewPopulation()
         {
             this.population = Enumerable.Range(1, this.PopulationSize).Select(
-                i => new PopulationMember(mutate(BASE))
+                i => new PopulationMember(mutate(BASE, i))
             ).ToArray();
         }
 
@@ -402,7 +401,7 @@ namespace VirtualCreatures
 
                 // FIXME: not just mutate the previous generation but also look at fitness
                 // FIXME: terminate this spieces if it has a dislocated joint (or broken body part)
-                Morphology newSpecification = mutate(prevSpecification);
+                Morphology newSpecification = mutate(prevSpecification, i);
 
                 newPopulation[i] = new PopulationMember(newSpecification, prev);
             }

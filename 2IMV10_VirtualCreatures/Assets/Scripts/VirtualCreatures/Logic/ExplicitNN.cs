@@ -254,7 +254,7 @@ namespace VirtualCreatures
                         if (b)
                         {
                             ticks.AddLast(valX);
-                            if(Util.DEBUG && ticks.Count % 200 == 0)
+                            if(Util.WRITE_NETWORK_FLOATS && ticks.Count % 200 == 0)
                             {
                                 //Write output values to file
                                 string fileName = "floats.dat";

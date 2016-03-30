@@ -20,16 +20,40 @@ namespace VirtualCreatures
             return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
         }
 
-        public readonly static bool DEBUG = setDEBUG();
+        public static readonly bool DEBUG;
+        public static readonly bool PAUSE_AFTER_CREATURE_INITIALIZATION;
+        public static readonly int INITIAL_POPULATION_SIZE;
+        public static readonly float INITIAL_EVALUATION_TIME;
+        public static readonly float FITNESS_EVALUATION_TIME;
+        public static readonly bool WRITE_NETWORK_GRAPHS;
+        public static readonly bool WRITE_NETWORK_FLOATS;
 
-        private static bool setDEBUG()
+        static Util()
         {
-            bool DEBUG = true;
-
+            DEBUG = System.Diagnostics.Debugger.IsAttached;
             if (DEBUG)
+            {
                 Debug.Log("Util.DEBUG variable is True");
+                PAUSE_AFTER_CREATURE_INITIALIZATION = false;
 
-            return DEBUG;
+                INITIAL_POPULATION_SIZE = 10;
+                INITIAL_EVALUATION_TIME = 0.1f;
+                FITNESS_EVALUATION_TIME = 1.0f;
+
+                WRITE_NETWORK_GRAPHS = true;
+                WRITE_NETWORK_FLOATS = false;
+            }
+            else
+            {
+                PAUSE_AFTER_CREATURE_INITIALIZATION = false;
+
+                INITIAL_POPULATION_SIZE = 500;
+                INITIAL_EVALUATION_TIME = 1f;
+                FITNESS_EVALUATION_TIME = 10f;
+
+                WRITE_NETWORK_GRAPHS = true;
+                WRITE_NETWORK_FLOATS = false;
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ namespace VirtualCreatures
     public class CreatureManager : MonoBehaviour
     {
         float CreatureSpacing = 3;
+        float ConstructionHeight = 1.7f; //TODO: This is mere a gues
 
         EvolutionAlgorithm EA;
 
@@ -47,7 +48,7 @@ namespace VirtualCreatures
             // Check if grid is still valid
             if (positioningGrid.Length != newPopulation.Length)
             {
-                positioningGrid = positionalGrid(Vector3.zero, newPopulation.Length, CreatureSpacing * EA.getCreatureSize());
+                positioningGrid = positionalGrid(new Vector3(0, ConstructionHeight, 0), newPopulation.Length, CreatureSpacing * EA.getCreatureSize());
             }
 
             // Construct new population
@@ -75,15 +76,18 @@ namespace VirtualCreatures
                     TimeCount += Time.deltaTime;
                     if(TimeCount >= EA.InitializationTime){
                         TimeCount = 0;
-                        Debug.Log("Creature initialization of "+ this.population.Length+" Creatures completed - pauzing simulation");
-                        Debug.Break(); // pause simulation after settling stage of the create
+                        Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed - pauzing simulation");
+                        if (Util.PAUSE_AFTER_CREATURE_INITIALIZATION)
+                        {
+                            Debug.Break(); // pause simulation after settling stage of the create
+                        }
                         this.initialCMs = population.Select(cc => cc.getCenterOfMass()).ToArray();
                         state = State.EVALUATING;
                     }
                     break;
                 case State.EVALUATING:
                     TimeCount += Time.deltaTime;
-                    if (TimeCount >= EA.EvalUationTime)
+                    if (TimeCount >= EA.EvaluationTime)
                     {
                         TimeCount = 0;
                         double[] fitness = evalFitness();
