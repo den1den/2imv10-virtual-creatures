@@ -33,7 +33,7 @@ namespace VirtualCreatures
             int i = 0;
             foreach(Morphology m in EA.generateInitialPopulation())
             {
-                CreatureController c = CreatureController.constructCreature(m, positioningGrid[i]);
+                population[i] = CreatureController.constructCreature(m, positioningGrid[i]);
                 i++;
             }
         }
