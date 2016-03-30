@@ -19,5 +19,17 @@ namespace VirtualCreatures
         {
             return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
         }
+
+        public readonly static bool DEBUG = setDEBUG();
+
+        private static bool setDEBUG()
+        {
+            bool DEBUG = true;
+
+            if (DEBUG)
+                Debug.Log("Util.DEBUG variable is True");
+
+            return DEBUG;
+        }
     }
 }

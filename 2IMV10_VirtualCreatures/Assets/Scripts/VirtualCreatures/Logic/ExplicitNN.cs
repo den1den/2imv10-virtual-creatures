@@ -254,7 +254,7 @@ namespace VirtualCreatures
                         if (b)
                         {
                             ticks.AddLast(valX);
-                            if(false && ticks.Count % 200 == 0)
+                            if(Util.DEBUG && ticks.Count % 200 == 0)
                             {
                                 //Write output values to file
                                 string fileName = "floats.dat";
@@ -341,6 +341,12 @@ namespace VirtualCreatures
 
             internal override void tick()
             {
+                if(Util.DEBUG)
+                {
+                    //FIXME: This is only debug
+                    if (weights.Length != inputs.Length || weights.Length != 2)
+                        throw new ApplicationException();
+                }
                 value = y(weights[0] * inputs[0].value, weights[1] * inputs[1].value);
             }
         }

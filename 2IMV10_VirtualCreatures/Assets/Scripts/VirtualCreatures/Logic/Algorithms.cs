@@ -13,9 +13,9 @@ namespace VirtualCreatures
 
     public abstract class EvolutionAlgorithm
     {
-        public int PopulationSize = 100;
-        public float EvalUationTime = 10;
-        public float InitializationTime = 1;
+        protected int PopulationSize = Util.DEBUG ? 10 : 500;
+        public float EvalUationTime = Util.DEBUG ? 1f : 10f;
+        public float InitializationTime = Util.DEBUG ? 0.1f : 1f;
 
         public PopulationMember[] population = null;
 
@@ -140,6 +140,8 @@ namespace VirtualCreatures
         {
             Morphology result = parent.deepCopy();
 
+            if(Util.DEBUG)
+                DotParser.write("stats/1.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 
             // first modify each edge internally
             foreach (EdgeMorph e in result.edges)
@@ -225,6 +227,8 @@ namespace VirtualCreatures
                 if (newDest != null) newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
             }
 
+            if (Util.DEBUG)
+                DotParser.write("stats/2.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
             
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
@@ -260,6 +264,8 @@ namespace VirtualCreatures
                 }
             }
 
+            if (Util.DEBUG)
+                DotParser.write("stats/3.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 
             return result;
         }

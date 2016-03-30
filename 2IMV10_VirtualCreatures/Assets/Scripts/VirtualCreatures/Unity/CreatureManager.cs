@@ -75,6 +75,8 @@ namespace VirtualCreatures
                     TimeCount += Time.deltaTime;
                     if(TimeCount >= EA.InitializationTime){
                         TimeCount = 0;
+                        Debug.Log("Creature initialization of "+ this.population.Length+" Creatures completed - pauzing simulation");
+                        Debug.Break(); // pause simulation after settling stage of the create
                         this.initialCMs = population.Select(cc => cc.getCenterOfMass()).ToArray();
                         state = State.EVALUATING;
                     }
