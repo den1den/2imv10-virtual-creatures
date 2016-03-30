@@ -242,14 +242,15 @@ namespace VirtualCreatures
         /// <param name="newDestinationNetwork"></param>
         internal void moveExternalConnection(Connection c, NNSpecification newSourceNetwork, NNSpecification newDestinationNetwork)
         {
-            if (this == newSourceNetwork || this == newDestinationNetwork)
+            if (this == newSourceNetwork || this == newDestinationNetwork || newSourceNetwork == newDestinationNetwork)
             {
                 throw new ApplicationException("We should not move this edge to the same network, or else it was not an external edge");
             }
-            if (!connections.Remove(c))
-            {
+            if(!connections.Contains(c))
                 throw new ArgumentException("Cannot move connection to antoher network, the connection is not found in this network");
-            }
+            if(Util.DEBUG && !(getNeuronSourceCandidates().Contains(c.source) || getNeuronDestinationCandidates().Contains(c.destination)))
+                throw new ApplicationException("Edge is in here but not the source or destination???");
+            connections.Remove(c);
             if (!newSourceNetwork.connections.Contains(c))
             {
                 // Connection was not in newSourceNetwork
@@ -264,7 +265,7 @@ namespace VirtualCreatures
                 }
                 newSourceNetwork.connections.Add(c);
             }
-            else
+            else if(!newDestinationNetwork.connections.Contains(c))
             {
                 // Connection was not in newDestinationnetwork
                 if (Util.DEBUG)
@@ -277,6 +278,10 @@ namespace VirtualCreatures
                         throw new ApplicationException(); //connection.dest was already set
                 }
                 newDestinationNetwork.connections.Add(c);
+            }
+            else
+            {
+                throw new ArgumentException();
             }
         }
 

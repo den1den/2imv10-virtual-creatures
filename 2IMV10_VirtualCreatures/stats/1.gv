@@ -1,0 +1,20 @@
+digraph {
+    subgraph cluster_0 {
+        label="Brain";
+        xBrainx72NEURONSAW [label="SAW"];
+        xBrainx73NEURONSIN [label="SIN"];
+    }
+    subgraph cluster_1 {
+        label="0";
+        x0x74NEURONSUM [label="SUM"];
+        x0x75ACTORSUM [label="Actor1"];
+    }
+    subgraph cluster_2 {
+        label="1";
+        x1x76NEURONSUM [label="SUM"];
+        x1x77ACTORSUM [label="Actor1"];
+    }
+    x0x74NEURONSUM -> xBrainx72NEURONSAW
+    x0x74NEURONSUM -> xBrainx72NEURONSAW
+    x1x76NEURONSUM -> x1x77ACTORSUM
+}

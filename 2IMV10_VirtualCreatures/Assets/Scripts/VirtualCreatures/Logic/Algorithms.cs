@@ -177,35 +177,41 @@ namespace VirtualCreatures
                 {
                     case 0: // reconnect source (sourceNetwork remains the same)
                         NeuralSpec newSource = findNewSource(destinationNetwork, destination, sourceNetwork);
-                        if (newSource != null) c.source = newSource;
+                        if (newSource == null) break;
+
+                        c.source = newSource;
                         break;
                     case 1: // reconnect source (sourceNetwork is in adjacent network)
                         NNSpecification newSourceNetwork = EvolutionAlgorithm.getElementExcept(neighbours[sourceNetwork], destinationNetwork);
+                        if (newSourceNetwork == null) break;
+
                         newSource = findNewSource(destinationNetwork, destination, newSourceNetwork);
-                        if (newSource != null)
-                        {
-                            //change connection
-                            c.source = newSource;
-                            //change connection network
-                            sourceNetwork.moveExternalConnection(c, newSourceNetwork, destinationNetwork);
-                            kvp.Value[0] = newSourceNetwork;
-                        }
+                        if (newSource == null) break;
+
+                        //change connection
+                        c.source = newSource;
+                        //change connection network
+                        sourceNetwork.moveExternalConnection(c, newSourceNetwork, destinationNetwork);
+                        kvp.Value[0] = newSourceNetwork;
                         break;
                     case 2: // reconnect destination (destinationNetwork remains the same)
                         NeuralSpec newDestination = findNewDestination(sourceNetwork, source, destinationNetwork);
-                        if (newDestination != null) c.destination = newDestination;
+                        if (newDestination == null) break;
+
+                        c.destination = newDestination;
                         break;
                     case 3: // reconnect destination (destinationNetwork is in adjacent network)
                         NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElementExcept(neighbours[destinationNetwork], sourceNetwork);
+                        if (newDestinationNetwork == null) break;
+
                         newDestination = findNewDestination(sourceNetwork, source, newDestinationNetwork);
-                        if (newDestinationNetwork != null)
-                        {
-                            //change connection
-                            c.destination = newDestination;
-                            //change connection network
-                            destinationNetwork.moveExternalConnection(c, sourceNetwork, newDestinationNetwork);
-                            kvp.Value[1] = newDestinationNetwork;
-                        }
+                        if (newDestination == null) break;
+
+                        //change connection
+                        c.destination = newDestination;
+                        //change connection network
+                        destinationNetwork.moveExternalConnection(c, sourceNetwork, newDestinationNetwork);
+                        kvp.Value[1] = newDestinationNetwork;
                         break;
                     case 4: // remove edge
                         sourceNetwork.removeExternalConnection(c, destinationNetwork);
@@ -222,14 +228,19 @@ namespace VirtualCreatures
                 // get source from some network
                 // TODO: could be made porportional to the neural nodes? instead of first choosing an (uniformly) random newSourceNetwork
                 NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(morphology.getAllNetworks());
+                if (newSourceNetwork == null) continue;
+
                 NeuralSpec newSource = EvolutionAlgorithm.getElement(newSourceNetwork.getNeuronSourceCandidates());
                 if (newSource == null) continue; //Not possible for this network
 
                 // get destination from neighbouring network
                 NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElementExcept(neighbours[newSourceNetwork], newSourceNetwork);
-                NeuralSpec newDest = findNewDestination(newSourceNetwork, newSource, newDestinationNetwork);
+                if (newDestinationNetwork == null) continue;
 
-                if (newDest != null) newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
+                NeuralSpec newDest = findNewDestination(newSourceNetwork, newSource, newDestinationNetwork);
+                if (newDest == null) continue;
+
+                newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
             }
 
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
