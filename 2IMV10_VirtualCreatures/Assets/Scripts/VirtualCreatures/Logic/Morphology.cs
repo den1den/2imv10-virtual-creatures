@@ -48,6 +48,11 @@ namespace VirtualCreatures
             return this.edges.Select(edge => edge.network).Concat(Enumerable.Repeat(this.brain, 1));
         }
 
+        public IList<EdgeMorph> getOutgoingEdges(Node source)
+        {
+            return edges.Where<EdgeMorph>(e => e.source == source).ToList<EdgeMorph>();
+        }
+
         public IDictionary<NNSpecification, IEnumerable<NNSpecification>> getNeighboringNetworksMap()
         {
             return edges.ToDictionary(

@@ -11,20 +11,18 @@ namespace VirtualCreatures
     /// </summary>
     public class Node
     {
+        public string title = null;
         public ShapeSpecification shape;
         public Node(ShapeSpecification shape)
         {
             this.shape = shape;
         }
+        public Node(ShapeSpecification shape, string title) : this(shape) { this.title = title; }
 
-        public IList<EdgeMorph> getEdges(IList<EdgeMorph> alledges)
-        {
-            return alledges.Where<EdgeMorph>(e => e.source == this).ToList<EdgeMorph>();
-        }
 
         public Node deepCopy()
         {
-            return new Node(this.shape.deepCopy());
+            return new Node(this.shape.deepCopy(), this.title);
         }
     }
 }

@@ -199,15 +199,23 @@ namespace VirtualCreatures
             }
         }
         
-        internal void removeExternalConnectionPartially(Connection c)
+        internal void removeExternalConnection(Connection c, NNSpecification destinationNetwork)
         {
             if (!getInterfacingConnections().Contains(c))
+            {
+                throw new ApplicationException("Edge could not be removed because it is an internal edge");
+            }
+            if (!destinationNetwork.getInterfacingConnections().Contains(c))
             {
                 throw new ApplicationException("Edge could not be removed because it is an internal edge");
             }
             if (!connections.Remove(c))
             {
                 throw new ApplicationException("Edge could not be removed because it is not longer in this network");
+            }
+            if (!destinationNetwork.connections.Remove(c))
+            {
+                throw new ApplicationException("Edge could not be removed because it is not longer in the destination network");
             }
         }
 
@@ -340,7 +348,7 @@ namespace VirtualCreatures
                 case NeuronFunc.IFSUM:
                     return 3;
                 default:
-                    throw new ApplicationException("getMinimalConnections is not setup for " + this.function);
+                    throw new ApplicationException("getMinimalConnections is not setup for " + function);
             }
         }
 
@@ -374,7 +382,7 @@ namespace VirtualCreatures
                 case NeuronFunc.IFSUM:
                     return 3;
                 default:
-                    throw new ApplicationException("getMaximalConnections is not setup for " + this.function);
+                    throw new ApplicationException("getMaximalConnections is not setup for " + function);
             }
         }
     }

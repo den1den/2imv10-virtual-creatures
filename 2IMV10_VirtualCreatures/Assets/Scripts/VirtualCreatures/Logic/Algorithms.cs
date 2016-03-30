@@ -121,13 +121,15 @@ namespace VirtualCreatures
         {
             Morphology result = parent.deepCopy();
 
+
             // first modify each edge internally
             foreach (EdgeMorph e in result.edges)
             {
                 // Add an extra neuron to the network
                 if (newNeuron.happens())
                 {
-                    e.network.addNewNeuron(newNeuron.getNext(e.network)); // iff the network is empty, the most simple neuron is returned
+                    NeuronFunc newFunction = newNeuron.getNext(e.network);
+                    e.network.addNewNeuron(newFunction); // iff the network is empty, the most simple neuron is returned
                 }
 
                 // change existing internal connections of the network
@@ -145,40 +147,43 @@ namespace VirtualCreatures
             foreach (KeyValuePair<Connection, NNSpecification[]> kvp in parent.getInterEdgeMap())
             {
                 Connection c = kvp.Key;
-                NeuralSpec sourceNeuron = c.source;
-                NeuralSpec destNeuron = c.destination;
+                NeuralSpec source = c.source;
+                NeuralSpec destination = c.destination;
                 NNSpecification sourceNetwork = kvp.Value[0];
-                NNSpecification destNetwork = kvp.Value[1];
+                NNSpecification destinationNetwork = kvp.Value[1];
 
                 c.weight = weights.possiblyChangeVal(c.weight);
 
                 switch (reconnectExternal.happens())
                 {
-                    case 0: // reconnect source (newSource in same network)
-                        NNSpecification newSourceNetwork = sourceNetwork;
-                        NeuralSpec newSource = findNewSource(c.destination.isActor(), newSourceNetwork, destNeuron, destNetwork);
-                        c.source = newSource;
+                    case 0: // reconnect source (sourceNetwork remains the same)
+                        NeuralSpec newSource = findNewSource(destinationNetwork, destination, sourceNetwork);
+                        if (newSource != null) c.source = newSource;
                         break;
-                    case 1: // reconnect source (newSource in adjacent network)
-                        newSourceNetwork = EvolutionAlgorithm.getElement(neighbours[sourceNetwork]);
-                        newSource = findNewSource(c.destination.isActor(), newSourceNetwork, destNeuron, destNetwork);
-                        c.source = newSource;
-                        kvp.Value[0] = newSourceNetwork;
+                    case 1: // reconnect source (sourceNetwork is in adjacent network)
+                        NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(neighbours[sourceNetwork]);
+                        newSource = findNewSource(destinationNetwork, destination, newSourceNetwork);
+                        if (newSource != null)
+                        {
+                            c.source = newSource;
+                            kvp.Value[0] = newSourceNetwork;
+                        }
                         break;
-                    case 2: // reconnect destination (newDestination in same network)
-                        NNSpecification newDestinationNetwork = destNetwork;
-                        NeuralSpec newDestination = findNewDestination(c.source.isSensor(), newDestinationNetwork, sourceNeuron, sourceNetwork);
-                        c.destination = newDestination;
+                    case 2: // reconnect destination (destinationNetwork remains the same)
+                        NeuralSpec newDestination = findNewDestination(sourceNetwork, source, destinationNetwork);
+                        if (newDestination != null) c.destination = newDestination;
                         break;
-                    case 3: // reconnect destination (newDestination in adjacent network)
-                        newDestinationNetwork = EvolutionAlgorithm.getElement(neighbours[destNetwork]);
-                        newDestination = findNewDestination(c.source.isSensor(), newDestinationNetwork, sourceNeuron, sourceNetwork);
-                        c.destination = newDestination;
-                        kvp.Value[1] = newDestinationNetwork;
+                    case 3: // reconnect destination (destinationNetwork is in adjacent network)
+                        NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElement(neighbours[destinationNetwork]);
+                        newDestination = findNewDestination(sourceNetwork, source, newDestinationNetwork);
+                        if (newDestinationNetwork != null)
+                        {
+                            c.destination = newDestination;
+                            kvp.Value[1] = newDestinationNetwork;
+                        }
                         break;
                     case 4: // remove edge
-                        sourceNetwork.removeExternalConnectionPartially(c);
-                        destNetwork.removeExternalConnectionPartially(c);
+                        sourceNetwork.removeExternalConnection(c, destinationNetwork);
                         break;
                     default: // no reconnection
                         break;
@@ -190,20 +195,18 @@ namespace VirtualCreatures
             for (int i = 0; i < numberOfNewExternalConnections; i++)
             {
                 // get source from some network
-                // TODO: could be made porportional to the neural nodes? instead of first choosing an random newSourceNetwork
+                // TODO: could be made porportional to the neural nodes? instead of first choosing an (uniformly) random newSourceNetwork
                 NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(parent.getAllNetworks());
                 NeuralSpec newSource = EvolutionAlgorithm.getElement(newSourceNetwork.getNeuronSourceCandidates());
 
                 // get destination from neighbouring network
-                NNSpecification newDestNetwork = EvolutionAlgorithm.getElement(neighbours[newSourceNetwork]);
-                NeuralSpec newDest = findNewDestination(newSource.isSensor(), newDestNetwork, newSource, newSourceNetwork);
+                NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElement(neighbours[newSourceNetwork]);
+                NeuralSpec newDest = findNewDestination(newSourceNetwork, newSource, newDestinationNetwork);
 
-                newSourceNetwork.addNewInterConnection(newSource, newDest, newDestNetwork, weights.newVal());
+                if (newDest != null) newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
             }
 
-            DotParser.write("stats/pre.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
-
-            // TODO: nextTODO: if this feasable?
+            
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
             foreach (EdgeMorph e in result.edges)
@@ -212,16 +215,17 @@ namespace VirtualCreatures
                 foreach(NeuralSpec neuron in network.neurons)
                 {
                     int connected = network.getConnectedN(neuron);
-                    if(connected < neuron.getMinimalConnections())
+                    if (connected < neuron.getMinimalConnections())
                     {
                         do // Add extra edge
                         {
-                            NeuralSpec newSource = findNewSource(neuron.isActor(), network, neuron);
+                            NeuralSpec destination = neuron;
+                            NeuralSpec newSource = findNewSource(network, destination, network);
                             if(newSource == null)
                             {
                                 throw new NotImplementedException("Not implemented yet; When the cardinality check gives to few neurons."); //TODO: Make sure to exclude certain neurons when the network is to small.
                             }
-                            network.addNewLocalConnection(newSource, neuron, weights.newVal());
+                            network.addNewLocalConnection(newSource, destination, weights.newVal());
                             connected++;
                         } while (connected < neuron.getMinimalConnections());
                     }
@@ -237,7 +241,6 @@ namespace VirtualCreatures
                 }
             }
 
-            DotParser.write("stats/post.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
 
             return result;
         }
@@ -262,12 +265,9 @@ namespace VirtualCreatures
                 NeuralSpec newSource = EvolutionAlgorithm.getElement(network.getNeuronSourceCandidates());
 
                 // find a possible destination
-                NeuralSpec newDest = EvolutionAlgorithm.getElement(
-                    network.getNeuronDestinationCandidates() //some sensor or neuron
-                    .Except(network.getEdgesBySource(newSource).Select(edge => edge.destination)) //not already connected to source
-                    .Except(Enumerable.Repeat(newSource, 1)) //nor the source itself
-                );
-                network.addNewLocalConnection(newSource, newDest, weights.newVal());
+                NeuralSpec newDest = findNewDestination(network, newSource, network);
+
+                if (newDest != null) network.addNewLocalConnection(newSource, newDest, weights.newVal());
             }
         }
 
@@ -282,11 +282,11 @@ namespace VirtualCreatures
                 switch (reconnectInternally.happens())
                 {
                     case 0: // change source
-                        NeuralSpec newSource = findNewSource(c.destination.isActor(), network, originalDestination);
+                        NeuralSpec newSource = findNewSource(network, originalDestination, network);
                         c.source = newSource;
                         break;
                     case 1: // change destination
-                        NeuralSpec newDest = findNewDestination(c.source.isSensor(), network, originalSource);
+                        NeuralSpec newDest = findNewDestination(network, originalSource, network);
                         c.destination = newDest;
                         break;
                     case 2: // remove edge
@@ -298,52 +298,53 @@ namespace VirtualCreatures
             }
         }
 
-        private static NeuralSpec findNewDestination(bool isSensor, NNSpecification inNetwork, NeuralSpec originalSource, NNSpecification sourceNetwork = null)
+        /// <summary>
+        /// Finds a new random destination given a source
+        /// </summary>
+        /// <param name="sourceNetwork"></param>
+        /// <param name="source"></param>
+        /// <param name="newDestinationNetwork"></param>
+        /// <returns>null or a NeuralSpec</returns>
+        private static NeuralSpec findNewDestination(NNSpecification sourceNetwork, NeuralSpec source, NNSpecification newDestinationNetwork)
         {
             IEnumerable<NeuralSpec> candidates;
-            if(isSensor)
+            if (source.isSensor())
             {
-                candidates = inNetwork.getNeuronsOnly();
+                // we cannot select actors
+                candidates = newDestinationNetwork.getNeuronsOnly();
             }
             else
             {
-                candidates = inNetwork.getNeuronDestinationCandidates();
+                candidates = newDestinationNetwork.getNeuronDestinationCandidates();
             }
-            if (sourceNetwork == null)
+            // must not already be connected (also excludes same edge)
+            candidates = candidates.Except(sourceNetwork.getEdgesBySource(source).Select(edge => edge.destination));
+            if (sourceNetwork == newDestinationNetwork)
             {
-                candidates = candidates
-                .Except(inNetwork.getEdgesBySource(originalSource).Select(edge => edge.destination)) //must not already be connected (also excludes same edge)
-                .Except(Enumerable.Repeat(originalSource, 1)); //must not be a direct loop
-            }
-            else
-            {
-                candidates = inNetwork.getNeuronDestinationCandidates()
-                .Except(sourceNetwork.getEdgesBySource(originalSource).Select(edge => edge.destination)); //must not already be connected (also excludes same edge)
+                // also exclude self loops
+                candidates = candidates.Except(Enumerable.Repeat(source, 1)); 
             }
             return EvolutionAlgorithm.getElement(candidates);
         }
 
-        private static NeuralSpec findNewSource(bool isActor, NNSpecification inNetwork, NeuralSpec originalDestination, NNSpecification destinationNetwork = null)
+        private static NeuralSpec findNewSource(NNSpecification destinationNetwork, NeuralSpec destination, NNSpecification newSourceNetwork)
         {
             IEnumerable<NeuralSpec> candidates;
-            if (isActor)
+            if(destination.isActor())
             {
-                candidates = inNetwork.getNeuronsOnly();
+                // we cannot select sensors
+                candidates = newSourceNetwork.getNeuronsOnly();
             }
             else
             {
-                candidates = inNetwork.getNeuronSourceCandidates();
+                candidates = newSourceNetwork.getNeuronSourceCandidates();
             }
-            if (destinationNetwork == null)
+            // must not already be connected (also excludes same edge)
+            candidates = candidates.Except(destinationNetwork.getEdgesByDestination(destination).Select(edge => edge.source));
+            if(newSourceNetwork == destinationNetwork)
             {
-                candidates = candidates
-                    .Except(inNetwork.getEdgesByDestination(originalDestination).Select(edge => edge.source)) //must not already be connected (also excludes same edge)
-                    .Except(Enumerable.Repeat(originalDestination, 1)); //must not be a direct loop
-            }
-            else
-            {
-                candidates = candidates
-                    .Except(destinationNetwork.getEdgesByDestination(originalDestination).Select(edge => edge.source)); //must not already be connected (also excludes same edge)
+                // also exclude self loops
+                candidates = candidates.Except(Enumerable.Repeat(destination, 1));
             }
             return EvolutionAlgorithm.getElement(candidates);
         }

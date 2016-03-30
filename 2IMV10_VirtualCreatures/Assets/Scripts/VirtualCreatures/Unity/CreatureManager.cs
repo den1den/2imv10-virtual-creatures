@@ -17,19 +17,17 @@ namespace VirtualCreatures
         // Use this for initialization
         void Start()
         {
-            Debug.Log("Debugging - Creating test morhologies and pausing...");
-            CreatureController.constructCreature(Morphology.testGiraffe().deepCopy(), new Vector3(0, -50, 0));
-            CreatureController.constructCreature(Morphology.testCircle(), new Vector3(30, -50, 0));
-            CreatureController.constructCreature(Morphology.testArc(), new Vector3(60, -50, 0));
-            CreatureController.constructCreature(Morphology.testSuperSwastika(), new Vector3(90, -50, 0));
-            CreatureController.constructCreature(Morphology.testHindge(), new Vector3(120, -50, 0));
-            Debug.Break();
-
-
+            //Debug.Log("Debugging - Creating test morhologies and pausing...");
+            //CreatureController.constructCreature(Morphology.testGiraffe().deepCopy(), new Vector3(0, -50, 0));
+            //CreatureController.constructCreature(Morphology.testCircle(), new Vector3(30, -50, 0));
+            //CreatureController.constructCreature(Morphology.testArc(), new Vector3(60, -50, 0));
+            //CreatureController.constructCreature(Morphology.testSuperSwastika(), new Vector3(90, -50, 0));
+            //CreatureController.constructCreature(Morphology.testHindge(), new Vector3(120, -50, 0));
+            //Debug.Break();
+            
             EA = new EvolutionAlgorithm1();
-            int initalPopulationSize = EA.PopulationSize;
-            positioningGrid = positionalGrid(Vector3.zero, initalPopulationSize, 3f * EA.getCreatureSize());
-            population = new CreatureController[initalPopulationSize];
+            positioningGrid = positionalGrid(Vector3.zero, EA.PopulationSize, 3f * EA.getCreatureSize());
+            population = new CreatureController[EA.PopulationSize];
 
             // place initial population
             int i = 0;

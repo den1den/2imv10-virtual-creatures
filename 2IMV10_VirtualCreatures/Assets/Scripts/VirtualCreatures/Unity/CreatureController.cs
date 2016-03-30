@@ -100,7 +100,7 @@ namespace VirtualCreatures {
         static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
         {
             // Iterate over each edge that we have for the current node
-            foreach (EdgeMorph e in parentNode.getEdges(morphology.edges))
+            foreach (EdgeMorph e in morphology.getOutgoingEdges(parentNode))
             {
                 // Create a primitive for the next node
                 Node childNode = e.destination;
@@ -123,7 +123,8 @@ namespace VirtualCreatures {
                 // Create the joint at the parent and set the direction of the joint
                 Joint joint = createJoint(e.joint, childGO);
                 joint.connectedBody = parentGO.GetComponent<Rigidbody>();
-                allJoints[morphology.edges.IndexOf(e)] = joint;
+                int index = morphology.edges.IndexOf(e);
+                allJoints[index] = joint;
 
                 // Position all the children
                 CreatureController.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
