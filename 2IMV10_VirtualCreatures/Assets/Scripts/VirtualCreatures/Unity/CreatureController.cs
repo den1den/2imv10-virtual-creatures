@@ -26,7 +26,7 @@ namespace VirtualCreatures {
         void Start()
         {
             // Let the script run for a couple of ticks to settle down
-            neuralNetwork.tickDt = 0;
+            neuralNetwork.tickDt = 1f / 60; // assuming around 60 FPS
             neuralNetwork.tick(20);
         }
 
@@ -45,7 +45,13 @@ namespace VirtualCreatures {
 
         public Vector3 getCenterOfMass()
         {
-            throw new NotImplementedException();
+            //FIXME: this might only be the center of mass of the root, instead of the center of mass of all components
+            return getRoot().GetComponent<Rigidbody>().worldCenterOfMass;
+        }
+
+        public GameObject getRoot()
+        {
+            return gameObject.transform.GetChild(0).gameObject;
         }
 
         public static CreatureController constructCreature(Morphology morphology, Vector3 position)
@@ -170,7 +176,7 @@ namespace VirtualCreatures {
                 Rectangle rect = (Rectangle)spec;
                 primitive = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 BoxCollider collider = primitive.GetComponent<BoxCollider>();
-                collider.size = spec.getSize();
+                collider.size = rect.getSize();
             }
             else if (spec.GetType() == typeof(Sphere))
             {

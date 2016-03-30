@@ -17,19 +17,38 @@ namespace VirtualCreatures
         public float EvalUationTime = 10;
         public float InitializationTime = 1;
 
-        internal abstract float getCreatureSize();
-
-        abstract public IEnumerable<Morphology> generateInitialPopulation();
+        public PopulationMember[] population = null;
 
         /// <summary>
-        /// Generates a new population and returns the resulting evolutions
+        /// Generates a new population. this sets the this.population variable.
         /// </summary>
-        /// <param name="population">The previous population</param>
-        /// <param name="initalPositions">The positions of the initial population</param>
-        /// <returns>result[x] is evolution from population[x] AND result.SelectMany(xs => xs).Distinct().Count() == PopulationSize</returns>
-        abstract public IEnumerable<IEnumerable<Morphology>> generateNewPopulation(CreatureController[] population, double[] fitness);
+        public abstract void generateNewPopulation(IList<CreatureController> oldPopulation, double[] fitness);
+        public abstract void generateNewPopulation();
 
+        internal abstract float getCreatureSize();
+        
         public Fitness fitness = Fitness.WALKING;
+
+        /// <summary>
+        /// Stores all the generated population in a graph.
+        /// Beware this graph is not a tree, because it can contain common parents
+        /// </summary>
+        public class PopulationMember
+        {
+            public readonly Morphology morphology;
+            public readonly IEnumerable<PopulationMember> parents;
+            public double fitness = double.NaN;
+
+            internal PopulationMember(Morphology morphology, IEnumerable<PopulationMember> parents)
+            {
+                this.morphology = morphology;
+                this.parents = parents;
+            }
+
+            internal PopulationMember(Morphology morphology, params PopulationMember[] parents) : this(morphology, parents.AsEnumerable()) { }
+
+            internal PopulationMember(Morphology morphology) : this(morphology, new List<PopulationMember>()) { }
+        }
 
         public static T getElement<T>(IEnumerable<T> enumerable)
         {
@@ -283,11 +302,11 @@ namespace VirtualCreatures
                 {
                     case 0: // change source
                         NeuralSpec newSource = findNewSource(network, originalDestination, network);
-                        c.source = newSource;
+                        if (c.source != null) c.source = newSource;
                         break;
                     case 1: // change destination
                         NeuralSpec newDest = findNewDestination(network, originalSource, network);
-                        c.destination = newDest;
+                        if (c.destination != null) c.source = newDest;
                         break;
                     case 2: // remove edge
                         network.removeInternalConnection(c);
@@ -351,23 +370,43 @@ namespace VirtualCreatures
 
         void mutate(Node node)
         {
-            //not yet
+            // Out of scope
             return;
+        }
+
+        public override void generateNewPopulation()
+        {
+            this.population = Enumerable.Range(1, this.PopulationSize).Select(
+                i => new PopulationMember(mutate(BASE))
+            ).ToArray();
+        }
+
+        public override void generateNewPopulation(IList<CreatureController> prevPopulation, double[] fitness)
+        {
+            PopulationMember[] newPopulation = new PopulationMember[prevPopulation.Count];
+            for (int i = 0; i < population.Length; i++)
+            {
+                // store fitness
+                double prevFitness = fitness[i];
+                PopulationMember prev = this.population[i];
+                prev.fitness = prevFitness;
+
+                CreatureController prevCreature = prevPopulation[i];
+                Morphology prevSpecification = prev.morphology;
+
+                // FIXME: not just mutate the previous generation but also look at fitness
+                // FIXME: terminate this spieces if it has a dislocated joint (or broken body part)
+                Morphology newSpecification = mutate(prevSpecification);
+
+                newPopulation[i] = new PopulationMember(newSpecification, prev);
+            }
+            // only save the generated morphologies
+            this.population = newPopulation;
         }
 
         internal override float getCreatureSize()
         {
             return 6f + 0.1f + 3f + 0.1f + 6f;
-        }
-
-        public override IEnumerable<Morphology> generateInitialPopulation()
-        {
-            return Enumerable.Range(1, this.PopulationSize).Select(i => mutate(BASE));
-        }
-
-        public override IEnumerable<IEnumerable<Morphology>> generateNewPopulation(CreatureController[] population, double[] fitness)
-        {
-            throw new NotImplementedException();
         }
 
         public static readonly Genotype BASE_GEN = new Genotype();
@@ -397,7 +436,7 @@ namespace VirtualCreatures
         {
             return NNSpecification.createEmptyReadWriteNetwork(js.getDegreesOfFreedom(), js.getDegreesOfFreedom());
         }
-    }
+}
 
     internal class NeuronChooser : Descision
     {
@@ -451,10 +490,11 @@ namespace VirtualCreatures
                 new NeuronFunc[] { NeuronFunc.INTERPOLATE }
             },
         };
+
         /// <summary>
         /// REVERSE_GOURPING[group i][function] = index
         /// </summary>
-        static IList<IDictionary<NeuronFunc, int>> REVERSE_GOURPING = GROUPINGS.Select(GROUP => {
+        static IList<IDictionary<NeuronFunc, int>> REVERSE_GROUPING = GROUPINGS.Select(GROUP => {
             IDictionary<NeuronFunc, int> ReverseGroup = new Dictionary<NeuronFunc, int>();
             for (int i = 0; i < GROUP.Length; i++)
             {
@@ -464,21 +504,24 @@ namespace VirtualCreatures
         }).ToList();
 
         NeuronFunc[][] set;
+        IDictionary<NeuronFunc, int> reverseSet;
         MultipleDescision group_element_descision;
 
-        public NeuronChooser(int indexSet, double p, params double[] porportions) : base(p)
+        public NeuronChooser(NeuronFunc[][] set, IDictionary<NeuronFunc, int> reverseSet, double p, params double[] porportions) : base(p)
         {
-            set = GROUPINGS[indexSet];
+            this.set = set;
+            this.reverseSet = reverseSet;
             if (porportions.Length != set.Length) throw new ArgumentException();
             group_element_descision = new MultipleDescision(true, porportions);
         }
 
-        public NeuronChooser(NeuronFunc[][] set, double p, params double[] porportions) : base(p)
-        {
-            this.set = set;
-            if (porportions.Length != set.Length) throw new ArgumentException();
-            group_element_descision = new MultipleDescision(true, porportions);
-        }
+        /// <summary>
+        /// Construct using the static GROUPING groupings.
+        /// </summary>
+        /// <param name="groupingIndex">the index of the GROUPING</param>
+        /// <param name="p">chance on this event</param>
+        /// <param name="porportions">The poprtions of chance off each possibel result, in the same ordering. (an (unscaled) chancedensityfunction)</param>
+        public NeuronChooser(int groupingIndex, double p, params double[] porportions) : this(GROUPINGS[groupingIndex], REVERSE_GROUPING[groupingIndex], p, porportions) { }
 
         /// <summary>
         /// Get a plausible function for the next neuron to some network
@@ -505,6 +548,11 @@ namespace VirtualCreatures
                 minimalConnectionsNeeded = NeuralSpec.getMinimalConnections(result);
             } while (minimalConnectionsNeeded > networkSize);
             return result;
+        }
+
+        public int getGroup(NeuronFunc function)
+        {
+            return reverseSet[function];
         }
     }
 

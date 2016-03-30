@@ -267,7 +267,6 @@ namespace VirtualCreatures
                                     writer.Close();
                                 }
                                 Debug.Log("Written to file: floats.dat");
-                                Debug.Break();
                             }
                             b = false;
                         }

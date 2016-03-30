@@ -7,12 +7,14 @@ namespace VirtualCreatures
 {
     public class CreatureManager : MonoBehaviour
     {
+        float CreatureSpacing = 3;
+
         EvolutionAlgorithm EA;
 
-        Vector3[] positioningGrid;
-        CreatureController[] population;
-
+        Vector3[] positioningGrid = new Vector3[0];
         Vector3[] initialCMs = null;
+
+        CreatureController[] population = new CreatureController[0];
         
         // Use this for initialization
         void Start()
@@ -26,15 +28,33 @@ namespace VirtualCreatures
             //Debug.Break();
             
             EA = new EvolutionAlgorithm1();
-            positioningGrid = positionalGrid(Vector3.zero, EA.PopulationSize, 3f * EA.getCreatureSize());
-            population = new CreatureController[EA.PopulationSize];
 
-            // place initial population
-            int i = 0;
-            foreach(Morphology m in EA.generateInitialPopulation())
+            EA.generateNewPopulation();
+
+            createPopulation(EA.population);
+        }
+
+        private void createPopulation(EvolutionAlgorithm.PopulationMember[] newPopulation)
+        {
+            // Destroy last population
+            int i;
+            for (i = 0; i < population.Length; i++)
             {
+                Destroy(population[i].gameObject);
+            }
+            population = new CreatureController[newPopulation.Length];
+
+            // Check if grid is still valid
+            if (positioningGrid.Length != newPopulation.Length)
+            {
+                positioningGrid = positionalGrid(Vector3.zero, newPopulation.Length, CreatureSpacing * EA.getCreatureSize());
+            }
+
+            // Construct new population
+            for(i = 0; i < newPopulation.Length; i++)
+            {
+                Morphology m = newPopulation[i].morphology;
                 population[i] = CreatureController.constructCreature(m, positioningGrid[i]);
-                i++;
             }
         }
 
@@ -65,12 +85,8 @@ namespace VirtualCreatures
                     {
                         TimeCount = 0;
                         double[] fitness = evalFitness();
-                        int i = 0;
-                        foreach (Morphology m in EA.generateNewPopulation(population, fitness))
-                        {
-                            population[i] = CreatureController.constructCreature(m, positioningGrid[i]);
-                            i++;
-                        }
+                        EA.generateNewPopulation(population, fitness);
+                        createPopulation(EA.population);
                         state = State.INITIAL;
                     }
                     break;
@@ -80,8 +96,8 @@ namespace VirtualCreatures
 
         private double[] evalFitness()
         {
-            double[] r = new double[this.population.Length];
-            for (int i = 0; i < population.Length; i ++)
+            double[] r = new double[this.population.Count()];
+            for (int i = 0; i < r.Length; i ++)
             {
                 Vector3 delta = population[i].getCenterOfMass() - this.initialCMs[i];
                 switch (EA.fitness)
