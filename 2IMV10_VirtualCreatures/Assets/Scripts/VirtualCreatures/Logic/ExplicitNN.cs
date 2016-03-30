@@ -296,7 +296,7 @@ namespace VirtualCreatures
             internal abstract void tick();
         }
 
-        internal abstract class SingleFunction : INeuron
+        internal abstract class INeuronSingleFunction : INeuron
         {
             public abstract double y(double input);
 
@@ -310,12 +310,11 @@ namespace VirtualCreatures
                 value = y(value);
             }
         }
-        internal abstract class TimeFunction : SingleFunction
-        {
-            NaiveENN parent;
-            internal TimeFunction(NaiveENN parent) { this.parent = parent; }
 
-            public override double y(double input) { throw new NotImplementedException("This neuron only uses y(x, dt)"); }
+        internal abstract class INeuronSingleTimeFunction : INeuron
+        {
+            NaiveENN super;
+            internal INeuronSingleTimeFunction(NaiveENN parent) { this.super = parent; }
 
             public abstract double y(double x, double dtf);
 
@@ -333,10 +332,11 @@ namespace VirtualCreatures
                         value += weights[i] * inputs[i].value;
                     }
                 }
-                value = y(value, parent.tickDt);
+                value = y(value, super.tickDt);
             }
         }
-        internal abstract class DoubleFunction : INeuron
+
+        internal abstract class INeuronDoubleFunction : INeuron
         {
             public abstract double y(double input1, double input2);
 
@@ -345,7 +345,8 @@ namespace VirtualCreatures
                 value = y(weights[0] * inputs[0].value, weights[1] * inputs[1].value);
             }
         }
-        internal abstract class TripleFunction : INeuron
+
+        internal abstract class INeuronTripleFunction : INeuron
         {
             public abstract double y(double input1, double input2, double input3);
 
@@ -354,7 +355,8 @@ namespace VirtualCreatures
                 value = y(weights[0] * inputs[0].value, weights[1] * inputs[1].value, weights[2] * inputs[2].value);
             }
         }
-        internal abstract class MultipleFunction : INeuron
+
+        internal abstract class INeuronMultiFunction : INeuron
         {
             public abstract double y(Neural[] inputs);
 
@@ -364,14 +366,14 @@ namespace VirtualCreatures
             }
         }
 
-        internal class ABS : SingleFunction
+        internal class ABS : INeuronSingleFunction
         {
             public override double y(double x)
             {
                 return Math.Abs(x);
             }
         }
-        internal class ATAN : SingleFunction
+        internal class ATAN : INeuronSingleFunction
         {
             static double CX = 7;
             static double C = 1.0f / Math.Atan(CX);
@@ -380,7 +382,7 @@ namespace VirtualCreatures
                 return Math.Atan(CX * x) * C;
             }
         }
-        internal class COS : SingleFunction
+        internal class COS : INeuronSingleFunction
         {
             static double CX = Math.PI;
             public override double y(double x)
@@ -388,7 +390,7 @@ namespace VirtualCreatures
                 return Math.Cos(CX * x);
             }
         }
-        internal class SIN : SingleFunction
+        internal class SIN : INeuronSingleFunction
         {
             static double CX = Math.PI;
             public override double y(double x)
@@ -399,7 +401,7 @@ namespace VirtualCreatures
         /// <summary>
         /// Expontential function: [-1,1] -> [0.018, 1]
         /// </summary>
-        internal class EXP : SingleFunction
+        internal class EXP : INeuronSingleFunction
         {
             static double C = 1.0 / Math.Exp(2);
             static double CX = 2;
@@ -408,7 +410,7 @@ namespace VirtualCreatures
                 return Math.Exp(CX * x) * C;
             }
         }
-        internal class LOG : SingleFunction
+        internal class LOG : INeuronSingleFunction
         {
             static double Base = Math.E;
             static double C = 0.2;
@@ -421,7 +423,7 @@ namespace VirtualCreatures
                 return Math.Max(-1, C * Math.Log(x, Base));
             }
         }
-        internal class DIFFERENTIATE : SingleFunction
+        internal class DIFFERENTIATE : INeuronSingleFunction
         {
             double last;
             public DIFFERENTIATE(double initValue) { this.last = initValue; }
@@ -432,14 +434,14 @@ namespace VirtualCreatures
                 return x - x0;
             }
         }
-        internal class INTERGRATE : SingleFunction
+        internal class INTERGRATE : INeuronSingleFunction
         {
             public override double y(double x)
             {
                 throw new NotImplementedException("I do not know how?");
             }
         }
-        internal class MEMORY : SingleFunction
+        internal class MEMORY : INeuronSingleFunction
         {
             static int SIZE = 30;
             double[] vals = new double[SIZE];
@@ -451,7 +453,7 @@ namespace VirtualCreatures
                 return vals[ptr];
             }
         }
-        internal class SMOOTH : SingleFunction
+        internal class SMOOTH : INeuronSingleFunction
         {
             static readonly double[] WEIGHTS = new double[] { 1.0, 0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125 };
             double[] history = new double[WEIGHTS.Length];
@@ -466,7 +468,7 @@ namespace VirtualCreatures
                 return r;
             }
         }
-        internal class SAW : TimeFunction
+        internal class SAW : INeuronSingleTimeFunction
         {
             public SAW(NaiveENN n) : base(n) { }
             double theta = 0;
@@ -476,7 +478,7 @@ namespace VirtualCreatures
                 return 2 * (theta % 1.0) - 1;
             }
         }
-        internal class WAVE : TimeFunction
+        internal class WAVE : INeuronSingleTimeFunction
         {
             public WAVE(NaiveENN n) : base(n) { }
             static double CX = Math.PI * 2;
@@ -487,7 +489,7 @@ namespace VirtualCreatures
                 return Math.Cos(CX * theta);
             }
         }
-        internal class SIGMOID : SingleFunction
+        internal class SIGMOID : INeuronSingleFunction
         {
             static double CX = -5;
             public override double y(double x)
@@ -495,7 +497,7 @@ namespace VirtualCreatures
                 return 1.0 / (1 + Math.Exp(CX * (x)));
             }
         }
-        internal class SIGN : SingleFunction
+        internal class SIGN : INeuronSingleFunction
         {
             public override double y(double x)
             {
@@ -507,7 +509,7 @@ namespace VirtualCreatures
             }
         }
 
-        internal class MIN : MultipleFunction
+        internal class MIN : INeuronMultiFunction
         {
             public override double y(Neural[] ns)
             {
@@ -524,7 +526,7 @@ namespace VirtualCreatures
                 return min * this.weights[index];
             }
         }
-        internal class MAX : MultipleFunction
+        internal class MAX : INeuronMultiFunction
         {
             public override double y(Neural[] ns)
             {
@@ -541,7 +543,7 @@ namespace VirtualCreatures
                 return max * this.weights[index];
             }
         }
-        internal class DEVISION : DoubleFunction
+        internal class DEVISION : INeuronDoubleFunction
         {
             static double limit = 0.01;
             public override double y(double x, double y)
@@ -553,7 +555,7 @@ namespace VirtualCreatures
                 return y / x;
             }
         }
-        internal class PRODUCT : MultipleFunction
+        internal class PRODUCT : INeuronMultiFunction
         {
             public override double y(Neural[] inputs)
             {
@@ -565,14 +567,14 @@ namespace VirtualCreatures
                 return val;
             }
         }
-        internal class SUM : DoubleFunction
+        internal class SUM : INeuronSingleFunction
         {
-            public override double y(double x, double y)
+            public override double y(double input)
             {
-                return x + y;
+                return input;
             }
         }
-        internal class GTE : TripleFunction
+        internal class GTE : INeuronTripleFunction
         {
             public override double y(double x, double y, double z)
             {
@@ -583,7 +585,7 @@ namespace VirtualCreatures
                 else return -z;
             }
         }
-        internal class IF : TripleFunction
+        internal class IF : INeuronTripleFunction
         {
             public override double y(double x, double y, double z)
             {
@@ -594,7 +596,7 @@ namespace VirtualCreatures
                 else return -z;
             }
         }
-        internal class INTERPOLATE : TripleFunction
+        internal class INTERPOLATE : INeuronTripleFunction
         {
             public override double y(double x, double y, double z)
             {
@@ -602,7 +604,7 @@ namespace VirtualCreatures
                 return x * w + y * (1 - w);
             }
         }
-        internal class IFSUM : TripleFunction
+        internal class IFSUM : INeuronTripleFunction
         {
             public override double y(double x, double y, double z)
             {

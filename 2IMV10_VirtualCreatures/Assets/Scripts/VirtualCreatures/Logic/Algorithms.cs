@@ -80,7 +80,7 @@ namespace VirtualCreatures
                 0.5,  // chance of adding MEMROY, SMOOTH (1+ dimensional, simple, history)
                 0.5,  // chance of adding ATAN, COS, EXP, LOG (1+ dimensional, complex)
                 0.5,  // chance of adding SAW, WAVE (1+ dimensional, complex, time dependent)
-                0.2,  // chance of adding DIFFERENTIATE, INTERGRATE (1+ dimentsional, complex, history)
+                0.2,  // chance of adding DIFFERENTIATE (1+ dimentsional, complex, history) //NOTE: intergration is left out
                 0.5,  // chance of adding MIN, MAX (2+ dimensional, simple)
                 0.2,  // chance of adding DEVISION (2. dimenstional, complex)
                 0.5,  // chance of adding PRODUCT (2+ dimensional, complex)
@@ -438,7 +438,7 @@ namespace VirtualCreatures
                 // 1+ dimensional, complex, time dependent
                 new NeuronFunc[] { NeuronFunc.SAW, NeuronFunc.WAVE },
                 // 1+ dimentsional, complex, history
-                new NeuronFunc[] { NeuronFunc.DIFFERENTIATE, NeuronFunc.INTERGRATE },
+                new NeuronFunc[] { NeuronFunc.DIFFERENTIATE }, // Note: NeuronFunc.INTERGRATE is left out because NaiveNN cannot handle it
                 // 2+ dimensional, simple
                 new NeuronFunc[] { NeuronFunc.MIN, NeuronFunc.MAX },
                 // 2. dimenstional, complex

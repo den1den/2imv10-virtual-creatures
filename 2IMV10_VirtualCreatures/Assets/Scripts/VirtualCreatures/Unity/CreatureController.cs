@@ -100,7 +100,8 @@ namespace VirtualCreatures {
         static void recursiveCreateJointsFromMorphology(Morphology morphology, Node parentNode, GameObject parentGO, IList<Joint> allJoints)
         {
             // Iterate over each edge that we have for the current node
-            foreach (EdgeMorph e in morphology.getOutgoingEdges(parentNode))
+            IList<EdgeMorph> outgoing = morphology.getOutgoingEdges(parentNode);
+            foreach (EdgeMorph e in outgoing)
             {
                 // Create a primitive for the next node
                 Node childNode = e.destination;

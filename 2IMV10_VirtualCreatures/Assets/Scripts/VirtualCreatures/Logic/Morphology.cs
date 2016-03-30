@@ -84,7 +84,7 @@ namespace VirtualCreatures
         {
             Node root = this.root.deepCopy();
             IDictionary<Node, Node> copiedNodes = new Dictionary<Node, Node>();
-            copiedNodes[root] = root;
+            copiedNodes[this.root] = root;
 
             IDictionary<NeuralSpec, NeuralSpec> copiedNeurons = new Dictionary<NeuralSpec, NeuralSpec>();
             foreach (NeuralSpec n in Enumerable.Repeat(this.brain, 1)
@@ -116,7 +116,11 @@ namespace VirtualCreatures
                 return new EdgeMorph(source, destination, joint, network);
             }).ToList();
 
-            return new Morphology(root, brain, edges, genotype);
+            Morphology copy = new Morphology(root, brain, edges, genotype);
+
+            if (this.getOutgoingEdges(this.root).Count != copy.getOutgoingEdges(root).Count) throw new ApplicationException();
+
+            return copy;
         }
 
         /// <summary>
