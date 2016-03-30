@@ -65,7 +65,6 @@ namespace VirtualCreatures
         // Update is called once per frame
         void Update()
         {
-
         }
 
         public void addChildNodeAtMorphology(Morphology parent, Morphology child)
