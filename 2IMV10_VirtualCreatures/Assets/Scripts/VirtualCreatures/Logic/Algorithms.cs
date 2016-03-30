@@ -135,15 +135,13 @@ namespace VirtualCreatures
             joint_type = new NominalMutation<JointType>(0);
         }
 
-        Morphology mutate(Morphology parent, int n)
+        Morphology mutate(Morphology morphology, int n)
         {
-            Morphology result = parent.deepCopy();
-
-            if(Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/1.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
+            if (Util.WRITE_NETWORK_GRAPHS && n == 1)
+                DotParser.write("stats/1.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
 
             // first modify each edge internally
-            foreach (EdgeMorph e in result.edges)
+            foreach (EdgeMorph e in morphology.edges)
             {
                 // Add an extra neuron to the network
                 if (newNeuron.happens())
@@ -163,8 +161,9 @@ namespace VirtualCreatures
             }
 
             // change existing connections between networks
-            IDictionary<NNSpecification, IEnumerable<NNSpecification>> neighbours = parent.getNeighboringNetworksMap();
-            foreach (KeyValuePair<Connection, NNSpecification[]> kvp in parent.getInterEdgeMap())
+            IDictionary<NNSpecification, IEnumerable<NNSpecification>> neighbours = morphology.getNeighboringNetworksMap();
+            
+            foreach (KeyValuePair<Connection, NNSpecification[]> kvp in morphology.getInterEdgeMap())
             {
                 Connection c = kvp.Key;
                 NeuralSpec source = c.source;
@@ -181,11 +180,14 @@ namespace VirtualCreatures
                         if (newSource != null) c.source = newSource;
                         break;
                     case 1: // reconnect source (sourceNetwork is in adjacent network)
-                        NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(neighbours[sourceNetwork]);
+                        NNSpecification newSourceNetwork = EvolutionAlgorithm.getElementExcept(neighbours[sourceNetwork], destinationNetwork);
                         newSource = findNewSource(destinationNetwork, destination, newSourceNetwork);
                         if (newSource != null)
                         {
+                            //change connection
                             c.source = newSource;
+                            //change connection network
+                            sourceNetwork.moveExternalConnection(c, newSourceNetwork, destinationNetwork);
                             kvp.Value[0] = newSourceNetwork;
                         }
                         break;
@@ -194,11 +196,14 @@ namespace VirtualCreatures
                         if (newDestination != null) c.destination = newDestination;
                         break;
                     case 3: // reconnect destination (destinationNetwork is in adjacent network)
-                        NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElement(neighbours[destinationNetwork]);
+                        NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElementExcept(neighbours[destinationNetwork], sourceNetwork);
                         newDestination = findNewDestination(sourceNetwork, source, newDestinationNetwork);
                         if (newDestinationNetwork != null)
                         {
+                            //change connection
                             c.destination = newDestination;
+                            //change connection network
+                            destinationNetwork.moveExternalConnection(c, sourceNetwork, newDestinationNetwork);
                             kvp.Value[1] = newDestinationNetwork;
                         }
                         break;
@@ -210,28 +215,29 @@ namespace VirtualCreatures
                 }
             }
 
-            // Add new connections
+            // Add new inter network neuron connections
             int numberOfNewExternalConnections = addExteralConnection.newVal();
             for (int i = 0; i < numberOfNewExternalConnections; i++)
             {
                 // get source from some network
                 // TODO: could be made porportional to the neural nodes? instead of first choosing an (uniformly) random newSourceNetwork
-                NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(parent.getAllNetworks());
+                NNSpecification newSourceNetwork = EvolutionAlgorithm.getElement(morphology.getAllNetworks());
                 NeuralSpec newSource = EvolutionAlgorithm.getElement(newSourceNetwork.getNeuronSourceCandidates());
+                if (newSource == null) continue; //Not possible for this network
 
                 // get destination from neighbouring network
-                NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElement(neighbours[newSourceNetwork]);
+                NNSpecification newDestinationNetwork = EvolutionAlgorithm.getElementExcept(neighbours[newSourceNetwork], newSourceNetwork);
                 NeuralSpec newDest = findNewDestination(newSourceNetwork, newSource, newDestinationNetwork);
 
                 if (newDest != null) newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
             }
 
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/2.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
+                DotParser.write("stats/2.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
             
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
-            foreach (EdgeMorph e in result.edges)
+            foreach (EdgeMorph e in morphology.edges)
             {
                 NNSpecification network = e.network;
                 foreach(NeuralSpec neuron in network.neurons)
@@ -245,7 +251,8 @@ namespace VirtualCreatures
                             NeuralSpec newSource = findNewSource(network, destination, network);
                             if(newSource == null)
                             {
-                                throw new NotImplementedException("Not implemented yet; When the cardinality check gives to few neurons."); //TODO: Make sure to exclude certain neurons when the network is to small.
+                                //FIXME: No suitable action for a network with to few nodes to cohere to a nodes cardinality constraints. Maby exclude or remove neurons then?
+                                break;
                             }
                             network.addNewLocalConnection(newSource, destination, weights.newVal());
                             connected++;
@@ -264,9 +271,9 @@ namespace VirtualCreatures
             }
 
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/3.gv", DotParser.parse(result.edges.Select(e => e.network), result.brain));
+                DotParser.write("stats/3.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
 
-            return result;
+            return morphology;
         }
 
         void mutateJoint(JointSpecification joint)
@@ -282,6 +289,11 @@ namespace VirtualCreatures
 
         void possiblyAddInternalConnections(NNSpecification network)
         {
+            if(network.getNumberOfSourceCandidates() <= 0)
+            {
+                //Could not add anything here...
+                return;
+            }
             int numberOfNewInternalConnections = this.addInternalConnection.newVal();
             for (int i = 0; i < numberOfNewInternalConnections; i++)
             {
@@ -382,7 +394,7 @@ namespace VirtualCreatures
         public override void generateNewPopulation()
         {
             this.population = Enumerable.Range(1, this.PopulationSize).Select(
-                i => new PopulationMember(mutate(BASE, i))
+                i => new PopulationMember(mutate(BASE.deepCopy(), i))
             ).ToArray();
         }
 
@@ -401,7 +413,7 @@ namespace VirtualCreatures
 
                 // FIXME: not just mutate the previous generation but also look at fitness
                 // FIXME: terminate this spieces if it has a dislocated joint (or broken body part)
-                Morphology newSpecification = mutate(prevSpecification, i);
+                Morphology newSpecification = mutate(prevSpecification.deepCopy(), i);
 
                 newPopulation[i] = new PopulationMember(newSpecification, prev);
             }
@@ -418,28 +430,45 @@ namespace VirtualCreatures
         public static readonly Morphology BASE = getBaseMutation();
         private static Morphology getBaseMutation()
         {
+            //Root body
             ShapeSpecification body = Rectangle.createCube(3);
+            Node root = new Node(body, "Base_Root");
+
+            //Left
             ShapeSpecification fin = Rectangle.createPilar(6, 0.1f);
-
-            Node root, left, right;
-            root = new Node(body, "Base_Root");
-            left = new Node(fin, "Base_Left");
-            right = new Node(fin, "Base_Right");
-
+            Node left = new Node(fin, "Base_Left");
             JointSpecification leftCon = new JointSpecification(Face.LEFT, 0, 0, 0, 0, 0.1f, JointType.HINDGE);
+            NNSpecification leftNetwork = NNSpecification.createEmptyWriteNetwork(leftCon.getDegreesOfFreedom());
+
+            //Right
+            Node right = new Node(fin, "Base_Right");
             JointSpecification rightCon = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 0.1f, JointType.HINDGE);
+            NNSpecification rightNetwork = NNSpecification.createEmptyWriteNetwork(rightCon.getDegreesOfFreedom());
+
+            //Brain (sinus wave output on second node)
+            NNSpecification brain = NNSpecification.testBrain1();
+            //Directly manages left and right output
+            brain.addNewInterConnection(brain.neurons[1], leftNetwork.actors[0], leftNetwork, 1);
+            brain.addNewInterConnection(brain.neurons[1], rightNetwork.actors[0], rightNetwork, 1);
 
             IList<EdgeMorph> edges = new EdgeMorph[]{
-                new EdgeMorph(root, left, leftCon, generateNetwork(leftCon)),
-                new EdgeMorph(root, right, rightCon, generateNetwork(rightCon)),
+                new EdgeMorph(root, left, leftCon, leftNetwork),
+                new EdgeMorph(root, right, rightCon, rightNetwork),
             }.ToList();
 
-            return new Morphology(root, NNSpecification.createEmptyNetwork(), edges, BASE_GEN);
-        }
+            if (Util.DEBUG)
+            {
+                Connection[] bi = brain.getOutgoingConnections().ToArray();
+                Connection[] bo = brain.getIncommingConnections().ToArray();
+                Connection[] li = leftNetwork.getOutgoingConnections().ToArray();
+                Connection[] lo = leftNetwork.getIncommingConnections().ToArray();
+                Connection[] ri = rightNetwork.getOutgoingConnections().ToArray();
+                Connection[] ro = rightNetwork.getIncommingConnections().ToArray();
+            }
+            
+            Morphology m = new Morphology(root, brain, edges, BASE_GEN);
 
-        static NNSpecification generateNetwork(JointSpecification js)
-        {
-            return NNSpecification.createEmptyReadWriteNetwork(js.getDegreesOfFreedom(), js.getDegreesOfFreedom());
+            return m;
         }
 }
 

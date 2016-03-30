@@ -7,6 +7,8 @@ namespace VirtualCreatures
 {
     public class CreatureManager : MonoBehaviour
     {
+        int simulationNumber = 0;
+
         float CreatureSpacing = 3;
         float ConstructionHeight = 1.7f; //TODO: This is mere a gues
 
@@ -76,10 +78,15 @@ namespace VirtualCreatures
                     TimeCount += Time.deltaTime;
                     if(TimeCount >= EA.InitializationTime){
                         TimeCount = 0;
-                        Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed - pauzing simulation");
+                        simulationNumber++;
                         if (Util.PAUSE_AFTER_CREATURE_INITIALIZATION)
                         {
+                            Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed ("+ simulationNumber + ") - pauzing simulation");
                             Debug.Break(); // pause simulation after settling stage of the create
+                        }
+                        else
+                        {
+                            Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed (" + simulationNumber + ")");
                         }
                         this.initialCMs = population.Select(cc => cc.getCenterOfMass()).ToArray();
                         state = State.EVALUATING;

@@ -41,6 +41,11 @@ namespace VirtualCreatures
             ID = Morphology.IDCount;
             Morphology.IDCount = (Char)(Convert.ToUInt16(Morphology.IDCount) + 1);
 
+            if (Util.DEBUG)
+            {
+                IDictionary<Connection, NNSpecification[]> iem = getInterEdgeMap();
+                IDictionary<NNSpecification, IEnumerable<NNSpecification>> nnm = getNeighboringNetworksMap();
+            }
         }
 
         public IEnumerable<NNSpecification> getAllNetworks()
@@ -55,12 +60,33 @@ namespace VirtualCreatures
 
         public IDictionary<NNSpecification, IEnumerable<NNSpecification>> getNeighboringNetworksMap()
         {
-            return edges.ToDictionary(
-                edgeKey => edgeKey.network,
-                edgeKey => edges.Where(e => e.destination == edgeKey.source || e.source == edgeKey.destination) // all directly connected
+            IDictionary<NNSpecification, IEnumerable<NNSpecification>> r = edges.ToDictionary(
+                edge => edge.network,
+                edge => edges.Where(edge_ => edge_.destination == edge.source || edge_.source == edge.destination) // all directly connected
                                 .Select(edgesVal => edgesVal.network)
-                                .Concat(Enumerable.Repeat(brain, 1)) // and the brain network
+                                .Concat(Enumerable.Repeat(brain, 1)) // and the brain network is neighbour to all networks
             );
+            // and add the brain as key
+            r[brain] = edges.Select(edge => edge.network);
+            if (Util.DEBUG)
+            {
+                //Every network should be present
+                foreach (NNSpecification existing in getInterEdgeMap().SelectMany(kvp => kvp.Value))
+                {
+                    if (!r.ContainsKey(existing))
+                    {
+                        throw new ApplicationException();
+                    }
+                }
+                //Neighbours should not be neighbours to themselfs
+                r.Where(kvp =>
+                {
+                    if (kvp.Value.Contains(kvp.Key))
+                        throw new ApplicationException();
+                    return true;
+                });
+            }
+            return r;
         }
 
         public IDictionary<Connection, NNSpecification[]> getInterEdgeMap()
@@ -71,9 +97,22 @@ namespace VirtualCreatures
             {
                 foreach (Connection outgoing in network.getOutgoingConnections())
                 {
+                    IEnumerable<NNSpecification> ns = allNetworks.Where(destNetwork => destNetwork.getIncommingConnections().Contains(outgoing));
+                    if (Util.DEBUG)
+                    {
+                        if(ns.Count() != 1)
+                        {
+                            NNSpecification[] error = ns.ToArray();
+                            Connection[] outs = network.getOutgoingConnections().ToArray();
+                            NNSpecification[] all = allNetworks.ToArray();
+                            IDictionary<NNSpecification, List<Connection>> inC = allNetworks.ToDictionary(n => n, n => n.getIncommingConnections().ToList());
+                            IDictionary<NNSpecification, List<Connection>> outG = allNetworks.ToDictionary(n => n, n => n.getOutgoingConnections().ToList());
+                            throw new ApplicationException();
+                        }
+                    }
                     d[outgoing] = new NNSpecification[] {
-                        network,
-                        allNetworks.Where(destNetwork => destNetwork.getIncommingConnections().Contains(outgoing)).Single()
+                        network,    //source network
+                        ns.Single() //destination network
                     };
                 }
             }
@@ -82,6 +121,12 @@ namespace VirtualCreatures
 
         internal Morphology deepCopy()
         {
+            if (Util.DEBUG)
+            {
+                IDictionary<Connection, NNSpecification[]> iem = getInterEdgeMap();
+                IDictionary<NNSpecification, IEnumerable<NNSpecification>> nnm = getNeighboringNetworksMap();
+            }
+
             Node root = this.root.deepCopy();
             IDictionary<Node, Node> copiedNodes = new Dictionary<Node, Node>();
             copiedNodes[this.root] = root;
@@ -93,8 +138,9 @@ namespace VirtualCreatures
             {
                 copiedNeurons[n] = n.clone();
             }
+            IDictionary<NeuralSpec, IList<Connection>> copiedConnectionSources = new Dictionary<NeuralSpec, IList<Connection>>();
 
-            NNSpecification brain = this.brain.copy(copiedNeurons);
+            NNSpecification brain = this.brain.copy(copiedNeurons, copiedConnectionSources);
 
             IList<EdgeMorph> edges = this.edges.Select(e => {
                 Node source;
@@ -112,7 +158,7 @@ namespace VirtualCreatures
 
                 }
                 JointSpecification joint = e.joint.deepCopy();
-                NNSpecification network = e.network.copy(copiedNeurons);
+                NNSpecification network = e.network.copy(copiedNeurons, copiedConnectionSources);
                 return new EdgeMorph(source, destination, joint, network);
             }).ToList();
 
