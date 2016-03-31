@@ -281,7 +281,7 @@ namespace VirtualCreatures
             }
             else
             {
-                throw new ArgumentException();
+                //FIXME: throw new ArgumentException();
             }
         }
 
