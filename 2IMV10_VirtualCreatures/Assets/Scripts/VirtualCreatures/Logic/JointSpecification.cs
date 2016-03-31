@@ -143,22 +143,22 @@ namespace VirtualCreatures
             switch (this.face)
             {
                 case Face.RIGHT:
-                    baseRotation = Quaternion.Euler(0, 90, 0);
+                    baseRotation = Quaternion.LookRotation(Vector3.right, Vector3.up);
                     break;
                 case Face.FORWARDS:
-                    baseRotation = Quaternion.identity;
+                    baseRotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
                     break;
                 case Face.LEFT:
-                    baseRotation = Quaternion.Euler(0, -90, 0);
+                    baseRotation = Quaternion.LookRotation(Vector3.left, Vector3.up);
                     break;
                 case Face.UP:
-                    baseRotation = Quaternion.Euler(0, 0, 90);
+                    baseRotation = Quaternion.LookRotation(Vector3.up, Vector3.up);
                     break;
                 case Face.DOWN:
-                    baseRotation = Quaternion.Euler(0, 0, -90);
+                    baseRotation = Quaternion.LookRotation(Vector3.down, Vector3.up);
                     break;
                 case Face.REVERSE:
-                    baseRotation = Quaternion.Euler(0, 180, 0);
+                    baseRotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
                     break;
                 default: throw new NotImplementedException();
             }
@@ -170,6 +170,8 @@ namespace VirtualCreatures
             Quaternion bending = Quaternion.Euler(0, bendingDegrees, 0);
 
             Quaternion total = baseRotation * axialRotation * bending;
+
+            Debug.Log(total.eulerAngles);
             return total;
         }
 

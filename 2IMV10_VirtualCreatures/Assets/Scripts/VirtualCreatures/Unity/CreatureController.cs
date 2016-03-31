@@ -127,9 +127,12 @@ namespace VirtualCreatures {
                 childGO.transform.localPosition = localPosition;
                 childGO.transform.localRotation = localRotation;
 
+                Debug.Log(childGO.transform.localRotation.eulerAngles);
+
                 // Create the joint at the parent and set the direction of the joint
                 Joint joint = createJoint(e.joint, parentGO);
                 joint.connectedBody = childGO.GetComponent<Rigidbody>();
+                //joint.autoConfigureConnectedAnchor = false;
                 int index = morphology.edges.IndexOf(e);
                 allJoints[index] = joint;
 
