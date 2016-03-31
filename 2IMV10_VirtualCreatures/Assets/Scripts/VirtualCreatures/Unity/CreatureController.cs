@@ -89,7 +89,7 @@ namespace VirtualCreatures {
             // Create the Neural Network
             ExplicitNN neuralNetwork = NaiveENN.construct(morphology, joints);
 
-            // Store everything in the creature script
+            // Store everything in the creature script (optional)
             controller.setReferences(neuralNetwork);
             
             //create.transform.position = position;
@@ -109,17 +109,20 @@ namespace VirtualCreatures {
             IList<EdgeMorph> outgoing = morphology.getOutgoingEdges(parentNode);
             foreach (EdgeMorph e in outgoing)
             {
-                // Create a primitive for the next node
+                // Create a GameObject for the next node
                 Node childNode = e.destination;
                 GameObject childGO = createUnscaledGameObject(childNode.shape);
-
-                // Calculate where it should be positioned (relative to parent)
-                // Calculate the distance between center of child and parent
-                Vector3 facePosition = e.getUnityPositionAnchor(); //on parent shape
-                Vector3 direction = e.joint.getUnityDirection(); //towards child
-                float distFaceToChildCenter = (float)e.joint.hover + childNode.shape.getBound(Face.REVERSE); //on child shape
+                
+                // Center of parent to the position on the surface
+                Vector3 facePosition = e.getUnityPositionAnchor();
+                // Directional unitvector from position on the surface towards center of the child
+                Vector3 direction = e.joint.getUnityDirection();
+                // Calculate the distance between center of child and the position on the parent's surface
+                float distFaceToChildCenter = (float)e.joint.hover + childNode.shape.getBound(Face.REVERSE);
+                // Positional vector from parent to child
                 Vector3 localPosition = facePosition + distFaceToChildCenter * direction;
 
+                // Calculate the rotation needed to go from the parent to the childs coordinate system
                 Quaternion localRotation = e.joint.getUnityRotation();
 
                 // Place the child on the correct position
@@ -127,20 +130,14 @@ namespace VirtualCreatures {
                 childGO.transform.localPosition = localPosition;
                 childGO.transform.localRotation = localRotation;
 
-                Debug.Log(childGO.transform.localRotation.eulerAngles);
-
                 // Create the joint at the parent and set the direction of the joint
-                Joint joint = createJoint(e.joint, parentGO);
-                joint.connectedBody = childGO.GetComponent<Rigidbody>();
-                //joint.autoConfigureConnectedAnchor = false;
+                Joint joint = createJoint(e.joint, parentGO, childGO, facePosition, localRotation);
+
                 int index = morphology.edges.IndexOf(e);
                 allJoints[index] = joint;
 
                 // Position all the children
                 CreatureController.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
-                
-                // Calculate where the joint should be, relative to the childs coordinates system
-                joint.anchor = facePosition;
             }
         }
 
@@ -149,25 +146,37 @@ namespace VirtualCreatures {
         /// </summary>
         /// <param name="parent"></param>
         /// <returns></returns>
-        static Joint createJoint(JointSpecification joint, GameObject parent)
+        static Joint createJoint(JointSpecification spec, GameObject parent, GameObject child, Vector3 anchor, Quaternion rotation)
         {
-            switch (joint.jointType)
+            // First specifiy the joint
+            Joint joint;
+            switch (spec.jointType)
             {
                 case JointType.FIXED:
                     FixedJoint fixedjoint = parent.AddComponent<FixedJoint>();
-                    return fixedjoint;
+                    joint = fixedjoint;
+                    break;
                 case JointType.HINDGE:
-                    //positive angle is in the direction of the normal
                     HingeJoint hindgeJoint = parent.AddComponent<HingeJoint>();
-                    hindgeJoint.axis = joint.getUnityAxisUnitVector();
-                    return hindgeJoint;
+                    hindgeJoint.axis = rotation * Vector3.right;
+                    joint = hindgeJoint;
+                    break;
                 case JointType.PISTON:
                     SpringJoint springJoint = parent.AddComponent<SpringJoint>();
-                    return springJoint;
-                case JointType.ROTATIONAL:
+                    joint = springJoint;
                     break;
+                case JointType.ROTATIONAL:
+                    joint = null;
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
-            throw new NotImplementedException();
+            joint.anchor = anchor;
+
+            // Then connect and let it be autoconfigured
+            joint.connectedBody = child.GetComponent<Rigidbody>();
+            joint.autoConfigureConnectedAnchor = true; // Triggers the autoconfiguration
+            return joint;
         }
 
         static GameObject createUnscaledGameObject(ShapeSpecification spec)
