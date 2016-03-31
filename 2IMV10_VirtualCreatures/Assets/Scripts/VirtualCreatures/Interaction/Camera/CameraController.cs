@@ -46,11 +46,11 @@ namespace VirtualCreatures {
             CameraModeFree();
             CameraModeTopView();
 
-            if (transform.position.z < 0)
-                transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+            if (transform.position.y < 10)
+                transform.position = new Vector3(transform.position.x, 10, transform.position.z);
 
-            if (transform.position.z > 1000)
-                transform.position = new Vector3(transform.position.x, transform.position.y, 1000);
+            if (transform.position.y > 1000)
+                transform.position = new Vector3(transform.position.x, 1000, transform.position.z);
         }
 
         public void CameraModeFree()

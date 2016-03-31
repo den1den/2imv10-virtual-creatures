@@ -20,6 +20,9 @@ namespace VirtualCreatures
         public float nodeYSpacing = 15.0f;
         public float nodeRadius = 50.0f;
 
+        public float mouseSensitivity = 1.0f;
+        private Vector3 lastPosition;
+
         private IList<UILineRenderer> lines = new List<UILineRenderer>();
 
         // Use this for initialization
@@ -65,6 +68,17 @@ namespace VirtualCreatures
         // Update is called once per frame
         void Update()
         {
+            if (Input.GetMouseButtonDown(0))
+            {
+                lastPosition = Input.mousePosition;
+            }
+
+            if (Input.GetMouseButton(0))
+            {
+                Vector3 delta = Input.mousePosition - lastPosition;
+                transform.Translate(delta.x * mouseSensitivity, delta.y * mouseSensitivity, 0);
+                lastPosition = Input.mousePosition;
+            }
         }
 
         public void addChildNodeAtMorphology(Morphology parent, Morphology child)
