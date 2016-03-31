@@ -26,7 +26,7 @@ namespace VirtualCreatures
             {
                 throw new ArgumentException(); //brain can only be added once, and that should not be in one of the edges
             }
-            if(brain.actors.Count > 0 || brain.sensors.Count > 0) { throw new ArgumentException("Brain should not have sensors for now"); }
+            if (brain.actors.Count > 0 || brain.sensors.Count > 0) { throw new ArgumentException("Brain should not have sensors for now"); }
             if (edges.Where(a => edges.Where(b => a.source == b.source && a.destination == b.destination).Count() > 1).Count() > 0)
             {
                 throw new ArgumentException(); //check for edges with same source en destination, this should not happen and nodes should be repeated
@@ -41,6 +41,11 @@ namespace VirtualCreatures
             ID = Morphology.IDCount;
             Morphology.IDCount = (Char)(Convert.ToUInt16(Morphology.IDCount) + 1);
 
+            if (Util.DEBUG)
+            {
+                IDictionary<Connection, NNSpecification[]> iem = getInterEdgeMap();
+                IDictionary<NNSpecification, IEnumerable<NNSpecification>> nnm = getNeighboringNetworksMap();
+            }
         }
 
         public IEnumerable<NNSpecification> getAllNetworks()
@@ -55,12 +60,33 @@ namespace VirtualCreatures
 
         public IDictionary<NNSpecification, IEnumerable<NNSpecification>> getNeighboringNetworksMap()
         {
-            return edges.ToDictionary(
-                edgeKey => edgeKey.network,
-                edgeKey => edges.Where(e => e.destination == edgeKey.source || e.source == edgeKey.destination) // all directly connected
+            IDictionary<NNSpecification, IEnumerable<NNSpecification>> r = edges.ToDictionary(
+                edge => edge.network,
+                edge => edges.Where(edge_ => edge_.destination == edge.source || edge_.source == edge.destination) // all directly connected
                                 .Select(edgesVal => edgesVal.network)
-                                .Concat(Enumerable.Repeat(brain, 1)) // and the brain network
+                                .Concat(Enumerable.Repeat(brain, 1)) // and the brain network is neighbour to all networks
             );
+            // and add the brain as key
+            r[brain] = edges.Select(edge => edge.network);
+            if (Util.DEBUG)
+            {
+                //Every network should be present
+                foreach (NNSpecification existing in getInterEdgeMap().SelectMany(kvp => kvp.Value))
+                {
+                    if (!r.ContainsKey(existing))
+                    {
+                        throw new ApplicationException();
+                    }
+                }
+                //Neighbours should not be neighbours to themselfs
+                r.Where(kvp =>
+                {
+                    if (kvp.Value.Contains(kvp.Key))
+                        throw new ApplicationException();
+                    return true;
+                });
+            }
+            return r;
         }
 
         public IDictionary<Connection, NNSpecification[]> getInterEdgeMap()
@@ -71,9 +97,22 @@ namespace VirtualCreatures
             {
                 foreach (Connection outgoing in network.getOutgoingConnections())
                 {
+                    IEnumerable<NNSpecification> ns = allNetworks.Where(destNetwork => destNetwork.getIncommingConnections().Contains(outgoing));
+                    if (Util.DEBUG)
+                    {
+                        if (ns.Count() != 1)
+                        {
+                            NNSpecification[] error = ns.ToArray();
+                            Connection[] outs = network.getOutgoingConnections().ToArray();
+                            NNSpecification[] all = allNetworks.ToArray();
+                            IDictionary<NNSpecification, List<Connection>> inC = allNetworks.ToDictionary(n => n, n => n.getIncommingConnections().ToList());
+                            IDictionary<NNSpecification, List<Connection>> outG = allNetworks.ToDictionary(n => n, n => n.getOutgoingConnections().ToList());
+                            throw new ApplicationException();
+                        }
+                    }
                     d[outgoing] = new NNSpecification[] {
-                        network,
-                        allNetworks.Where(destNetwork => destNetwork.getIncommingConnections().Contains(outgoing)).Single()
+                        network,    //source network
+                        ns.Single() //destination network
                     };
                 }
             }
@@ -82,6 +121,12 @@ namespace VirtualCreatures
 
         internal Morphology deepCopy()
         {
+            if (Util.DEBUG)
+            {
+                IDictionary<Connection, NNSpecification[]> iem = getInterEdgeMap();
+                IDictionary<NNSpecification, IEnumerable<NNSpecification>> nnm = getNeighboringNetworksMap();
+            }
+
             Node root = this.root.deepCopy();
             IDictionary<Node, Node> copiedNodes = new Dictionary<Node, Node>();
             copiedNodes[this.root] = root;
@@ -93,12 +138,13 @@ namespace VirtualCreatures
             {
                 copiedNeurons[n] = n.clone();
             }
+            IDictionary<NeuralSpec, IList<Connection>> copiedConnectionSources = new Dictionary<NeuralSpec, IList<Connection>>();
 
-            NNSpecification brain = this.brain.copy(copiedNeurons);
+            NNSpecification brain = this.brain.copy(copiedNeurons, copiedConnectionSources);
 
             IList<EdgeMorph> edges = this.edges.Select(e => {
                 Node source;
-                if(!copiedNodes.TryGetValue(e.source, out source))
+                if (!copiedNodes.TryGetValue(e.source, out source))
                 {
                     source = e.source.deepCopy();
                     copiedNodes[e.source] = source;
@@ -112,7 +158,7 @@ namespace VirtualCreatures
 
                 }
                 JointSpecification joint = e.joint.deepCopy();
-                NNSpecification network = e.network.copy(copiedNeurons);
+                NNSpecification network = e.network.copy(copiedNeurons, copiedConnectionSources);
                 return new EdgeMorph(source, destination, joint, network);
             }).ToList();
 
@@ -340,18 +386,18 @@ namespace VirtualCreatures
             float k = h / 2;
 
             //body element
-            ShapeSpecification smaller_body = Rectangle.createPlane(k*2, 0.1f);
-            ShapeSpecification body = Rectangle.createPlane(h*2, 0.1f);
-            ShapeSpecification bigger_body = Rectangle.createPlane((h + k)*2, 0.15f);
+            ShapeSpecification smaller_body = Rectangle.createPlane(k * 2, 0.1f);
+            ShapeSpecification body = Rectangle.createPlane(h * 2, 0.1f);
+            ShapeSpecification bigger_body = Rectangle.createPlane((h + k) * 2, 0.15f);
 
-            smaller_body = Rectangle.createCube(k*2);
-            body = Rectangle.createCube(h*2);
-            bigger_body = Rectangle.createPilar((h+k)*2, 0.01f);
+            smaller_body = Rectangle.createCube(k * 2);
+            body = Rectangle.createCube(h * 2);
+            bigger_body = Rectangle.createPilar((h + k) * 2, 0.01f);
 
             //right
             JointSpecification rl = new JointSpecification(Face.RIGHT, 0, 0, 0, -angle, k, JointType.FIXED);
             JointSpecification r = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 2 - h, JointType.FIXED);
-            JointSpecification rr = new JointSpecification(Face.RIGHT, 0, 0, 0, angle, h+k, JointType.FIXED);
+            JointSpecification rr = new JointSpecification(Face.RIGHT, 0, 0, 0, angle, h + k, JointType.FIXED);
             Node r0 = new Node(bigger_body);
             Node r1 = new Node(body);
             Node r2 = new Node(smaller_body);
@@ -408,9 +454,9 @@ namespace VirtualCreatures
             int N = 10;
             double angle = (Math.PI / 2) / N;
             float x = 2;
-            
-            ShapeSpecification body = Rectangle.createPilar(x/2, 0.1f);
-            JointSpecification joint = new JointSpecification(Face.FORWARDS, 0, 0, 0, angle, x/2, JointType.FIXED);
+
+            ShapeSpecification body = Rectangle.createPilar(x / 2, 0.1f);
+            JointSpecification joint = new JointSpecification(Face.FORWARDS, 0, 0, 0, angle, x / 2, JointType.FIXED);
             IList<EdgeMorph> edges = new List<EdgeMorph>();
 
             Node a = new Node(body);
@@ -445,7 +491,7 @@ namespace VirtualCreatures
             Node head = new Node(headS);
             Node snout = new Node(snoutS);
 
-            double legRotation = Math.PI/2;
+            double legRotation = Math.PI / 2;
             double legBending = 0.25;
 
             //the joints
@@ -479,7 +525,7 @@ namespace VirtualCreatures
             float angleRadium10th = (float)(2 * Math.PI / 9) - 0.1f;
 
             //forwards, all positioned up
-            JointSpecification forwards = new JointSpecification( Face.FORWARDS, 0, 0, 0.5, angleRadium10th, 2.5f, JointType.FIXED);
+            JointSpecification forwards = new JointSpecification(Face.FORWARDS, 0, 0, 0.5, angleRadium10th, 2.5f, JointType.FIXED);
 
             //body element
             ShapeSpecification body = Rectangle.createPlane(6, 0.5f);

@@ -7,6 +7,8 @@ namespace VirtualCreatures
 {
     public class CreatureManager : MonoBehaviour
     {
+        int simulationNumber = 0;
+
         float CreatureSpacing = 3;
         float ConstructionHeight = 1.7f; //TODO: This is mere a gues
 
@@ -16,7 +18,7 @@ namespace VirtualCreatures
         Vector3[] initialCMs = null;
 
         CreatureController[] population = new CreatureController[0];
-        
+
         // Use this for initialization
         void Start()
         {
@@ -27,7 +29,7 @@ namespace VirtualCreatures
             //CreatureController.constructCreature(Morphology.testSuperSwastika(), new Vector3(90, -50, 0));
             //CreatureController.constructCreature(Morphology.testHindge(), new Vector3(120, -50, 0));
             //Debug.Break();
-            
+
             EA = new EvolutionAlgorithm1();
 
             EA.generateNewPopulation();
@@ -52,7 +54,7 @@ namespace VirtualCreatures
             }
 
             // Construct new population
-            for(i = 0; i < newPopulation.Length; i++)
+            for (i = 0; i < newPopulation.Length; i++)
             {
                 Morphology m = newPopulation[i].morphology;
                 population[i] = CreatureController.constructCreature(m, positioningGrid[i]);
@@ -69,17 +71,23 @@ namespace VirtualCreatures
         // Update is called once per frame
         void Update()
         {
-            switch(this.state)
+            switch (this.state)
             {
                 case State.INITIAL:
                     //keep track of initial movements
                     TimeCount += Time.deltaTime;
-                    if(TimeCount >= EA.InitializationTime){
+                    if (TimeCount >= EA.InitializationTime)
+                    {
                         TimeCount = 0;
-                        Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed - pauzing simulation");
+                        simulationNumber++;
                         if (Util.PAUSE_AFTER_CREATURE_INITIALIZATION)
                         {
+                            Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed (" + simulationNumber + ") - pauzing simulation");
                             Debug.Break(); // pause simulation after settling stage of the create
+                        }
+                        else
+                        {
+                            Debug.Log("Creature initialization of " + this.population.Length + " Creatures completed (" + simulationNumber + ")");
                         }
                         this.initialCMs = population.Select(cc => cc.getCenterOfMass()).ToArray();
                         state = State.EVALUATING;
@@ -97,13 +105,13 @@ namespace VirtualCreatures
                     }
                     break;
             }
-            
+
         }
 
         private double[] evalFitness()
         {
             double[] r = new double[this.population.Count()];
-            for (int i = 0; i < r.Length; i ++)
+            for (int i = 0; i < r.Length; i++)
             {
                 Vector3 delta = population[i].getCenterOfMass() - this.initialCMs[i];
                 switch (EA.fitness)
@@ -112,7 +120,7 @@ namespace VirtualCreatures
                         r[i] = delta.x * delta.x + delta.z * delta.z;
                         break;
                     case Fitness.SWIMMING:
-                        r[i] = delta.x * delta.x + 1/2*Math.Sign(delta.y)*delta.y*delta.y + delta.z * delta.z;
+                        r[i] = delta.x * delta.x + 1 / 2 * Math.Sign(delta.y) * delta.y * delta.y + delta.z * delta.z;
                         break;
                 }
             }
