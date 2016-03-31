@@ -26,7 +26,7 @@ namespace VirtualCreatures
             {
                 throw new ArgumentException(); //brain can only be added once, and that should not be in one of the edges
             }
-            if(brain.actors.Count > 0 || brain.sensors.Count > 0) { throw new ArgumentException("Brain should not have sensors for now"); }
+            if (brain.actors.Count > 0 || brain.sensors.Count > 0) { throw new ArgumentException("Brain should not have sensors for now"); }
             if (edges.Where(a => edges.Where(b => a.source == b.source && a.destination == b.destination).Count() > 1).Count() > 0)
             {
                 throw new ArgumentException(); //check for edges with same source en destination, this should not happen and nodes should be repeated
@@ -100,7 +100,7 @@ namespace VirtualCreatures
                     IEnumerable<NNSpecification> ns = allNetworks.Where(destNetwork => destNetwork.getIncommingConnections().Contains(outgoing));
                     if (Util.DEBUG)
                     {
-                        if(ns.Count() != 1)
+                        if (ns.Count() != 1)
                         {
                             NNSpecification[] error = ns.ToArray();
                             Connection[] outs = network.getOutgoingConnections().ToArray();
@@ -144,7 +144,7 @@ namespace VirtualCreatures
 
             IList<EdgeMorph> edges = this.edges.Select(e => {
                 Node source;
-                if(!copiedNodes.TryGetValue(e.source, out source))
+                if (!copiedNodes.TryGetValue(e.source, out source))
                 {
                     source = e.source.deepCopy();
                     copiedNodes[e.source] = source;
@@ -386,18 +386,18 @@ namespace VirtualCreatures
             float k = h / 2;
 
             //body element
-            ShapeSpecification smaller_body = Rectangle.createPlane(k*2, 0.1f);
-            ShapeSpecification body = Rectangle.createPlane(h*2, 0.1f);
-            ShapeSpecification bigger_body = Rectangle.createPlane((h + k)*2, 0.15f);
+            ShapeSpecification smaller_body = Rectangle.createPlane(k * 2, 0.1f);
+            ShapeSpecification body = Rectangle.createPlane(h * 2, 0.1f);
+            ShapeSpecification bigger_body = Rectangle.createPlane((h + k) * 2, 0.15f);
 
-            smaller_body = Rectangle.createCube(k*2);
-            body = Rectangle.createCube(h*2);
-            bigger_body = Rectangle.createPilar((h+k)*2, 0.01f);
+            smaller_body = Rectangle.createCube(k * 2);
+            body = Rectangle.createCube(h * 2);
+            bigger_body = Rectangle.createPilar((h + k) * 2, 0.01f);
 
             //right
             JointSpecification rl = new JointSpecification(Face.RIGHT, 0, 0, 0, -angle, k, JointType.FIXED);
             JointSpecification r = new JointSpecification(Face.RIGHT, 0, 0, 0, 0, 2 - h, JointType.FIXED);
-            JointSpecification rr = new JointSpecification(Face.RIGHT, 0, 0, 0, angle, h+k, JointType.FIXED);
+            JointSpecification rr = new JointSpecification(Face.RIGHT, 0, 0, 0, angle, h + k, JointType.FIXED);
             Node r0 = new Node(bigger_body);
             Node r1 = new Node(body);
             Node r2 = new Node(smaller_body);
@@ -454,9 +454,9 @@ namespace VirtualCreatures
             int N = 10;
             double angle = (Math.PI / 2) / N;
             float x = 2;
-            
-            ShapeSpecification body = Rectangle.createPilar(x/2, 0.1f);
-            JointSpecification joint = new JointSpecification(Face.FORWARDS, 0, 0, 0, angle, x/2, JointType.FIXED);
+
+            ShapeSpecification body = Rectangle.createPilar(x / 2, 0.1f);
+            JointSpecification joint = new JointSpecification(Face.FORWARDS, 0, 0, 0, angle, x / 2, JointType.FIXED);
             IList<EdgeMorph> edges = new List<EdgeMorph>();
 
             Node a = new Node(body);
@@ -491,7 +491,7 @@ namespace VirtualCreatures
             Node head = new Node(headS);
             Node snout = new Node(snoutS);
 
-            double legRotation = Math.PI/2;
+            double legRotation = Math.PI / 2;
             double legBending = 0.25;
 
             //the joints
@@ -525,7 +525,7 @@ namespace VirtualCreatures
             float angleRadium10th = (float)(2 * Math.PI / 9) - 0.1f;
 
             //forwards, all positioned up
-            JointSpecification forwards = new JointSpecification( Face.FORWARDS, 0, 0, 0.5, angleRadium10th, 2.5f, JointType.FIXED);
+            JointSpecification forwards = new JointSpecification(Face.FORWARDS, 0, 0, 0.5, angleRadium10th, 2.5f, JointType.FIXED);
 
             //body element
             ShapeSpecification body = Rectangle.createPlane(6, 0.5f);

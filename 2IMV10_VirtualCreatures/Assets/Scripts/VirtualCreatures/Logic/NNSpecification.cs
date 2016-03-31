@@ -34,11 +34,11 @@ namespace VirtualCreatures
 
         NNSpecification(IList<NeuralSpec> neurons, IList<Connection> connections) : this(new List<NeuralSpec>(0), neurons, new List<NeuralSpec>(0), connections) { }
 
-        NNSpecification() : this(new List<NeuralSpec>(0), new List<Connection>(0)){}
-        
+        NNSpecification() : this(new List<NeuralSpec>(0), new List<Connection>(0)) { }
+
         public void checkInvariants()
         {
-            foreach(Connection c in connections)
+            foreach (Connection c in connections)
             {
                 if (c.source.isSensor() && c.destination.isActor()) throw new ApplicationException("no direct connections allowed between sensors and actors");
             }
@@ -74,7 +74,7 @@ namespace VirtualCreatures
             IList<Connection> connections = new List<Connection>(0);
             return new NNSpecification(sensors, neurons, actors, connections);
         }
-        
+
         internal NNSpecification copy(IDictionary<NeuralSpec, NeuralSpec> copiedNeurons, IDictionary<NeuralSpec, IList<Connection>> copiedConnectionSources)
         {
             Func<NeuralSpec, NeuralSpec> getCopied = n => copiedNeurons[n];
@@ -94,7 +94,7 @@ namespace VirtualCreatures
                     copiedConnectionSources[source] = candidates;
                 }
                 Connection foundCon = candidates.Where(con => con.source == source).SingleOrDefault();
-                if(foundCon == null)
+                if (foundCon == null)
                 {
                     //create connections on the fly
                     foundCon = new Connection(source, destination);
@@ -135,7 +135,7 @@ namespace VirtualCreatures
             this.neurons.Add(n);
             return n;
         }
-        
+
         /// <returns>Total number of sensors+neurons+actors in this network</returns>
         internal int getNumberOfNeurons()
         {
@@ -213,7 +213,7 @@ namespace VirtualCreatures
                 throw new ApplicationException("Edge could not be removed because it is not longer in this network");
             }
         }
-        
+
         internal void removeExternalConnection(Connection c, NNSpecification destinationNetwork)
         {
             if (!getInterfacingConnections().Contains(c))
@@ -246,16 +246,17 @@ namespace VirtualCreatures
             {
                 throw new ApplicationException("We should not move this edge to the same network, or else it was not an external edge");
             }
-            if(!connections.Contains(c))
+            if (!connections.Contains(c))
                 throw new ArgumentException("Cannot move connection to antoher network, the connection is not found in this network");
-            if(Util.DEBUG && !(getNeuronSourceCandidates().Contains(c.source) || getNeuronDestinationCandidates().Contains(c.destination)))
+            if (Util.DEBUG && !(getNeuronSourceCandidates().Contains(c.source) || getNeuronDestinationCandidates().Contains(c.destination)))
                 throw new ApplicationException("Edge is in here but not the source or destination???");
             connections.Remove(c);
             if (!newSourceNetwork.connections.Contains(c))
             {
                 // Connection was not in newSourceNetwork
                 // We move with a new source
-                if (Util.DEBUG) {
+                if (Util.DEBUG)
+                {
                     if (!newDestinationNetwork.connections.Contains(c))
                         throw new ApplicationException(); //dest connection was already set
                     if (!newDestinationNetwork.contains(c.destination))
@@ -265,7 +266,7 @@ namespace VirtualCreatures
                 }
                 newSourceNetwork.connections.Add(c);
             }
-            else if(!newDestinationNetwork.connections.Contains(c))
+            else if (!newDestinationNetwork.connections.Contains(c))
             {
                 // Connection was not in newDestinationnetwork
                 if (Util.DEBUG)
@@ -295,7 +296,7 @@ namespace VirtualCreatures
 
         public Connection addNewLocalConnection(NeuralSpec source, NeuralSpec destination, float weight)
         {
-            if(!getNeuronsAndSensors().Contains(source))
+            if (!getNeuronsAndSensors().Contains(source))
                 throw new ArgumentException();
             if (!getNeuronsAndActors().Contains(destination))
                 throw new ArgumentException();
@@ -313,10 +314,10 @@ namespace VirtualCreatures
             destinationNetwork.connections.Add(c);
             return c;
         }
-        
+
         public void addNewInterConnectionToActors(NeuralSpec source, NNSpecification destinationNetwork)
         {
-            foreach(NeuralSpec actor in destinationNetwork.actors)
+            foreach (NeuralSpec actor in destinationNetwork.actors)
             {
                 addNewInterConnection(source, actor, destinationNetwork, 1);
             }
@@ -353,8 +354,9 @@ namespace VirtualCreatures
         private enum NeuronType { SENSOR, NEURON, ACTOR };
 
         private NeuronFunc function;
-        
-        private NeuralSpec(NeuronType type, NeuronFunc function) {
+
+        private NeuralSpec(NeuronType type, NeuronFunc function)
+        {
             this.type = type;
             this.function = function;
             this.id = NeuralSpec.ID.ToString() + type.ToString() + function.ToString();
@@ -522,7 +524,7 @@ namespace VirtualCreatures
 
         public override string ToString()
         {
-            return "Connection: " + source.id + " -> " +destination.id;
+            return "Connection: " + source.id + " -> " + destination.id;
         }
     }
 
@@ -533,7 +535,7 @@ namespace VirtualCreatures
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(filename));
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
             {
-                foreach(String line in contents) { file.WriteLine(line); }
+                foreach (String line in contents) { file.WriteLine(line); }
             }
         }
 
@@ -550,7 +552,7 @@ namespace VirtualCreatures
             netnames[brain] = "Brain";
 
             IDictionary<NeuralSpec, string> neuronIDs = nets
-                .SelectMany(net => net.getNeuronsAll().Select(neural => new object[] {net, neural}))
+                .SelectMany(net => net.getNeuronsAll().Select(neural => new object[] { net, neural }))
                 .ToDictionary(
                 objs => (NeuralSpec)objs[1],
                 objs => "x" + netnames[(NNSpecification)objs[0]] + "x" + ((NeuralSpec)objs[1]).id
@@ -565,7 +567,7 @@ namespace VirtualCreatures
                 string name = "cluster_" + N.ToString();
                 string label = netnames[network];
                 result.Add("    subgraph " + name + " {");
-                result.Add("        label=\""+ label + "\";");
+                result.Add("        label=\"" + label + "\";");
                 int sensor = 0;
                 int actor = 0;
                 foreach (NeuralSpec n in network.getNeuronsAll())
@@ -574,10 +576,12 @@ namespace VirtualCreatures
                     if (n.isActor())
                     {
                         label = "Actor" + (++actor);
-                    }else if (n.isSensor())
+                    }
+                    else if (n.isSensor())
                     {
                         label = "Sensor" + (++sensor);
-                    } else
+                    }
+                    else
                     {
                         label = n.getFunction().ToString();
                     }
@@ -588,7 +592,7 @@ namespace VirtualCreatures
             }
             foreach (NNSpecification network in networks)
             {
-                foreach(Connection connection in network.getInternalConnections().Concat(network.getOutgoingConnections())) //all internal and outgoing connections)
+                foreach (Connection connection in network.getInternalConnections().Concat(network.getOutgoingConnections())) //all internal and outgoing connections)
                 {
                     string sourceName = neuronIDs[connection.source];
                     string destName = neuronIDs[connection.destination];

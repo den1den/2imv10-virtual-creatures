@@ -25,7 +25,7 @@ namespace VirtualCreatures
         public abstract void generateNewPopulation();
 
         internal abstract float getCreatureSize();
-        
+
         public Fitness fitness = Fitness.WALKING;
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace VirtualCreatures
 
             // change existing connections between networks
             IDictionary<NNSpecification, IEnumerable<NNSpecification>> neighbours = morphology.getNeighboringNetworksMap();
-            
+
             foreach (KeyValuePair<Connection, NNSpecification[]> kvp in morphology.getInterEdgeMap())
             {
                 Connection c = kvp.Key;
@@ -245,13 +245,13 @@ namespace VirtualCreatures
 
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
                 DotParser.write("stats/2.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
-            
+
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
             foreach (EdgeMorph e in morphology.edges)
             {
                 NNSpecification network = e.network;
-                foreach(NeuralSpec neuron in network.neurons)
+                foreach (NeuralSpec neuron in network.neurons)
                 {
                     int connected = network.getConnectedN(neuron);
                     if (connected < neuron.getMinimalConnections())
@@ -260,7 +260,7 @@ namespace VirtualCreatures
                         {
                             NeuralSpec destination = neuron;
                             NeuralSpec newSource = findNewSource(network, destination, network);
-                            if(newSource == null)
+                            if (newSource == null)
                             {
                                 //FIXME: No suitable action for a network with to few nodes to cohere to a nodes cardinality constraints. Maby exclude or remove neurons then?
                                 break;
@@ -300,7 +300,7 @@ namespace VirtualCreatures
 
         void possiblyAddInternalConnections(NNSpecification network)
         {
-            if(network.getNumberOfSourceCandidates() <= 0)
+            if (network.getNumberOfSourceCandidates() <= 0)
             {
                 //Could not add anything here...
                 return;
@@ -369,7 +369,7 @@ namespace VirtualCreatures
             if (sourceNetwork == newDestinationNetwork)
             {
                 // also exclude self loops
-                candidates = candidates.Except(Enumerable.Repeat(source, 1)); 
+                candidates = candidates.Except(Enumerable.Repeat(source, 1));
             }
             return EvolutionAlgorithm.getElement(candidates);
         }
@@ -377,7 +377,7 @@ namespace VirtualCreatures
         private static NeuralSpec findNewSource(NNSpecification destinationNetwork, NeuralSpec destination, NNSpecification newSourceNetwork)
         {
             IEnumerable<NeuralSpec> candidates;
-            if(destination.isActor())
+            if (destination.isActor())
             {
                 // we cannot select sensors
                 candidates = newSourceNetwork.getNeuronsOnly();
@@ -388,7 +388,7 @@ namespace VirtualCreatures
             }
             // must not already be connected (also excludes same edge)
             candidates = candidates.Except(destinationNetwork.getEdgesByDestination(destination).Select(edge => edge.source));
-            if(newSourceNetwork == destinationNetwork)
+            if (newSourceNetwork == destinationNetwork)
             {
                 // also exclude self loops
                 candidates = candidates.Except(Enumerable.Repeat(destination, 1));
@@ -476,12 +476,12 @@ namespace VirtualCreatures
                 Connection[] ri = rightNetwork.getOutgoingConnections().ToArray();
                 Connection[] ro = rightNetwork.getIncommingConnections().ToArray();
             }
-            
+
             Morphology m = new Morphology(root, brain, edges, BASE_GEN);
 
             return m;
         }
-}
+    }
 
     internal class NeuronChooser : Descision
     {
@@ -578,7 +578,7 @@ namespace VirtualCreatures
             //TODO network topology is ignored, we iterate until a right one is found
             //TODO Might even be a good choice, but the current network topology is not used when generating new neuron
             int networkSize = network.getNumberOfNeurons();
-            if(networkSize == 0)
+            if (networkSize == 0)
             {
                 //just return a Neuron from the first set
                 return EvolutionAlgorithm.getElement(set[0]);
@@ -780,7 +780,7 @@ namespace VirtualCreatures
             if (normalized)
             {
                 double total = this.ps.Max();
-                for(int i = 0; i < ps.Length; i++)
+                for (int i = 0; i < ps.Length; i++)
                 {
                     ps[i] /= total;
                 }

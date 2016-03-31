@@ -23,7 +23,10 @@ namespace VirtualCreatures {
         public bool lockCursor;
         public Vector2 sensitivity = new Vector2(2, 2);
         public Vector2 smoothing = new Vector2(3, 3);
-        public Vector2 targetDirection;
+        public Vector3 targetDirection;
+
+        public Vector3 savedDirection;
+        public Vector3 savedPosition;
 
         void Start()
         {
@@ -35,7 +38,6 @@ namespace VirtualCreatures {
         void Update()
         {
             CameraKeyboardControl();
-            CameraLookAt();
         }
 
 
@@ -43,18 +45,26 @@ namespace VirtualCreatures {
         {
             CameraModeFree();
             CameraModeTopView();
+
+            if (transform.position.y < 10)
+                transform.position = new Vector3(transform.position.x, 10, transform.position.z);
+
+            if (transform.position.y > 1000)
+                transform.position = new Vector3(transform.position.x, 1000, transform.position.z);
         }
 
         public void CameraModeFree()
         {
             if(mode == CameraMode.Free)
             {
+                CameraLookAt();
+
                 float orthogonalAxisValue = Input.GetAxis("Horizontal");
                 float forwardAxisValue = Input.GetAxis("Vertical");
 
                 transform.Translate(Vector3.forward * forwardAxisValue * Time.deltaTime * speed);
-
                 transform.Translate(Vector3.right * orthogonalAxisValue * Time.deltaTime * speed);
+
             }
         }
 
@@ -62,11 +72,39 @@ namespace VirtualCreatures {
         {
             if(mode == CameraMode.Top)
             {
+                float horizontalAxisValue = Input.GetAxis("Horizontal");
+                float verticalAxisValue = Input.GetAxis("Vertical");
+                float zoomAxisValue = Input.GetAxis("Mouse ScrollWheel");
 
+                transform.Translate(Vector3.right * horizontalAxisValue * Time.deltaTime * speed * 10);
+                transform.Translate(Vector3.up * verticalAxisValue * Time.deltaTime * speed * 10);
+                transform.Translate(Vector3.forward * zoomAxisValue * Time.deltaTime * speed * 100);
+
+                transform.LookAt(new Vector3(transform.position.x, -100, transform.position.z));
             }
         }
 
-        public void CameraLookAt()
+
+        public void changeMode(CameraMode mode)
+        {
+            if (mode == CameraMode.Top && this.mode != CameraMode.Top)
+            {
+                savedPosition = transform.position;
+                savedDirection = targetDirection;
+
+                transform.position = new Vector3(0, 200, 0);
+            }
+            else if (mode == CameraMode.Free && this.mode != CameraMode.Free)
+            {
+                targetDirection = savedDirection;
+
+                transform.position = savedPosition;
+            }
+
+            this.mode = mode;
+        }
+
+        private void CameraLookAt()
         {
             // Lock cursor
             //creen.lockCursor = lockCursor;
@@ -103,6 +141,5 @@ namespace VirtualCreatures {
             var yRotation = Quaternion.AngleAxis(_mouseAbsolute.x, transform.InverseTransformDirection(Vector3.up));
             transform.localRotation *= yRotation;
         }
-
     }
 }
