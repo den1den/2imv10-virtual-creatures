@@ -40,15 +40,6 @@ namespace VirtualCreatures
             treeUI_GO.SetActive(!treeUI_GO.active);
         }
 
-        public void TopViewOnClick()
-        {
-            cameraController.changeMode(CameraController.CameraMode.Top);
-        }
-
-        public void FreeViewOnClick()
-        {
-            cameraController.changeMode(CameraController.CameraMode.Free);
-        }
 
     }
 }
