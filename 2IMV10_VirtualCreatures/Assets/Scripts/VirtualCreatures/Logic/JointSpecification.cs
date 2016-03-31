@@ -152,10 +152,10 @@ namespace VirtualCreatures
                     baseRotation = Quaternion.Euler(0, -90, 0);
                     break;
                 case Face.UP:
-                    baseRotation = Quaternion.Euler(-90, 0, 0);
+                    baseRotation = Quaternion.Euler(0, 0, 90);
                     break;
                 case Face.DOWN:
-                    baseRotation = Quaternion.Euler(90, 0, 0);
+                    baseRotation = Quaternion.Euler(0, 0, -90);
                     break;
                 case Face.REVERSE:
                     baseRotation = Quaternion.Euler(0, 180, 0);

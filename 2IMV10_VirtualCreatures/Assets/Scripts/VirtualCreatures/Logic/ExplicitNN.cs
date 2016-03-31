@@ -271,7 +271,10 @@ namespace VirtualCreatures
                             b = false;
                         }
 
-                        motor.force = valX;
+                        motor.force = valX * 50;
+                        motor.targetVelocity = 10;
+                        dest.motor = motor;
+                        dest.useMotor = true;
                         break;
                     case JointType.PISTON:
                     case JointType.ROTATIONAL:

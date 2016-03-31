@@ -32,6 +32,8 @@ namespace VirtualCreatures
         {
             //DEBUG = System.Diagnostics.Debugger.IsAttached;
             DEBUG = false;
+            WRITE_NETWORK_GRAPHS = true;
+            WRITE_NETWORK_FLOATS = true;
             if (DEBUG)
             {
                 Debug.Log("Util.DEBUG variable is True");
@@ -40,20 +42,14 @@ namespace VirtualCreatures
                 INITIAL_POPULATION_SIZE = 10;
                 INITIAL_EVALUATION_TIME = 0.1f;
                 FITNESS_EVALUATION_TIME = 1.0f;
-
-                WRITE_NETWORK_GRAPHS = true;
-                WRITE_NETWORK_FLOATS = false;
             }
             else
             {
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
 
-                INITIAL_POPULATION_SIZE = 500;
-                INITIAL_EVALUATION_TIME = 1f;
-                FITNESS_EVALUATION_TIME = 10f;
-
-                WRITE_NETWORK_GRAPHS = true;
-                WRITE_NETWORK_FLOATS = false;
+                INITIAL_POPULATION_SIZE = 1;
+                INITIAL_EVALUATION_TIME = 100f;
+                FITNESS_EVALUATION_TIME = 10000f;
             }
         }
     }

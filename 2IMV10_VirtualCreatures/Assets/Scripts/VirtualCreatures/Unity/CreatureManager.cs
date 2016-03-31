@@ -10,7 +10,7 @@ namespace VirtualCreatures
         int simulationNumber = 0;
 
         float CreatureSpacing = 3;
-        float ConstructionHeight = 0.7f; //TODO: This is mere a gues
+        float ConstructionHeight = 2.7f; //TODO: This is mere a gues
 
         EvolutionAlgorithm EA;
 

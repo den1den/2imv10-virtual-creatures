@@ -128,8 +128,8 @@ namespace VirtualCreatures {
                 childGO.transform.localRotation = localRotation;
 
                 // Create the joint at the parent and set the direction of the joint
-                Joint joint = createJoint(e.joint, childGO);
-                joint.connectedBody = parentGO.GetComponent<Rigidbody>();
+                Joint joint = createJoint(e.joint, parentGO);
+                joint.connectedBody = childGO.GetComponent<Rigidbody>();
                 int index = morphology.edges.IndexOf(e);
                 allJoints[index] = joint;
 
@@ -137,7 +137,7 @@ namespace VirtualCreatures {
                 CreatureController.recursiveCreateJointsFromMorphology(morphology, childNode, childGO, allJoints);
                 
                 // Calculate where the joint should be, relative to the childs coordinates system
-                joint.anchor = new Vector3(0, 0, -distFaceToChildCenter);
+                joint.anchor = facePosition;
             }
         }
 
