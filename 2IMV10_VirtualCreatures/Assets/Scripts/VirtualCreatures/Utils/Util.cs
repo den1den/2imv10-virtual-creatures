@@ -30,7 +30,8 @@ namespace VirtualCreatures
 
         static Util()
         {
-            DEBUG = System.Diagnostics.Debugger.IsAttached;
+            //DEBUG = System.Diagnostics.Debugger.IsAttached;
+            DEBUG = false;
             if (DEBUG)
             {
                 Debug.Log("Util.DEBUG variable is True");

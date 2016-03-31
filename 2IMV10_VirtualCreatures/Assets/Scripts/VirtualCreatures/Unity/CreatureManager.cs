@@ -10,7 +10,7 @@ namespace VirtualCreatures
         int simulationNumber = 0;
 
         float CreatureSpacing = 3;
-        float ConstructionHeight = 1.7f; //TODO: This is mere a gues
+        float ConstructionHeight = 0.7f; //TODO: This is mere a gues
 
         EvolutionAlgorithm EA;
 
@@ -23,7 +23,7 @@ namespace VirtualCreatures
         void Start()
         {
             //Debug.Log("Debugging - Creating test morhologies and pausing...");
-            //CreatureController.constructCreature(Morphology.testGiraffe().deepCopy(), new Vector3(0, -50, 0));
+            CreatureController.constructCreature(Morphology.testGiraffe().deepCopy(), new Vector3(0, -50, 0));
             //CreatureController.constructCreature(Morphology.testCircle(), new Vector3(30, -50, 0));
             //CreatureController.constructCreature(Morphology.testArc(), new Vector3(60, -50, 0));
             //CreatureController.constructCreature(Morphology.testSuperSwastika(), new Vector3(90, -50, 0));
