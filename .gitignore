@@ -31,6 +31,5 @@ sysinfo.txt
 
 expandedItems
 LastSceneManagerSetup.txt
-2IMV10_VirtualCreatures/stats/1.gv
-2IMV10_VirtualCreatures/stats/2.gv
-2IMV10_VirtualCreatures/stats/3.gv
+2IMV10_VirtualCreatures/stats/*.gv
+2IMV10_VirtualCreatures/stats/*.dat

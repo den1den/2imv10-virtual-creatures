@@ -48,8 +48,8 @@ namespace VirtualCreatures
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
 
                 INITIAL_POPULATION_SIZE = 1;
-                INITIAL_EVALUATION_TIME = 100f;
                 FITNESS_EVALUATION_TIME = 10000f;
+                INITIAL_EVALUATION_TIME = 1f;
             }
         }
     }
