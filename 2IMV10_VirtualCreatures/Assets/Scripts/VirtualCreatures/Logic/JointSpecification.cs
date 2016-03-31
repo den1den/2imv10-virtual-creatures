@@ -152,10 +152,10 @@ namespace VirtualCreatures
                     baseRotation = Quaternion.LookRotation(Vector3.left, Vector3.up);
                     break;
                 case Face.UP:
-                    baseRotation = Quaternion.LookRotation(Vector3.up, Vector3.up);
+                    baseRotation = Quaternion.LookRotation(Vector3.up, Vector3.back);
                     break;
                 case Face.DOWN:
-                    baseRotation = Quaternion.LookRotation(Vector3.down, Vector3.up);
+                    baseRotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
                     break;
                 case Face.REVERSE:
                     baseRotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
@@ -171,7 +171,6 @@ namespace VirtualCreatures
 
             Quaternion total = baseRotation * axialRotation * bending;
 
-            Debug.Log(total.eulerAngles);
             return total;
         }
 
