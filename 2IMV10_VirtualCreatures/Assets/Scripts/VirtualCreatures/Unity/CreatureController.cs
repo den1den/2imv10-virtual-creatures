@@ -176,6 +176,8 @@ namespace VirtualCreatures {
             // Then connect and let it be autoconfigured
             joint.connectedBody = child.GetComponent<Rigidbody>();
             joint.autoConfigureConnectedAnchor = true; // Triggers the autoconfiguration
+            joint.enableCollision = true;
+
             return joint;
         }
 
