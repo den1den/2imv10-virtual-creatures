@@ -350,10 +350,10 @@ namespace VirtualCreatures
         public readonly String id;
         private static int ID = 0;
 
-        private NeuronType type;
-        private enum NeuronType { SENSOR, NEURON, ACTOR };
+        public NeuronType type;
+        public enum NeuronType { SENSOR, NEURON, ACTOR };
 
-        private NeuronFunc function;
+        public NeuronFunc function;
 
         private NeuralSpec(NeuronType type, NeuronFunc function)
         {
@@ -539,9 +539,9 @@ namespace VirtualCreatures
             }
         }
 
-        public static List<string> parse(IEnumerable<NNSpecification> networks, NNSpecification brain)
+        public static List<string> parse(Morphology m)
         {
-            IEnumerable<NNSpecification> nets = Enumerable.Repeat(brain, 1).Concat(networks);
+            IEnumerable<NNSpecification> networks = Enumerable.Repeat(m.brain, 1).Concat(m.edges.Select(e => e.network));
 
             // Name all the neurals
             int N = 0;
@@ -549,9 +549,9 @@ namespace VirtualCreatures
                 net => net,
                 net => (N++).ToString()
                 );
-            netnames[brain] = "Brain";
+            netnames[m.brain] = "Brain";
 
-            IDictionary<NeuralSpec, string> neuronIDs = nets
+            IDictionary<NeuralSpec, string> neuronIDs = networks
                 .SelectMany(net => net.getNeuronsAll().Select(neural => new object[] { net, neural }))
                 .ToDictionary(
                 objs => (NeuralSpec)objs[1],
@@ -562,7 +562,7 @@ namespace VirtualCreatures
             // List all the connections
             List<string> result = new List<string>();
             result.Add("digraph {");
-            foreach (NNSpecification network in nets)
+            foreach (NNSpecification network in networks)
             {
                 string name = "cluster_" + N.ToString();
                 string label = netnames[network];
@@ -601,11 +601,6 @@ namespace VirtualCreatures
             }
             result.Add("}");
             return result;
-        }
-
-        public static void write(IEnumerable<NNSpecification> networks, NNSpecification brain)
-        {
-            write("network.gv", parse(networks, brain));
         }
     }
 }

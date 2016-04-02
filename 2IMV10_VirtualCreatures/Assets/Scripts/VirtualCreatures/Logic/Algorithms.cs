@@ -138,7 +138,7 @@ namespace VirtualCreatures
         Morphology mutate(Morphology morphology, int n)
         {
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/1.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
+                DotParser.write("stats/1.gv", DotParser.parse(morphology));
 
             // first modify each edge internally
             foreach (EdgeMorph e in morphology.edges)
@@ -244,7 +244,7 @@ namespace VirtualCreatures
             }
 
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/2.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
+                DotParser.write("stats/2.gv", DotParser.parse(morphology));
 
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
@@ -282,7 +282,7 @@ namespace VirtualCreatures
             }
 
             if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/3.gv", DotParser.parse(morphology.edges.Select(e => e.network), morphology.brain));
+                DotParser.write("stats/3.gv", DotParser.parse(morphology));
 
             return morphology;
         }
