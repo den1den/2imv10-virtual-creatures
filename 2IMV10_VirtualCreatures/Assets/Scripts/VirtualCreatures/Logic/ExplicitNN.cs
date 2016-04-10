@@ -6,27 +6,36 @@ using UnityEngine;
 
 namespace VirtualCreatures
 {
-    internal class NaiveENN : ExplicitNN
+    public interface ExplicitNN
     {
-        float globalTargetVelocity = 180; // deg/sec
-        bool globalFreeSpin = true;
-        float globalHindgeForceFactor = -10;
+        void doTicks(int n, float dt);
+        void onDestory();
+    }
+
+    internal class NaiveNN : ExplicitNN
+    {
+        protected float globalTargetVelocity = 180; // deg/sec
+        protected bool globalFreeSpin = true;
+        protected float globalHindgeForceFactor = 300; // maximal force applied to Unity joints
 
         /// <summary>
         /// The first ones are the joints then the rest
         /// </summary>
-        Neural[][] sensorNeurons;
-        INeuron[][] actorNeurons;
-        JointType[] jointTypes;
+        internal readonly Neural[][] sensorNeurons;
+        internal readonly INeuron[][] actorNeurons;
+        internal readonly JointType[] jointTypes;
+        internal readonly Joint[] joints;
 
-        INeuron[] internalNeurons = null;
+        internal INeuron[] internalNeurons = null;
 
         /// <summary>
-        /// Create a NaiveENN network that controlles an couple of joints.
+        /// Create a empty NaiveENN network that controlles an couple of joints.
         /// </summary>
         /// <param name="joints"></param>
-        NaiveENN(Joint[] joints) : base(joints)
+        internal NaiveNN(Morphology morphology, Joint[] joints)
         {
+            // Set the arrays
+            this.joints = joints;
             this.sensorNeurons = new Neural[joints.Length][];
             this.actorNeurons = new INeuron[joints.Length][];
             this.jointTypes = new JointType[joints.Length];
@@ -44,25 +53,22 @@ namespace VirtualCreatures
                     hinge.useMotor = true;
                 }
             }
-        }
 
-        public static NaiveENN construct(Morphology morphology, Joint[] joints)
-        {
+            // Construct the network
             if (morphology.edges.Count != joints.Length) throw new ArgumentException(); //every edge should correspond to exactly one joint
             //throw all networks together
             IEnumerable<NNSpecification> allNetworks = Enumerable.Repeat(morphology.brain, 1).Union(morphology.edges.Select(e => e.network));
-            foreach(NNSpecification n in allNetworks) { n.checkInvariants();}
 
-            //create reference for the creation of neurons
-            NaiveENN N = new NaiveENN(joints);
+            if (Util.DEBUG)
+                foreach (NNSpecification n in allNetworks) { n.checkInvariants(); }
 
             //create all neurons of the brain
             IDictionary<NeuralSpec, Neural> created = Enumerable
                 .Repeat(morphology.brain, 1)
                 .SelectMany(nn => nn.neurons) //brain has only normal neurons
-                .ToDictionary(n => n, n => N.createNewNeuron(n));
+                .ToDictionary(n => n, n => this.createNewNeuron(n));
 
-            //create all the sensors and actors for the edges
+            //create all the sensors and actors for the edges in the morphology
             for (int i = 0; i < morphology.edges.Count; i++)
             {
                 //pick the corresponsing joint and network
@@ -76,16 +82,16 @@ namespace VirtualCreatures
                 if (nDOF < nAct) throw new ArgumentException();
 
                 //set the action that should be performed on write to a neuron
-                N.jointTypes[i] = joint.jointType;
+                this.jointTypes[i] = joint.jointType;
 
                 //create the actual sensors
                 //always create the same amount of sensor implementations as dergees of freedom of a joint
-                N.sensorNeurons[i] = new Neural[nDOF];
-                for(int j = 0; j < nDOF; j++)
+                this.sensorNeurons[i] = new Neural[nDOF];
+                for (int j = 0; j < nDOF; j++)
                 {
-                    Neural sensor = N.createNewSensor();
-                    N.sensorNeurons[i][j] = sensor;
-                    if(j < nSen)
+                    Neural sensor = this.createNewSensor();
+                    this.sensorNeurons[i][j] = sensor;
+                    if (j < nSen)
                     {
                         //this is attached to an specification
                         created[nn.sensors[j]] = sensor;
@@ -93,14 +99,12 @@ namespace VirtualCreatures
                 }
 
                 //and create the actual actors
-                N.actorNeurons[i] = new INeuron[nDOF];
+                this.actorNeurons[i] = new INeuron[nDOF];
                 for (int j = 0; j < nDOF; j++)
                 {
-                    INeuron actor = Util.WRITE_NETWORK_FLOATS
-                        ? new ActorLogger(null, "Edge" + i + "-Actor" + j)
-                        : N.createNewActor();
+                    INeuron actor = this.createNewActor();
 
-                    N.actorNeurons[i][j] = actor;
+                    this.actorNeurons[i][j] = actor;
                     if (j >= nAct)
                     {
                         //this NeuronActor is not specified to be connected to any joint
@@ -114,12 +118,9 @@ namespace VirtualCreatures
                 //also create all normal neurons in this network
                 foreach (NeuralSpec n in nn.neurons)
                 {
-                    created[n] = N.createNewNeuron(n);
+                    created[n] = this.createNewNeuron(n);
                 }
             }
-
-            if (Util.WRITE_NETWORK_FLOATS)
-                Debug.Log("Created ActorLogger nodes for this morhology, with names: " + N.actorNeurons.SelectMany(nai=>nai).Cast<ActorLogger>().Select(al => al.fileName).ToList());
 
             //inv: all neurons are created
             //inv: per node create the implemenetation is stored in a map from Spec->Impl
@@ -153,11 +154,9 @@ namespace VirtualCreatures
             }
 
             // No specific ordering
-            N.internalNeurons = created.Where(kvp => kvp.Key.isNeuron()).Select(kvp => kvp.Value).Cast<INeuron>().ToArray();
-            
-            // TODO: extra check if the numer of sensors and actors are exactly the DOF's?
+            this.internalNeurons = created.Where(kvp => kvp.Key.isNeuron()).Select(kvp => kvp.Value).Cast<INeuron>().ToArray();
 
-            return N;
+            // TODO: extra check if the numer of sensors and actors are exactly the DOF's?
         }
 
         Neural createNewNeuron(NeuralSpec n)
@@ -222,26 +221,39 @@ namespace VirtualCreatures
 
         Neural createNewSensor() { return new Neural(); }
 
-        internal override void tickimpl(int N)
+        internal float dt = float.NaN;
+
+        public void doTicks(int n, float dt)
         {
-            //read sensors
+            readSensors();
+
+            //do N internal ticks
+            this.dt = dt;
+            for (int i = 0; i < n; i++)
+            {
+                tickImpl();
+            }
+
+            writeActors();
+        }
+
+        internal void readSensors()
+        {
             for (int i = 0; i < this.sensorNeurons.Length; i++)
             {
-                Joint source = this.joints[i];
+                Joint joint = this.joints[i];
                 JointType type = this.jointTypes[i];
-                Neural[] destination = this.sensorNeurons[i];
-                
+                Neural[] sensor = this.sensorNeurons[i];
+
                 switch (type)
                 {
                     case JointType.FIXED:
                         break;
                     case JointType.HINDGE:
-                        HingeJoint src = (HingeJoint)source;
+                        HingeJoint src = (HingeJoint)joint;
                         float valX = src.angle;
                         valX /= 180;
-                        // Actually read a value
-                        //Debug.Log("Phenotype:tick:read " + valX);
-                        destination[0].value = valX;
+                        sensor[0].value = valX;
                         break;
                     case JointType.PISTON:
                     case JointType.ROTATIONAL:
@@ -249,17 +261,33 @@ namespace VirtualCreatures
                         throw new NotSupportedException(type + " not supported in " + GetType());
                 }
             }
-            
-            //do N internal ticks
-            for(int i = 0; i < N; i++)
+
+            // Check if there is a sensor skipped
+            if (Util.DEBUG)
             {
-                foreach (INeuron n in this.internalNeurons)
+                for (int i = 0; i < this.sensorNeurons.Length; i++)
                 {
-                    n.tick();
+                    for (int j = 0; j < this.sensorNeurons[i].Length; j++)
+                    {
+                        if (this.sensorNeurons[i][j].value == double.NaN)
+                        {
+                            throw new ApplicationException("Could not read sensor");
+                        }
+                    }
                 }
             }
+        }
 
-            //write to actors
+        internal void tickImpl()
+        {
+            foreach (INeuron n in this.internalNeurons)
+            {
+                n.tick();
+            }
+        }
+
+        internal void writeActors()
+        {
             for (int i = 0; i < this.actorNeurons.Length; i++)
             {
                 Joint destination = this.joints[i];
@@ -290,56 +318,14 @@ namespace VirtualCreatures
                         break;
                 }
             }
-            
         }
+
+        public void onDestory() { }
 
         internal class Neural
         {
-            internal double value = double.NaN;
+            internal double value = 0;
         }
-
-        #region WRITE_NETWORK_FLOATS
-        internal class ActorLogger : SUM
-        {
-            readonly IList<string> titles = new List<string>();
-            readonly double[] buffer = new double[150];
-            public string fileName;
-            int i = 0;
-            string title;
-
-            internal ActorLogger(string fileName, string title)
-            {
-                this.title = title;
-                while (titles.Contains(this.title))
-                {
-                    this.title = title + titles.Count + Guid.NewGuid().ToString().Replace("-", string.Empty).Substring(0, 8);
-                }
-                this.fileName = fileName == null ? "stats\\" + title + ".dat" : fileName;
-            }
-
-            public override double y(double input)
-            {
-                double y = base.y(input);
-                buffer[i++] = y;
-                if(i >= buffer.Length)
-                {
-                    i = 0;
-                    //Write output values to file
-                    Debug.Log("Writing values of ActorLogger "+title+" to "+ fileName);
-                    using (System.IO.StreamWriter writer = new System.IO.StreamWriter(System.IO.File.Open(fileName, System.IO.FileMode.Create)))
-                    {
-                        while(i < buffer.Length)
-                        {
-                            writer.WriteLine(buffer[i++]);
-                        }
-                        writer.Close();
-                    }
-                    i = 0;
-                }
-                return y;
-            }
-        }
-        #endregion
 
         internal abstract class INeuron : Neural
         {
@@ -366,8 +352,8 @@ namespace VirtualCreatures
 
         internal abstract class INeuronSingleTimeFunction : INeuron
         {
-            NaiveENN super;
-            internal INeuronSingleTimeFunction(NaiveENN parent) { this.super = parent; }
+            NaiveNN parentNetwork;
+            internal INeuronSingleTimeFunction(NaiveNN parentNetwork) { this.parentNetwork = parentNetwork; }
 
             public abstract double y(double x, double dtf);
 
@@ -385,7 +371,7 @@ namespace VirtualCreatures
                         value += weights[i] * inputs[i].value;
                     }
                 }
-                value = y(value, super.tickDt);
+                value = y(value, parentNetwork.dt);
             }
         }
 
@@ -425,6 +411,7 @@ namespace VirtualCreatures
             }
         }
 
+        #region NeuronClasses
         internal class ABS : INeuronSingleFunction
         {
             public override double y(double x)
@@ -475,7 +462,7 @@ namespace VirtualCreatures
             static double C = 0.2;
             public override double y(double x)
             {
-                if(x == 0)
+                if (x == 0)
                 {
                     return -1;
                 }
@@ -529,7 +516,7 @@ namespace VirtualCreatures
         }
         internal class SAW : INeuronSingleTimeFunction
         {
-            public SAW(NaiveENN n) : base(n) { }
+            public SAW(NaiveNN n) : base(n) { }
             double theta = 0;
             public override double y(double x, double dtf)
             {
@@ -539,7 +526,7 @@ namespace VirtualCreatures
         }
         internal class WAVE : INeuronSingleTimeFunction
         {
-            public WAVE(NaiveENN n) : base(n) { }
+            public WAVE(NaiveNN n) : base(n) { }
             static double CX = Math.PI * 2;
             double theta = 0;
             public override double y(double x, double dtf)
@@ -618,7 +605,7 @@ namespace VirtualCreatures
             public override double y(Neural[] inputs)
             {
                 double val = 1;
-                for(int i = 0; i < inputs.Length; i++)
+                for (int i = 0; i < inputs.Length; i++)
                 {
                     val *= inputs[i].value;
                 }
@@ -672,26 +659,113 @@ namespace VirtualCreatures
                 }
                 else return -1;
             }
-        }
+        } 
+        #endregion
     }
-
-    internal abstract class ExplicitNN
+    internal class NaiveNNDebugWrapper : ExplicitNN
     {
-        internal Joint[] joints;
-        internal ExplicitNN(Joint[] joints)
+        NaiveNN wrapped;
+        internal NaiveNNDebugWrapper(NaiveNN wrapped, string filename)
         {
-            this.joints = joints;
+            this.wrapped = wrapped;
+            this.filename = filename;
+
+            List<string> header = new List<string>();
+            header.Add("Time");
+            header.Add("TickOperations");
+            header.Add("WriteToUnityOperations");
+            for(int i = 0; i < wrapped.sensorNeurons.Length; i++)
+            {
+                NaiveNN.Neural[] sensors = wrapped.sensorNeurons[i];
+                for (int j = 0; j < sensors.Length; j++)
+                {
+                    header.Add("SENSOR" + i + "_DOF" + j);
+                }
+            }
+            for (int i = 0; i < wrapped.internalNeurons.Length; i++)
+            {
+                header.Add("NEURON" + i);
+            }
+            for (int i = 0; i < wrapped.actorNeurons.Length; i++)
+            {
+                NaiveNN.Neural[] actors = wrapped.actorNeurons[i];
+                for (int j = 0; j < actors.Length; j++)
+                {
+                    header.Add("ACTOR" + i + "_DOF" + j);
+                }
+            }
+            this.header = header.ToArray();
         }
 
-        internal float tickDt = float.NaN;
-        internal void tick(int n)
+        string filename;
+        string[] header;
+        IList<string[]> log = new List<string[]>();
+
+        int WriteToUnityOperations = 0;
+        int TickOperations = 0;
+        float time = 0;
+
+        public void doTicks(int n, float dt)
         {
-            tickimpl(n);
-            totalTicks += n;
+            wrapped.readSensors(); // Copy unity values to the Neurons
+
+            wrapped.dt = dt;
+            time += dt;
+            for (int i = 0; i < n; i++)
+            {
+                // Do n internal ticks of the network
+                wrapped.tickImpl();
+                if (i < n - 1)
+                {
+                    // Record the values after each tick (except for the last)
+                    record();
+                }
+                TickOperations++;
+            }
+
+            wrapped.writeActors();
+            record();
+            WriteToUnityOperations++;
         }
 
-        internal abstract void tickimpl(int n);
+        string format = "F4";
+        IFormatProvider provider = System.Globalization.CultureInfo.CreateSpecificCulture("nl-NL");
 
-        int totalTicks = 0;
+        void record()
+        {
+            string[] line = new string[this.header.Length];
+            int index = 0;
+            line[index++] = time.ToString(format, provider);
+            line[index++] = TickOperations.ToString(format, provider);
+            line[index++] = WriteToUnityOperations.ToString(format, provider);
+            for (int i = 0; i < wrapped.sensorNeurons.Length; i++)
+            {
+                NaiveNN.Neural[] sensors = wrapped.sensorNeurons[i];
+                for (int j = 0; j < sensors.Length; j++)
+                {
+                    line[index++] = sensors[j].value.ToString(format, provider);
+                }
+            }
+            for (int i = 0; i < wrapped.internalNeurons.Length; i++)
+            {
+                line[index++] = wrapped.internalNeurons[i].value.ToString(format, provider);
+            }
+            for (int i = 0; i < wrapped.actorNeurons.Length; i++)
+            {
+                NaiveNN.Neural[] actors = wrapped.actorNeurons[i];
+                for (int j = 0; j < actors.Length; j++)
+                {
+                    line[index++] = actors[j].value.ToString(format, provider);
+                }
+            }
+            log.Add(line);
+        }
+
+        public void onDestory()
+        {
+            Debug.Log("Writing networkoutput to " + filename);
+            Util.writeCSV(filename, header, log);
+            ((ExplicitNN)wrapped).onDestory();
+        }
     }
 }

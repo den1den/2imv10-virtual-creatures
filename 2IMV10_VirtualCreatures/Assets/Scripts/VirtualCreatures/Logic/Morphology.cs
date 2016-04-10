@@ -127,44 +127,73 @@ namespace VirtualCreatures
                 IDictionary<NNSpecification, IEnumerable<NNSpecification>> nnm = getNeighboringNetworksMap();
             }
 
-            Node root = this.root.deepCopy();
-            IDictionary<Node, Node> copiedNodes = new Dictionary<Node, Node>();
-            copiedNodes[this.root] = root;
+            Node newRoot = this.root.deepCopy();
 
-            IDictionary<NeuralSpec, NeuralSpec> copiedNeurons = new Dictionary<NeuralSpec, NeuralSpec>();
-            foreach (NeuralSpec n in Enumerable.Repeat(this.brain, 1)
-                .Concat(this.edges.Select(edge => edge.network))
+            IDictionary<Node, Node> newNodes = new Dictionary<Node, Node>();
+            newNodes[this.root] = newRoot;
+
+            IDictionary<NeuralSpec, NeuralSpec> newNeurons = new Dictionary<NeuralSpec, NeuralSpec>();
+            foreach (NeuralSpec n in Enumerable.Repeat(this.brain, 1).Concat(this.edges.Select(edge => edge.network))
                 .SelectMany(net => net.getNeuronsAll()))
             {
-                copiedNeurons[n] = n.clone();
+                newNeurons[n] = n.clone();
             }
             IDictionary<NeuralSpec, IList<Connection>> copiedConnectionSources = new Dictionary<NeuralSpec, IList<Connection>>();
 
-            NNSpecification brain = this.brain.copy(copiedNeurons, copiedConnectionSources);
+            NNSpecification newBrain = this.brain.copy(newNeurons, copiedConnectionSources);
 
-            IList<EdgeMorph> edges = this.edges.Select(e => {
-                Node source;
-                if (!copiedNodes.TryGetValue(e.source, out source))
+            IList<EdgeMorph> newEdges = new List<EdgeMorph>();
+            for(int i = 0; i < this.edges.Count; i++)
+            {
+                EdgeMorph oldEdge = this.edges[i];
+                Node oldSource = oldEdge.source;
+                Node oldDest = oldEdge.destination;
+                JointSpecification oldJoint = oldEdge.joint;
+                NNSpecification oldNetwork = oldEdge.network;
+
+                Node newSource;
+                if (!newNodes.TryGetValue(oldSource, out newSource))
                 {
-                    source = e.source.deepCopy();
-                    copiedNodes[e.source] = source;
-
+                    newSource = oldSource.deepCopy();
+                    newNodes[oldSource] = newSource;
                 }
-                Node destination;
-                if (!copiedNodes.TryGetValue(e.destination, out destination))
+
+                Node newDest;
+                if (!newNodes.TryGetValue(oldDest, out newDest))
                 {
-                    destination = e.destination.deepCopy();
-                    copiedNodes[e.destination] = destination;
-
+                    newDest = oldDest.deepCopy();
+                    newNodes[oldDest] = newDest;
                 }
-                JointSpecification joint = e.joint.deepCopy();
-                NNSpecification network = e.network.copy(copiedNeurons, copiedConnectionSources);
-                return new EdgeMorph(source, destination, joint, network);
-            }).ToList();
 
-            Morphology copy = new Morphology(root, brain, edges, genotype);
+                JointSpecification newJoint = oldJoint.deepCopy();
 
-            if (this.getOutgoingEdges(this.root).Count != copy.getOutgoingEdges(root).Count) throw new ApplicationException();
+                NNSpecification newNetwork = oldNetwork.copy(newNeurons, copiedConnectionSources);
+                if (Util.DEBUG)
+                {
+                    if (newNetwork.getInternalConnections().Count() != oldNetwork.getInternalConnections().Count())
+                    {
+                        throw new ApplicationException();
+                    }
+                        
+                    if (newNetwork.getOutgoingConnections().Count() != oldNetwork.getOutgoingConnections().Count())
+                    {
+                        throw new ApplicationException();
+                    }
+                    if (newNetwork.getIncommingConnections().Count() != oldNetwork.getIncommingConnections().Count())
+                    {
+                        IList<Connection> newIn = newNetwork.getIncommingConnections().ToList();
+                        IList<Connection> oldIn = oldNetwork.getIncommingConnections().ToList();
+                        throw new ApplicationException();
+                    }
+                }
+
+                EdgeMorph newEdge = new EdgeMorph(newSource, newDest, newJoint, newNetwork);
+                newEdges.Add(newEdge);
+            }
+
+            Morphology copy = new Morphology(newRoot, newBrain, newEdges, this.genotype);
+
+            if (this.getOutgoingEdges(this.root).Count != copy.getOutgoingEdges(newRoot).Count) throw new ApplicationException();
 
             return copy;
         }

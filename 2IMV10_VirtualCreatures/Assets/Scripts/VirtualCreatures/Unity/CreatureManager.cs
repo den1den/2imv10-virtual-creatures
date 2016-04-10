@@ -5,6 +5,9 @@ using System;
 
 namespace VirtualCreatures
 {
+    /// <summary>
+    /// Unity class to manage a population of creatures
+    /// </summary>
     public class CreatureManager : MonoBehaviour
     {
         int simulationNumber = 0;
@@ -12,32 +15,20 @@ namespace VirtualCreatures
         float CreatureSpacing = 3;
         float ConstructionHeight = 2.7f; //TODO: This is mere a gues
 
-        EvolutionAlgorithm EA;
+        EvolutionAlgorithm EA = new EvolutionAlgorithm1();
 
         Vector3[] positioningGrid = new Vector3[0];
         Vector3[] initialCMs = null;
 
         CreatureController[] population = new CreatureController[0];
-
-        // Use this for initialization
+        
         void Start()
         {
-            //Debug.Log("Debugging - Creating test morhologies and pausing...");
-            //CreatureController.constructCreature(Morphology.testGiraffe(), new Vector3(0, -50, 0));
-            //CreatureController.constructCreature(Morphology.testCircle(), new Vector3(30, -50, 0));
-            //CreatureController.constructCreature(Morphology.testArc(), new Vector3(60, -50, 0));
-            //CreatureController.constructCreature(Morphology.testSuperSwastika(), new Vector3(90, -50, 0));
-            //CreatureController.constructCreature(Morphology.testHindge(), new Vector3(120, -50, 0));
-            //Debug.Break();
-
-            EA = new EvolutionAlgorithm1();
-
             EA.generateNewPopulation();
-
-            createPopulation(EA.population);
+            constructPopulation();
         }
 
-        private void createPopulation(EvolutionAlgorithm.PopulationMember[] newPopulation)
+        private void constructPopulation()
         {
             // Destroy last population
             int i;
@@ -45,24 +36,26 @@ namespace VirtualCreatures
             {
                 Destroy(population[i].gameObject);
             }
-            population = new CreatureController[newPopulation.Length];
+            population = new CreatureController[EA.population.Length];
 
             // Check if grid is still valid
-            if (positioningGrid.Length != newPopulation.Length)
+            if (positioningGrid.Length != EA.population.Length)
             {
-                positioningGrid = positionalGrid(new Vector3(0, ConstructionHeight, 0), newPopulation.Length, CreatureSpacing * EA.getCreatureSize());
+                positioningGrid = positionalGrid(new Vector3(0, ConstructionHeight, 0), EA.population.Length, CreatureSpacing * EA.getCreatureSize());
             }
 
             // Construct new population
-            for (i = 0; i < newPopulation.Length; i++)
+            for (i = 0; i < EA.population.Length; i++)
             {
-                Morphology m = newPopulation[i].morphology;
-                population[i] = CreatureController.constructCreature(m, positioningGrid[i]);
+                Morphology m = EA.population[i].morphology;
+                CreatureController creatureController = CreatureController.constructCreature(m, positioningGrid[i], Quaternion.identity);
+                creatureController.neuralNetwork = Util.tryWrapNeuralNetwork((NaiveNN)creatureController.neuralNetwork, i, EA.GenerationCount - 1);
+                population[i] = creatureController;
             }
         }
 
         /// <summary>
-        /// Keeps track of the time of the simulations
+        /// A timer to keep track of time
         /// </summary>
         private float TimeCount = 0;
 
@@ -100,7 +93,7 @@ namespace VirtualCreatures
                         TimeCount = 0;
                         double[] fitness = evalFitness();
                         EA.generateNewPopulation(population, fitness);
-                        createPopulation(EA.population);
+                        constructPopulation();
                         state = State.INITIAL;
                     }
                     break;

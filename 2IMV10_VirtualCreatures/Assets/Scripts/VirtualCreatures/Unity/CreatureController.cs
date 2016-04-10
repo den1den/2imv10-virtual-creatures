@@ -8,39 +8,37 @@ namespace VirtualCreatures {
     /// <summary>
     /// An script to controll a single creature.
     /// This parent (the prefab) is the Phenotype of a creature.
-    /// The purpose of this script is to call the neuralnetwork each time.
+    /// The purpose of this script is to control a single creature.
     /// </summary>
     public class CreatureController : MonoBehaviour {
 
         /// <summary>
-        /// The constructed neural network that controlls this creature
+        /// The neural network that is called to control this creature
         /// </summary>
-        ExplicitNN neuralNetwork = null;
-
-        void setReferences(ExplicitNN neuralNetwork)
-        {
-            this.neuralNetwork = neuralNetwork;
-        }
+        public ExplicitNN neuralNetwork = null;
 
         // Use this for initialization
         void Start()
         {
             // Let the script run for a couple of ticks to settle down
-            neuralNetwork.tickDt = 1f / 60; // assuming around 60 FPS
-            neuralNetwork.tick(20);
+            float dt = 1f / 60; // assuming around 60 FPS
+            neuralNetwork.doTicks(20, dt);
         }
 
         // Update is called once per frame
         void FixedUpdate()
         {
-            // Update phenotype in each physics engine step
-            float dt = Time.deltaTime;
-
             int STEPS = 2;
+            // TODO decide wether: When the dt changes to much we should do more ticks? in the network to keep it consistent with Update and Fixedupdate functionalities.
+            float dt = Time.deltaTime / STEPS;
 
-            // Read and write values of Joints once
-            neuralNetwork.tickDt = dt / STEPS;
-            neuralNetwork.tick(STEPS); // TODO decide wether: When the dt changes to much we should do more ticks? in the network to keep it consistent with Update and Fixedupdate functionalities.
+            // Do ticks of the neural network for each physics step   
+            neuralNetwork.doTicks(STEPS, dt);
+        }
+
+        void onDestroy()
+        {
+            neuralNetwork.onDestory();
         }
 
         public Vector3 getCenterOfMass()
@@ -54,11 +52,6 @@ namespace VirtualCreatures {
             return gameObject.transform.GetChild(0).gameObject;
         }
 
-        public static CreatureController constructCreature(Morphology morphology, Vector3 position)
-        {
-            return CreatureController.construct(morphology, position, Quaternion.identity);
-        }
-
         /// <summary>
         /// Create a creture at some position
         /// </summary>
@@ -66,34 +59,29 @@ namespace VirtualCreatures {
         /// <param name="position"></param>
         /// <param name="rotation"></param>
         /// <returns>The controlling script of the creature</returns>
-        public static CreatureController construct(Morphology morphology, Vector3 position, Quaternion rotation)
+        public static CreatureController constructCreature(Morphology morphology, Vector3 position, Quaternion rotation)
         {
             // Instantiate creature prefab to scene
-            GameObject superInstance = (GameObject)Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"), position, rotation);
+            GameObject phenotype = (GameObject)Instantiate(UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Creature.prefab"), position, rotation);
 
-            // Get `this` from the prefab
-            CreatureController controller = superInstance.GetComponent<CreatureController>();
-
-            // Create new joints list 
-            Joint[] joints = new Joint[morphology.edges.Count];
-
+            // Get the CreatureController script from the prefab
+            CreatureController creatureController = phenotype.GetComponent<CreatureController>();
+            
             // Recursivaly create and connect all components
             // Start with the root
             GameObject creatureRootNode = createUnscaledGameObject(morphology.root.shape);
-            creatureRootNode.transform.parent = superInstance.transform;
-            creatureRootNode.transform.localPosition = Vector3.zero; // not redundant
-
-            // then recursivly traverse all connected edges
-            recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints);
+            creatureRootNode.transform.parent = phenotype.transform;
+            creatureRootNode.transform.localPosition = Vector3.zero;
+            // Then recursivly traverse all connected edges
+            Joint[] joints = new Joint[morphology.edges.Count];
+            recursiveCreateJointsFromMorphology(morphology, morphology.root, creatureRootNode, joints); // recursive call
 
             // Create the Neural Network
-            ExplicitNN neuralNetwork = NaiveENN.construct(morphology, joints);
-
-            // Store everything in the creature script (optional)
-            controller.setReferences(neuralNetwork);
+            ExplicitNN neuralNetwork = new NaiveNN(morphology, joints);
+            // Link the neural network to the script
+            creatureController.neuralNetwork = neuralNetwork;
             
-            //create.transform.position = position;
-            return controller; //script
+            return creatureController;
         }
 
         /// <summary>

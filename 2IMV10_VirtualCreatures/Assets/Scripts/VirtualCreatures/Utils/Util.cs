@@ -25,31 +25,93 @@ namespace VirtualCreatures
         public static readonly int INITIAL_POPULATION_SIZE;
         public static readonly float INITIAL_EVALUATION_TIME;
         public static readonly float FITNESS_EVALUATION_TIME;
-        public static readonly bool WRITE_NETWORK_GRAPHS;
-        public static readonly bool WRITE_NETWORK_FLOATS;
+        /// <summary>
+        /// Print the full mutation steps of the ith creature for each generation
+        /// </summary>
+        public static readonly int PRINT_MUTATION_OF;
+        /// <summary>
+        /// Print the full network values of the ith creature for each generation
+        /// </summary>
+        public static readonly int WRITE_NETWORK_FLOATS_OF;
+        private static readonly bool PRINT_EVERY_POPULATION;
 
         static Util()
         {
             //DEBUG = System.Diagnostics.Debugger.IsAttached;
-            DEBUG = false;
-            WRITE_NETWORK_GRAPHS = true;
-            WRITE_NETWORK_FLOATS = true;
+            DEBUG = true;
+
+            Debug.Log("Util.DEBUG variable is " + DEBUG);
+
+            PRINT_MUTATION_OF = 1;
+            WRITE_NETWORK_FLOATS_OF = 0;
             if (DEBUG)
             {
-                Debug.Log("Util.DEBUG variable is True");
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
+                PRINT_EVERY_POPULATION = true;
 
-                INITIAL_POPULATION_SIZE = 10;
-                INITIAL_EVALUATION_TIME = 0.1f;
-                FITNESS_EVALUATION_TIME = 1.0f;
+                INITIAL_POPULATION_SIZE = 1000;
+                INITIAL_EVALUATION_TIME = 2.0f;
+                FITNESS_EVALUATION_TIME = 10.0f;
             }
             else
             {
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
+                PRINT_EVERY_POPULATION = false;
 
-                INITIAL_POPULATION_SIZE = 1;
-                FITNESS_EVALUATION_TIME = 10000f;
-                INITIAL_EVALUATION_TIME = 1f;
+                INITIAL_POPULATION_SIZE = 1000;
+                INITIAL_EVALUATION_TIME = 1.0f;
+                FITNESS_EVALUATION_TIME = 100.0f;
+            }
+        }
+
+        public static string STARTTIME = DateTime.Now.ToString("MMddHHmmss");
+
+        public static void tryPrintEveryPopulation(Morphology morphology, int sequenceNumber, int populationNumber)
+        {
+            if (!Util.PRINT_EVERY_POPULATION)
+            {
+                return;
+            }
+            string filename = "stats/populations" + Util.STARTTIME + "/POP_" + populationNumber + "_" + sequenceNumber + ".gv";
+            write(filename, DotParser.parse(morphology));
+        }
+
+        internal static void tryPrintMutation(string stage, Morphology morphology, int sequenceNumber, int populationNumber)
+        {
+            if(sequenceNumber != Util.PRINT_MUTATION_OF)
+            {
+                return;
+            }
+            string filename = "stats/populations" + Util.STARTTIME + "/POP_" + populationNumber + "_" + sequenceNumber + "_MUTATION-"+ stage + ".gv";
+            write(filename, DotParser.parse(morphology));
+        }
+
+        internal static ExplicitNN tryWrapNeuralNetwork(NaiveNN network, int sequenceNumber, int populationNumber)
+        {
+            if(sequenceNumber != Util.WRITE_NETWORK_FLOATS_OF)
+            {
+                return network;
+            }
+            string filename = "stats/populations" + Util.STARTTIME + "/POP_" + populationNumber + "_" + sequenceNumber + "_NNV.csv";
+            return new NaiveNNDebugWrapper(network, filename);
+        }
+
+        public static void write(string filename, IEnumerable<string> contents)
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(filename));
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
+            {
+                foreach (string line in contents) { file.WriteLine(line); }
+            }
+        }
+
+        public static void writeCSV(string filename, string[] header, IEnumerable<string[]> contents)
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(filename));
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
+            {
+                file.WriteLine(string.Join(";", header));
+                foreach (string[] line in contents) { file.WriteLine(string.Join(";", line)); }
             }
         }
     }

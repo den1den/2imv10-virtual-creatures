@@ -13,10 +13,11 @@ namespace VirtualCreatures
 
     public abstract class EvolutionAlgorithm
     {
-        protected int PopulationSize = Util.INITIAL_POPULATION_SIZE;
         public float InitializationTime = Util.INITIAL_EVALUATION_TIME;
         public float EvaluationTime = Util.FITNESS_EVALUATION_TIME;
-        public PopulationMember[] population = null;
+        public int GenerationCount = 0;
+        
+        public PopulationMember[] population;
 
         /// <summary>
         /// Generates a new population. this sets the this.population variable.
@@ -135,10 +136,9 @@ namespace VirtualCreatures
             joint_type = new NominalMutation<JointType>(0);
         }
 
-        Morphology mutate(Morphology morphology, int n)
+        Morphology mutate(Morphology morphology, int sequenceNumber, int populationNumber)
         {
-            if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/1.gv", DotParser.parse(morphology));
+            Util.tryPrintMutation("0-start", morphology, sequenceNumber, populationNumber);
 
             // first modify each edge internally
             foreach (EdgeMorph e in morphology.edges)
@@ -159,6 +159,8 @@ namespace VirtualCreatures
                 // change parameters of the joints
                 mutateJoint(e.joint);
             }
+
+            Util.tryPrintMutation("1-internal", morphology, sequenceNumber, populationNumber);
 
             // change existing connections between networks
             IDictionary<NNSpecification, IEnumerable<NNSpecification>> neighbours = morphology.getNeighboringNetworksMap();
@@ -188,11 +190,9 @@ namespace VirtualCreatures
                         newSource = findNewSource(destinationNetwork, destination, newSourceNetwork);
                         if (newSource == null) break;
 
-                        //change connection
-                        c.source = newSource;
-                        //change connection network
-                        sourceNetwork.moveExternalConnection(c, newSourceNetwork, destinationNetwork);
-                        kvp.Value[0] = newSourceNetwork;
+                        // Change connection
+                        destinationNetwork.moveExternalConnectionItsSource(c, newSourceNetwork, newSource, sourceNetwork);
+                        kvp.Value[0] = newSourceNetwork; // update the interedge map source network to keep inv
                         break;
                     case 2: // reconnect destination (destinationNetwork remains the same)
                         NeuralSpec newDestination = findNewDestination(sourceNetwork, source, destinationNetwork);
@@ -207,11 +207,9 @@ namespace VirtualCreatures
                         newDestination = findNewDestination(sourceNetwork, source, newDestinationNetwork);
                         if (newDestination == null) break;
 
-                        //change connection
-                        c.destination = newDestination;
-                        //change connection network
-                        destinationNetwork.moveExternalConnection(c, sourceNetwork, newDestinationNetwork);
-                        kvp.Value[1] = newDestinationNetwork;
+                        // Change connection
+                        sourceNetwork.moveExternalConnectionItsDestination(c, newDestinationNetwork, newDestination, destinationNetwork);
+                        kvp.Value[1] = newDestinationNetwork; // update the interedge map source network to keep inv
                         break;
                     case 4: // remove edge
                         sourceNetwork.removeExternalConnection(c, destinationNetwork);
@@ -220,6 +218,8 @@ namespace VirtualCreatures
                         break;
                 }
             }
+
+            Util.tryPrintMutation("2-betweennetworks", morphology, sequenceNumber, populationNumber);
 
             // Add new inter network neuron connections
             int numberOfNewExternalConnections = addExteralConnection.newVal();
@@ -243,8 +243,7 @@ namespace VirtualCreatures
                 newSourceNetwork.addNewInterConnection(newSource, newDest, newDestinationNetwork, weights.newVal());
             }
 
-            if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/2.gv", DotParser.parse(morphology));
+            Util.tryPrintMutation("3-add-betweennetworks", morphology, sequenceNumber, populationNumber);
 
             // Finalize by checking all cardinality constraints on the Neurons
             // first modify each edge internally
@@ -281,8 +280,7 @@ namespace VirtualCreatures
                 }
             }
 
-            if (Util.WRITE_NETWORK_GRAPHS && n == 1)
-                DotParser.write("stats/3.gv", DotParser.parse(morphology));
+            Util.tryPrintMutation("4-fix", morphology, sequenceNumber, populationNumber);
 
             return morphology;
         }
@@ -402,34 +400,50 @@ namespace VirtualCreatures
             return;
         }
 
+        /// <summary>
+        /// Generate the spec for the first population
+        /// </summary>
         public override void generateNewPopulation()
         {
-            this.population = Enumerable.Range(1, this.PopulationSize).Select(
-                i => new PopulationMember(mutate(BASE.deepCopy(), i))
-            ).ToArray();
+            this.population = new PopulationMember[Util.INITIAL_POPULATION_SIZE];
+
+            PopulationMember the_first = new PopulationMember(BASE); // no parents
+            Util.tryPrintEveryPopulation(the_first.morphology, 0, GenerationCount);
+            this.population[0] = the_first;
+
+            for (int i = 1; i < this.population.Length; i++)
+            {
+                PopulationMember offspring = new PopulationMember(
+                    mutate(BASE.deepCopy(), i, GenerationCount) // no parents, although BASE actually is it's parent
+                );
+                Util.tryPrintEveryPopulation(offspring.morphology, i, GenerationCount);
+                this.population[i] = offspring;
+            }
+
+            GenerationCount = 1;
         }
 
         public override void generateNewPopulation(IList<CreatureController> prevPopulation, double[] fitness)
         {
             PopulationMember[] newPopulation = new PopulationMember[prevPopulation.Count];
-            for (int i = 0; i < population.Length; i++)
+            for (int i = 0; i < prevPopulation.Count; i++)
             {
-                // store fitness
-                double prevFitness = fitness[i];
-                PopulationMember prev = this.population[i];
-                prev.fitness = prevFitness;
-
+                // store fitness of the previous generation
+                PopulationMember prevPop = this.population[i];
+                prevPop.fitness = fitness[i];
                 CreatureController prevCreature = prevPopulation[i];
-                Morphology prevSpecification = prev.morphology;
+                Morphology prevSpecification = prevPop.morphology;
+                Morphology newSpecification = prevSpecification.deepCopy();
 
                 // FIXME: not just mutate the previous generation but also look at fitness
                 // FIXME: terminate this spieces if it has a dislocated joint (or broken body part)
-                Morphology newSpecification = mutate(prevSpecification.deepCopy(), i);
+                newSpecification = mutate(newSpecification, i, GenerationCount);
+                Util.tryPrintEveryPopulation(newSpecification, i, GenerationCount);
 
-                newPopulation[i] = new PopulationMember(newSpecification, prev);
+                PopulationMember newMember = new PopulationMember(newSpecification, prevPop);  // Only one parent
+                newPopulation[i] = newMember;
             }
-            // only save the generated morphologies
-            this.population = newPopulation;
+            GenerationCount++;
         }
 
         internal override float getCreatureSize()

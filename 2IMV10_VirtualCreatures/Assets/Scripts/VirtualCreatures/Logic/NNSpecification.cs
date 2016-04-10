@@ -77,32 +77,44 @@ namespace VirtualCreatures
 
         internal NNSpecification copy(IDictionary<NeuralSpec, NeuralSpec> copiedNeurons, IDictionary<NeuralSpec, IList<Connection>> copiedConnectionSources)
         {
-            Func<NeuralSpec, NeuralSpec> getCopied = n => copiedNeurons[n];
-            IList<NeuralSpec> sensors = this.sensors.Select(getCopied).ToList();
-            IList<NeuralSpec> neurons = this.neurons.Select(getCopied).ToList();
-            IList<NeuralSpec> actors = this.actors.Select(getCopied).ToList();
-
-            IList<Connection> connections = this.connections.Select(oldCon =>
+            IList<NeuralSpec> newSensors = this.sensors.Select(oldS => copiedNeurons[oldS]).ToList();
+            IList<NeuralSpec> newNeurons = this.neurons.Select(oldN => copiedNeurons[oldN]).ToList();
+            IList<NeuralSpec> newActors = this.actors.Select(oldA => copiedNeurons[oldA]).ToList();
+            IList<Connection> newConnections = new List<Connection>(this.connections.Count);
+            for(int i = 0; i < this.connections.Count; i++)
             {
-                NeuralSpec source = copiedNeurons[oldCon.source];
-                NeuralSpec destination = copiedNeurons[oldCon.destination];
+                Connection oldCon = this.connections[i];
+                float oldWeight = oldCon.weight;
+                NeuralSpec newSource = copiedNeurons[oldCon.source];
+                NeuralSpec newDestination = copiedNeurons[oldCon.destination];
+                Connection newCon;
+
+                // This connection could have already been created in antoher network
                 IList<Connection> candidates;
-                if (!copiedConnectionSources.TryGetValue(source, out candidates))
+                if (copiedConnectionSources.TryGetValue(newSource, out candidates))
                 {
-                    //create list on the fly
+                    newCon = candidates.Where(con => con.source == newSource && con.destination == newDestination).SingleOrDefault();
+                    if (newCon == null)
+                    {
+                        // This connection was not already created
+                        newCon = new Connection(newSource, newDestination, oldWeight);
+                        candidates.Add(newCon);
+                    }
+                    else if (newCon.weight != oldWeight) throw new ApplicationException();
+                }
+                else
+                {
+                    // No connection with newSource has been created
+                    newCon = new Connection(newSource, newDestination, oldWeight);
                     candidates = new List<Connection>();
-                    copiedConnectionSources[source] = candidates;
+                    candidates.Add(newCon);
+                    copiedConnectionSources[newSource] = candidates;
                 }
-                Connection foundCon = candidates.Where(con => con.source == source).SingleOrDefault();
-                if (foundCon == null)
-                {
-                    //create connections on the fly
-                    foundCon = new Connection(source, destination);
-                    copiedConnectionSources[source].Add(foundCon);
-                }
-                return foundCon;
-            }).ToList();
-            return new NNSpecification(sensors, neurons, actors, connections);
+
+                //Update the connection
+                newConnections.Add(newCon);
+            }
+            return new NNSpecification(newSensors, newNeurons, newActors, newConnections);
         }
 
         //getters
@@ -204,10 +216,8 @@ namespace VirtualCreatures
 
         internal void removeInternalConnection(Connection c)
         {
-            if (getInterfacingConnections().Contains(c))
-            {
-                throw new ApplicationException("Edge could not be removed because it is also in other networks");
-            }
+            if (Util.DEBUG)
+                debugCheckConnection(c, this);
             if (!connections.Remove(c))
             {
                 throw new ApplicationException("Edge could not be removed because it is not longer in this network");
@@ -216,74 +226,82 @@ namespace VirtualCreatures
 
         internal void removeExternalConnection(Connection c, NNSpecification destinationNetwork)
         {
-            if (!getInterfacingConnections().Contains(c))
+            if(Util.DEBUG)
             {
-                throw new ApplicationException("Edge could not be removed because it is an internal edge");
-            }
-            if (!destinationNetwork.getInterfacingConnections().Contains(c))
-            {
-                throw new ApplicationException("Edge could not be removed because it is an internal edge");
+                debugCheckConnection(c, this, destinationNetwork);
             }
             if (!connections.Remove(c))
             {
-                throw new ApplicationException("Edge could not be removed because it is not longer in this network");
+                throw new ApplicationException("Edge could not be removed because it was not longer in this network");
             }
             if (!destinationNetwork.connections.Remove(c))
             {
-                throw new ApplicationException("Edge could not be removed because it is not longer in the destination network");
+                throw new ApplicationException("Edge could not be removed because it was not longer in the destination network");
             }
         }
 
         /// <summary>
-        /// We move a connection from this network to a new network (only move of source XOR destination allowed)
+        /// Move a source of an external connection
         /// </summary>
-        /// <param name="c"></param>
+        /// <param name="connection">A connection from oldSourceNetwork to this</param>
         /// <param name="newSourceNetwork"></param>
-        /// <param name="newDestinationNetwork"></param>
-        internal void moveExternalConnection(Connection c, NNSpecification newSourceNetwork, NNSpecification newDestinationNetwork)
+        /// <param name="newSource"></param>
+        /// <param name="oldSourceNetwork"></param>
+        internal void moveExternalConnectionItsSource(Connection connection, NNSpecification newSourceNetwork, NeuralSpec newSource, NNSpecification oldSourceNetwork)
         {
-            if (this == newSourceNetwork || this == newDestinationNetwork || newSourceNetwork == newDestinationNetwork)
+            if (Util.DEBUG)
             {
-                throw new ApplicationException("We should not move this edge to the same network, or else it was not an external edge");
+                // Check if connection is a connection from oldSourceNetwork to this
+                debugCheckConnection(connection, oldSourceNetwork, this);
+                // Check if the new source is valid
+                if (!newSourceNetwork.contains(newSource))
+                    throw new ApplicationException("newSource is not in newSourceNetwork");
+                if (newSourceNetwork == this)
+                    throw new ApplicationException("We should not move this edge to the same network, or else it was not an external edge");
+                if (newSourceNetwork.connections.Contains(connection))
+                    throw new ApplicationException("newSourceNetwork already contained this connection!?");
+                // Check if it can be moved
+                if (connection.source == newSource || connection.destination == newSource)
+                    throw new ApplicationException("Connection's newSource is not valid!?");
             }
-            if (!connections.Contains(c))
-                throw new ArgumentException("Cannot move connection to antoher network, the connection is not found in this network");
-            if (Util.DEBUG && !(getNeuronSourceCandidates().Contains(c.source) || getNeuronDestinationCandidates().Contains(c.destination)))
-                throw new ApplicationException("Edge is in here but not the source or destination???");
-            connections.Remove(c);
-            if (!newSourceNetwork.connections.Contains(c))
+            if (!oldSourceNetwork.connections.Remove(connection))
             {
-                // Connection was not in newSourceNetwork
-                // We move with a new source
-                if (Util.DEBUG)
-                {
-                    if (!newDestinationNetwork.connections.Contains(c))
-                        throw new ApplicationException(); //dest connection was already set
-                    if (!newDestinationNetwork.contains(c.destination))
-                        throw new ApplicationException(); //connection.dest was already set
-                    if (!newSourceNetwork.contains(c.source))
-                        throw new ApplicationException(); //connection.source was already set
-                }
-                newSourceNetwork.connections.Add(c);
+                throw new ApplicationException("Removing connection while connection was not in oldSourceNetwork");
             }
-            else if (!newDestinationNetwork.connections.Contains(c))
+            connection.source = newSource;
+            newSourceNetwork.connections.Add(connection);
+        }
+
+        /// <summary>
+        /// Move a destination of an external connection
+        /// </summary>
+        /// <param name="connection">A connection from this to oldDestinationNetwork</param>
+        /// <param name="newDestinationNetwork"></param>
+        /// <param name="newDestination"></param>
+        /// <param name="oldDestinationNetwork"></param>
+        internal void moveExternalConnectionItsDestination(Connection connection, NNSpecification newDestinationNetwork, NeuralSpec newDestination, NNSpecification oldDestinationNetwork)
+        {
+            if (Util.DEBUG)
             {
-                // Connection was not in newDestinationnetwork
-                if (Util.DEBUG)
-                {
-                    if (!newSourceNetwork.connections.Contains(c))
-                        throw new ApplicationException(); //source connection was already set
-                    if (!newSourceNetwork.contains(c.source))
-                        throw new ApplicationException(); //connection.source was already set
-                    if (!newDestinationNetwork.contains(c.destination))
-                        throw new ApplicationException(); //connection.dest was already set
-                }
-                newDestinationNetwork.connections.Add(c);
+                // Check if connection is a connection from this to oldDestinationNetwork
+                debugCheckConnection(connection, this, oldDestinationNetwork);
+                // Check if the new destination is valid
+                if (!newDestinationNetwork.contains(newDestination))
+                    throw new ApplicationException("newDestination is not in newDestinationNetwork");
+                if (newDestinationNetwork == this)
+                    throw new ApplicationException("We should not move this edge to the same network, or else it was not an external edge");
+                if (newDestinationNetwork.connections.Contains(connection))
+                    throw new ApplicationException("newDestinationNetwork already contained this connection!?");
+                // Check if it can be moved
+                if (connection.source == newDestination || connection.destination == newDestination)
+                    throw new ApplicationException("Connection's newDestination is not valid!?");
             }
-            else
+            if (!oldDestinationNetwork.connections.Remove(connection))
             {
-                //FIXME: throw new ArgumentException();
+                throw new ApplicationException("Removing connection while connection was not in oldDestinationNetwork");
             }
+            connection.destination = newDestination;
+            newDestinationNetwork.connections.Add(connection);
         }
 
         public int getConnectedN(NeuralSpec n)
@@ -342,6 +360,28 @@ namespace VirtualCreatures
         internal int getNumberOfSourceCandidates()
         {
             return this.sensors.Count + this.neurons.Count;
+        }
+
+        public static void debugCheckConnection(Connection connection, NNSpecification source, NNSpecification destination)
+        {
+            if (!source.connections.Contains(connection))
+                throw new ApplicationException("Expected connection is source network");
+            if (!source.getNeuronSourceCandidates().Contains(connection.source))
+                throw new ApplicationException("Expected connection.source is source network");
+            if (!destination.connections.Contains(connection))
+                throw new ApplicationException("Expected connection is destination network");
+            if (!destination.getNeuronDestinationCandidates().Contains(connection.destination))
+                throw new ApplicationException("Expected connection.destination is destination network");
+        }
+
+        public static void debugCheckConnection(Connection connection, NNSpecification destinationAndSource)
+        {
+            if (!destinationAndSource.connections.Contains(connection))
+                throw new ApplicationException("Expected connection is not in the network");
+            if (!destinationAndSource.getNeuronSourceCandidates().Contains(connection.source))
+                throw new ApplicationException("Expected connection.source is not in the network");
+            if (!destinationAndSource.getNeuronDestinationCandidates().Contains(connection.destination))
+                throw new ApplicationException("Expected connection.destination is not in the network");
         }
     }
 
@@ -530,15 +570,6 @@ namespace VirtualCreatures
 
     class DotParser
     {
-        public static void write(String filename, IEnumerable<string> contents)
-        {
-            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(filename));
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(filename))
-            {
-                foreach (String line in contents) { file.WriteLine(line); }
-            }
-        }
-
         public static List<string> parse(Morphology m)
         {
             IEnumerable<NNSpecification> networks = Enumerable.Repeat(m.brain, 1).Concat(m.edges.Select(e => e.network));
