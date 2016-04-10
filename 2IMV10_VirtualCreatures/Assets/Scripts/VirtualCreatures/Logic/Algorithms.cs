@@ -136,8 +136,9 @@ namespace VirtualCreatures
             joint_type = new NominalMutation<JointType>(0);
         }
 
-        Morphology mutate(Morphology morphology, int sequenceNumber, int populationNumber)
+        Morphology mutate(Morphology morphology, double coherenceToOriginal, int sequenceNumber, int populationNumber)
         {
+            morphology = morphology.deepCopy();
             Util.tryPrintMutation("0-start", morphology, sequenceNumber, populationNumber);
 
             // first modify each edge internally
@@ -151,13 +152,13 @@ namespace VirtualCreatures
                 }
 
                 // change existing internal connections of the network
-                mutateInternalConnections(e.network);
+                mutateInternalConnections(e.network, coherenceToOriginal);
 
                 // add internal connections to the network
                 possiblyAddInternalConnections(e.network);
 
                 // change parameters of the joints
-                mutateJoint(e.joint);
+                mutateJoint(e.joint, coherenceToOriginal);
             }
 
             Util.tryPrintMutation("1-internal", morphology, sequenceNumber, populationNumber);
@@ -173,9 +174,9 @@ namespace VirtualCreatures
                 NNSpecification sourceNetwork = kvp.Value[0];
                 NNSpecification destinationNetwork = kvp.Value[1];
 
-                c.weight = weights.possiblyChangeVal(c.weight);
+                c.weight = weights.possiblyChangeVal(c.weight, coherenceToOriginal);
 
-                switch (reconnectExternal.happens())
+                switch (reconnectExternal.happens(coherenceToOriginal))
                 {
                     case 0: // reconnect source (sourceNetwork remains the same)
                         NeuralSpec newSource = findNewSource(destinationNetwork, destination, sourceNetwork);
@@ -222,7 +223,7 @@ namespace VirtualCreatures
             Util.tryPrintMutation("2-betweennetworks", morphology, sequenceNumber, populationNumber);
 
             // Add new inter network neuron connections
-            int numberOfNewExternalConnections = addExteralConnection.newVal();
+            int numberOfNewExternalConnections = addExteralConnection.newVal(coherenceToOriginal);
             for (int i = 0; i < numberOfNewExternalConnections; i++)
             {
                 // get source from some network
@@ -285,15 +286,15 @@ namespace VirtualCreatures
             return morphology;
         }
 
-        void mutateJoint(JointSpecification joint)
+        void mutateJoint(JointSpecification joint, double coherenceToOriginal)
         {
-            joint.faceHorizontal = joint_faceHorizontal.possiblyChangeVal(joint.faceHorizontal);
-            joint.faceVertical = joint_faceVertical.possiblyChangeVal(joint.faceVertical);
-            joint.rotation = joint_rotation.possiblyChangeVal(joint.rotation);
-            joint.bending = joint_bending.possiblyChangeVal(joint.bending);
-            joint.hover = joint_hover.possiblyChangeVal(joint.hover);
-            joint.face = joint_face.possiblyChangeVal(joint.face);
-            joint.jointType = joint_type.possiblyChangeVal(joint.jointType);
+            joint.faceHorizontal = joint_faceHorizontal.possiblyChangeVal(joint.faceHorizontal, coherenceToOriginal);
+            joint.faceVertical = joint_faceVertical.possiblyChangeVal(joint.faceVertical, coherenceToOriginal);
+            joint.rotation = joint_rotation.possiblyChangeVal(joint.rotation, coherenceToOriginal);
+            joint.bending = joint_bending.possiblyChangeVal(joint.bending, coherenceToOriginal);
+            joint.hover = joint_hover.possiblyChangeVal(joint.hover, coherenceToOriginal);
+            joint.face = joint_face.possiblyChangeVal(joint.face, coherenceToOriginal);
+            joint.jointType = joint_type.possiblyChangeVal(joint.jointType, coherenceToOriginal);
         }
 
         void possiblyAddInternalConnections(NNSpecification network)
@@ -316,15 +317,15 @@ namespace VirtualCreatures
             }
         }
 
-        void mutateInternalConnections(NNSpecification network)
+        void mutateInternalConnections(NNSpecification network, double coherenceToOriginal)
         {
             var internalConns = network.getInternalConnections().ToList();
             foreach (Connection c in internalConns)
             {
                 NeuralSpec originalSource = c.source;
                 NeuralSpec originalDestination = c.destination;
-                c.weight = weights.possiblyChangeVal(c.weight);
-                switch (reconnectInternally.happens())
+                c.weight = weights.possiblyChangeVal(c.weight, coherenceToOriginal);
+                switch (reconnectInternally.happens(coherenceToOriginal))
                 {
                     case 0: // change source
                         NeuralSpec newSource = findNewSource(network, originalDestination, network);
@@ -411,10 +412,11 @@ namespace VirtualCreatures
             Util.tryPrintEveryPopulation(the_first.morphology, 0, GenerationCount);
             this.population[0] = the_first;
 
+            double coherenceToOriginal = 0;
             for (int i = 1; i < this.population.Length; i++)
             {
                 PopulationMember offspring = new PopulationMember(
-                    mutate(BASE.deepCopy(), i, GenerationCount) // no parents, although BASE actually is it's parent
+                    mutate(BASE, coherenceToOriginal, i, GenerationCount) // no parents, although BASE actually is it's parent
                 );
                 Util.tryPrintEveryPopulation(offspring.morphology, i, GenerationCount);
                 this.population[i] = offspring;
@@ -425,25 +427,59 @@ namespace VirtualCreatures
 
         public override void generateNewPopulation(IList<CreatureController> prevPopulation, double[] fitness)
         {
-            PopulationMember[] newPopulation = new PopulationMember[prevPopulation.Count];
-            for (int i = 0; i < prevPopulation.Count; i++)
+            double max = fitness.Max();
+
+            IList<PopulationMember> resultingCandidates = new List<PopulationMember>(prevPopulation.Count);
+            IList<PopulationMember> newPopulation = new List<PopulationMember>();
+            
+            for (int oldIndex = 0; oldIndex < prevPopulation.Count; oldIndex++)
             {
-                // store fitness of the previous generation
-                PopulationMember prevPop = this.population[i];
-                prevPop.fitness = fitness[i];
-                CreatureController prevCreature = prevPopulation[i];
-                Morphology prevSpecification = prevPop.morphology;
-                Morphology newSpecification = prevSpecification.deepCopy();
+                // Store fitness of the previous generation
+                PopulationMember member = this.population[oldIndex];
+                member.fitness = fitness[oldIndex];
+                Morphology prevSpecification = member.morphology;
 
-                // FIXME: not just mutate the previous generation but also look at fitness
                 // FIXME: terminate this spieces if it has a dislocated joint (or broken body part)
-                newSpecification = mutate(newSpecification, i, GenerationCount);
-                Util.tryPrintEveryPopulation(newSpecification, i, GenerationCount);
+                if(member.fitness > 0.8 * max)
+                {
+                    int successors;
+                    if (member.fitness == max)
+                    {   // Top => Generate 10 successors
+                        successors = 10;
+                    }
+                    else
+                    {   // Top 20% => Generate 2 to 9 successors
+                        successors = 2 + (int)Math.Floor(8 * ((member.fitness - 0.8 * max) / (0.2 * max)));
+                    }
+                    for (int i = 0; i < successors; i++)
+                    {
+                        double coherenceToOriginal = 0.97 * member.fitness / max;
+                        Morphology newSpec = mutate(prevSpecification, coherenceToOriginal, newPopulation.Count, GenerationCount);
 
-                PopulationMember newMember = new PopulationMember(newSpecification, prevPop);  // Only one parent
-                newPopulation[i] = newMember;
+                        PopulationMember newMember = new PopulationMember(newSpec, member);
+                        Util.tryPrintEveryPopulation(newSpec, oldIndex, GenerationCount);
+                        newPopulation.Add(newMember);
+                    }
+                    resultingCandidates.Add(member);
+                }
+                else if (member.fitness > 0.2 * max)
+                {
+                    resultingCandidates.Add(member);
+                }
             }
+
+            // Fill population from resultingCandidates till Util.INITIAL_POPULATION_SIZE
+            while (newPopulation.Count < Util.INITIAL_POPULATION_SIZE)
+            {
+                PopulationMember member = resultingCandidates[UnityEngine.Random.Range(0, resultingCandidates.Count-1)];
+                double coherenceToOriginal = 0.85 * member.fitness / max;
+                Morphology newSpec = mutate(member.morphology, coherenceToOriginal, newPopulation.Count, GenerationCount);
+                newPopulation.Add(new PopulationMember(newSpec, member));
+            }
+
+            // Save the new population
             GenerationCount++;
+            this.population = newPopulation.ToArray();
         }
 
         internal override float getCreatureSize()
@@ -626,6 +662,12 @@ namespace VirtualCreatures
             // probability = 1 => true;
             return EvolutionAlgorithm.random.NextDouble() < probability;
         }
+
+        public bool happens(double coherenceToFalse)
+        {
+            double probability = this.probability * (1 - coherenceToFalse);
+            return EvolutionAlgorithm.random.NextDouble() < probability;
+        }
     }
 
     public class DoubleMutation : Descision
@@ -664,6 +706,16 @@ namespace VirtualCreatures
             if (happens())
             {
                 return newVal(old);
+            }
+            return old;
+        }
+
+        internal double possiblyChangeVal(double old, double coherenceToOriginal)
+        {
+            if (happens(coherenceToOriginal))
+            {
+                return coherenceToOriginal * old
+                    + (1 - coherenceToOriginal) * newVal(old);
             }
             return old;
         }
@@ -713,6 +765,19 @@ namespace VirtualCreatures
         {
             return (float)baseMutation.newVal();
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="weight"></param>
+        /// <param name="coherence">Extra coherence</param>
+        /// <returns></returns>
+        internal float possiblyChangeVal(float old, double coherenceToOriginal)
+        {
+            return (float)(
+                (coherenceToOriginal) * old
+                + (1 - coherenceToOriginal) * baseMutation.possiblyChangeVal(old));
+        }
     }
 
     public class IntegerMutation
@@ -749,6 +814,16 @@ namespace VirtualCreatures
             int normalInt = (int)(Math.Round(normalVar));
             return Math.Abs(normalInt) + 1;
         }
+        
+        /// <param name="coherenceToOriginal">The (extra) change to be 0. If it is 1 this always returns 0</param>
+        /// <returns></returns>
+        public int newVal(double coherenceToOriginal)
+        {
+            if (!happens(coherenceToOriginal)) return 0;
+            double normalVar = DoubleMutation.normalDist(this.max - 1);
+            int normalInt = (int)(Math.Round(normalVar));
+            return Math.Abs(normalInt) + 1;
+        }
     }
 
     public class NominalMutation<E> : Descision
@@ -779,6 +854,12 @@ namespace VirtualCreatures
         {
             return EvolutionAlgorithm.getElement(vals.Except(except));
         }
+
+        internal E possiblyChangeVal(E oldVal, double coherence)
+        {
+            if (!happens(coherence)) return oldVal;
+            return EvolutionAlgorithm.getElementExcept(vals, oldVal);
+        }
     }
 
     public class MultipleDescision
@@ -804,6 +885,25 @@ namespace VirtualCreatures
         public int happens()
         {
             double r = EvolutionAlgorithm.random.NextDouble();
+            int i;
+            for (i = 0; i < ps.Length; i++)
+            {
+                if (r < ps[i])
+                {
+                    return i;
+                }
+                else
+                {
+                    r -= ps[i];
+                }
+            }
+            return ps.Length;
+        }
+
+        public int happens(double coherenceToLastValue)
+        {
+            double r = (1) * coherenceToLastValue
+                + (1 - coherenceToLastValue) * EvolutionAlgorithm.random.NextDouble();
             int i;
             for (i = 0; i < ps.Length; i++)
             {

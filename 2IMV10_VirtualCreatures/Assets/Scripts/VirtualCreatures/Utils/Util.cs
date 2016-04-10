@@ -49,7 +49,7 @@ namespace VirtualCreatures
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
                 PRINT_EVERY_POPULATION = true;
 
-                INITIAL_POPULATION_SIZE = 1000;
+                INITIAL_POPULATION_SIZE = 500;
                 INITIAL_EVALUATION_TIME = 2.0f;
                 FITNESS_EVALUATION_TIME = 10.0f;
             }
