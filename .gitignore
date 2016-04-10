@@ -32,3 +32,7 @@ sysinfo.txt
 expandedItems
 LastSceneManagerSetup.txt
 2IMV10_VirtualCreatures/stats/*
+
+# Ignore everything in root except 2IMV10_VirtualCreatures
+*/
+!2IMV10_VirtualCreatures/
