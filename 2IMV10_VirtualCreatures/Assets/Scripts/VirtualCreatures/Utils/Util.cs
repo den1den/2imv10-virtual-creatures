@@ -29,6 +29,7 @@ namespace VirtualCreatures
         /// Print the full mutation steps of the ith creature for each generation
         /// </summary>
         public static readonly int PRINT_MUTATION_OF;
+        public static readonly bool PRINT_ONLY_LAST_MUTATION;
         /// <summary>
         /// Print the full network values of the ith creature for each generation
         /// </summary>
@@ -38,15 +39,17 @@ namespace VirtualCreatures
         static Util()
         {
             //DEBUG = System.Diagnostics.Debugger.IsAttached;
-            DEBUG = true;
+            DEBUG = false;
 
             Debug.Log("Util.DEBUG variable is " + DEBUG);
 
-            PRINT_MUTATION_OF = 1;
-            WRITE_NETWORK_FLOATS_OF = 0;
+            PRINT_ONLY_LAST_MUTATION = false;
+
             if (DEBUG)
             {
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
+                PRINT_MUTATION_OF = 1;
+                WRITE_NETWORK_FLOATS_OF = 0;
                 PRINT_EVERY_POPULATION = true;
 
                 INITIAL_POPULATION_SIZE = 500;
@@ -56,29 +59,55 @@ namespace VirtualCreatures
             else
             {
                 PAUSE_AFTER_CREATURE_INITIALIZATION = false;
-                PRINT_EVERY_POPULATION = false;
+                PRINT_ONLY_LAST_MUTATION = true;
+                PRINT_MUTATION_OF = 0;
+                PRINT_EVERY_POPULATION = true;
+                WRITE_NETWORK_FLOATS_OF = -1;
 
-                INITIAL_POPULATION_SIZE = 1000;
-                INITIAL_EVALUATION_TIME = 1.0f;
-                FITNESS_EVALUATION_TIME = 100.0f;
+                INITIAL_POPULATION_SIZE = 300;
+                INITIAL_EVALUATION_TIME = 2.0f;
+                FITNESS_EVALUATION_TIME = 10.0f;
             }
         }
 
         public static string STARTTIME = DateTime.Now.ToString("MMddHHmmss");
+        public static string format = "F4";
+        public static IFormatProvider provider = System.Globalization.CultureInfo.CreateSpecificCulture("nl-NL");
 
-        public static void tryPrintEveryPopulation(Morphology morphology, int sequenceNumber, int populationNumber)
+        static string[] fitnessHistoryHeader = new string[] { "Generation", "id", "Predessors", "Fitnesses" };
+        static IList<string[]> fitnesshistory = new List<string[]>();
+        public static void tryPrintEveryPopulation(IList<EvolutionAlgorithm.PopulationMember> newPop, int populationNumber)
         {
             if (!Util.PRINT_EVERY_POPULATION)
             {
                 return;
             }
-            string filename = "stats/populations" + Util.STARTTIME + "/POP_" + populationNumber + "_" + sequenceNumber + ".gv";
-            write(filename, DotParser.parse(morphology));
+            //store
+            for(int i = 0; i < newPop.Count; i++)
+            {
+                fitnesshistory.Add(new string[] {
+                    populationNumber.ToString(),
+                    newPop[i].id.ToString(),
+                    String.Join(", ", newPop[i].parents.Select(p => p.id.ToString()).ToArray()),
+                    newPop[i].fitness.ToString(Util.format, Util.provider)
+                });
+            }
+            if(populationNumber % 20 == 0)
+            {
+                //write
+                string filename = "stats/populations" + Util.STARTTIME + "/FITNESSES_" + populationNumber + ".csv";
+                writeCSV(filename, fitnessHistoryHeader, fitnesshistory);
+                fitnesshistory.Clear();
+            }
         }
 
         internal static void tryPrintMutation(string stage, Morphology morphology, int sequenceNumber, int populationNumber)
         {
             if(sequenceNumber != Util.PRINT_MUTATION_OF)
+            {
+                return;
+            }
+            if(PRINT_ONLY_LAST_MUTATION && !stage.Equals("4-fix"))
             {
                 return;
             }

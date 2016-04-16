@@ -15,7 +15,7 @@ namespace VirtualCreatures
     {
         public float InitializationTime = Util.INITIAL_EVALUATION_TIME;
         public float EvaluationTime = Util.FITNESS_EVALUATION_TIME;
-        public int GenerationCount = 0;
+        public int GenerationCount;
         
         public PopulationMember[] population;
 
@@ -35,14 +35,20 @@ namespace VirtualCreatures
         /// </summary>
         public class PopulationMember
         {
+            private static int idcounter = 0;
+
             public readonly Morphology morphology;
             public readonly IEnumerable<PopulationMember> parents;
             public double fitness = double.NaN;
+            public double avgFitness = double.NaN;
+            public readonly int id;
 
             internal PopulationMember(Morphology morphology, IEnumerable<PopulationMember> parents)
             {
                 this.morphology = morphology;
                 this.parents = parents;
+                this.id = idcounter;
+                idcounter++;
             }
 
             internal PopulationMember(Morphology morphology, params PopulationMember[] parents) : this(morphology, parents.AsEnumerable()) { }
@@ -407,9 +413,9 @@ namespace VirtualCreatures
         public override void generateNewPopulation()
         {
             this.population = new PopulationMember[Util.INITIAL_POPULATION_SIZE];
+            GenerationCount = 1;
 
             PopulationMember the_first = new PopulationMember(BASE); // no parents
-            Util.tryPrintEveryPopulation(the_first.morphology, 0, GenerationCount);
             this.population[0] = the_first;
 
             double coherenceToOriginal = 0;
@@ -418,68 +424,54 @@ namespace VirtualCreatures
                 PopulationMember offspring = new PopulationMember(
                     mutate(BASE, coherenceToOriginal, i, GenerationCount) // no parents, although BASE actually is it's parent
                 );
-                Util.tryPrintEveryPopulation(offspring.morphology, i, GenerationCount);
                 this.population[i] = offspring;
             }
-
-            GenerationCount = 1;
         }
 
         public override void generateNewPopulation(IList<CreatureController> prevPopulation, double[] fitness)
         {
             double max = fitness.Max();
 
-            IList<PopulationMember> resultingCandidates = new List<PopulationMember>(prevPopulation.Count);
             IList<PopulationMember> newPopulation = new List<PopulationMember>();
-            
+
             for (int oldIndex = 0; oldIndex < prevPopulation.Count; oldIndex++)
             {
                 // Store fitness of the previous generation
                 PopulationMember member = this.population[oldIndex];
                 member.fitness = fitness[oldIndex];
-                Morphology prevSpecification = member.morphology;
-
+                double parentalFitness = member.parents.Select(p => p.avgFitness).Sum();
+                parentalFitness = parentalFitness / member.parents.Count();
+                member.avgFitness =
+                    0.75 * parentalFitness
+                    + 0.25 * member.fitness;
+                if (double.IsNaN(member.avgFitness))
+                {
+                    member.avgFitness = member.fitness;
+                }
                 // FIXME: terminate this spieces if it has a dislocated joint (or broken body part)
-                if(member.fitness > 0.8 * max)
-                {
-                    int successors;
-                    if (member.fitness == max)
-                    {   // Top => Generate 10 successors
-                        successors = 10;
-                    }
-                    else
-                    {   // Top 20% => Generate 2 to 9 successors
-                        successors = 2 + (int)Math.Floor(8 * ((member.fitness - 0.8 * max) / (0.2 * max)));
-                    }
-                    for (int i = 0; i < successors; i++)
-                    {
-                        double coherenceToOriginal = 0.97 * member.fitness / max;
-                        Morphology newSpec = mutate(prevSpecification, coherenceToOriginal, newPopulation.Count, GenerationCount);
-
-                        PopulationMember newMember = new PopulationMember(newSpec, member);
-                        Util.tryPrintEveryPopulation(newSpec, oldIndex, GenerationCount);
-                        newPopulation.Add(newMember);
-                    }
-                    resultingCandidates.Add(member);
-                }
-                else if (member.fitness > 0.2 * max)
-                {
-                    resultingCandidates.Add(member);
-                }
             }
+            Util.tryPrintEveryPopulation(this.population, GenerationCount);
 
-            // Fill population from resultingCandidates till Util.INITIAL_POPULATION_SIZE
-            while (newPopulation.Count < Util.INITIAL_POPULATION_SIZE)
+            IList<PopulationMember> oldPopulation = this.population.OrderByDescending(p => p.avgFitness).ToList();
+            int i = 0;
+            double children = Util.INITIAL_POPULATION_SIZE / 10;
+            while(newPopulation.Count < Util.INITIAL_POPULATION_SIZE && i < oldPopulation.Count)
             {
-                PopulationMember member = resultingCandidates[UnityEngine.Random.Range(0, resultingCandidates.Count-1)];
-                double coherenceToOriginal = 0.85 * member.fitness / max;
-                Morphology newSpec = mutate(member.morphology, coherenceToOriginal, newPopulation.Count, GenerationCount);
-                newPopulation.Add(new PopulationMember(newSpec, member));
+                PopulationMember member = oldPopulation[i++];
+                double coherenceToOriginal = 0.97 * member.fitness / max;
+                for(int c = 0; c < children; c++)
+                {
+                    Morphology newSpec = mutate(member.morphology, coherenceToOriginal, newPopulation.Count, GenerationCount);
+                    PopulationMember newMember = new PopulationMember(newSpec, member);
+                    newPopulation.Add(newMember);
+                }
+                
+                children *= 0.8;
             }
 
             // Save the new population
-            GenerationCount++;
             this.population = newPopulation.ToArray();
+            GenerationCount++;
         }
 
         internal override float getCreatureSize()

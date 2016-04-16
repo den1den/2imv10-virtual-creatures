@@ -124,13 +124,15 @@ namespace VirtualCreatures
         {
             Vector3[] r = new Vector3[totalSize];
             int rowSize = (int)Math.Ceiling(Math.Sqrt(totalSize));
+            float startX = start.x - rowSize / 2 * spacing;
+            float startZ = start.z - rowSize / 2 * spacing;
             for (int x = 0; x < rowSize; x++)
             {
-                float xC = start.x + x * spacing;
+                float xC = startX + x * spacing;
                 int i = x * rowSize;
                 for (int z = 0; z < rowSize && i < totalSize;)
                 {
-                    float zC = start.z + z * spacing;
+                    float zC = startZ + z * spacing;
                     r[i] = new Vector3(xC, start.y, zC);
                     i = x * rowSize + ++z;
                 }

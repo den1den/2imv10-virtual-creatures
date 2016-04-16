@@ -728,34 +728,31 @@ namespace VirtualCreatures
             WriteToUnityOperations++;
         }
 
-        string format = "F4";
-        IFormatProvider provider = System.Globalization.CultureInfo.CreateSpecificCulture("nl-NL");
-
         void record()
         {
             string[] line = new string[this.header.Length];
             int index = 0;
-            line[index++] = time.ToString(format, provider);
-            line[index++] = TickOperations.ToString(format, provider);
-            line[index++] = WriteToUnityOperations.ToString(format, provider);
+            line[index++] = time.ToString(Util.format, Util.provider);
+            line[index++] = TickOperations.ToString(Util.format, Util.provider);
+            line[index++] = WriteToUnityOperations.ToString(Util.format, Util.provider);
             for (int i = 0; i < wrapped.sensorNeurons.Length; i++)
             {
                 NaiveNN.Neural[] sensors = wrapped.sensorNeurons[i];
                 for (int j = 0; j < sensors.Length; j++)
                 {
-                    line[index++] = sensors[j].value.ToString(format, provider);
+                    line[index++] = sensors[j].value.ToString(Util.format, Util.provider);
                 }
             }
             for (int i = 0; i < wrapped.internalNeurons.Length; i++)
             {
-                line[index++] = wrapped.internalNeurons[i].value.ToString(format, provider);
+                line[index++] = wrapped.internalNeurons[i].value.ToString(Util.format, Util.provider);
             }
             for (int i = 0; i < wrapped.actorNeurons.Length; i++)
             {
                 NaiveNN.Neural[] actors = wrapped.actorNeurons[i];
                 for (int j = 0; j < actors.Length; j++)
                 {
-                    line[index++] = actors[j].value.ToString(format, provider);
+                    line[index++] = actors[j].value.ToString(Util.format, Util.provider);
                 }
             }
             log.Add(line);
